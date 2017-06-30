@@ -25,7 +25,7 @@ function save_sim_param(filename::ASCIIString, p::SimParam)
  return true
 end
 
-function save_sim_results(filename::ASCIIString, p::SimParam; distances::Vector{Float64}=Array(Float64,0), summary_stats::CatalogSummaryStatistics = CatalogSummaryStatistics() )
+function save_sim_results(filename::ASCIIString, p::SimParam; distances::Vector{Float64}=Array{Float64}(0), summary_stats::CatalogSummaryStatistics = CatalogSummaryStatistics() )
  local file
  try
    file = JLD.jldopen(filename,"w")

@@ -9,7 +9,7 @@ using DataFrames
 export setup_koi_table, koi_table, num_koi
 
 df = DataFrame()
-usable = Array(Int64,0)
+usable = Array{Int64}(0)
         
 function setup(sim_param::SimParam; force_reread::Bool = false)
   global df, usable
