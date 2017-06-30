@@ -1,0 +1,16 @@
+julia 0.5
+Combinatorics
+Compat
+DataFrames
+Distributions
+DistributedArrays
+HDF5
+HypothesisTests
+JLD
+StatsFuns
+
+# Packages that are used by some examples, but not needed by SysSim itself
+# Optim           # Only needed for optim.jl example, not main package
+# PyPlot          # Only needed for example, not main package
+
+
