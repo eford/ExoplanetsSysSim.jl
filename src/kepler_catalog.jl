@@ -129,8 +129,8 @@ function setup_actual_planet_candidate_catalog(df_star::DataFrame, sim_param::Si
   #is_cand = (csv_data[:,koi_disposition_idx] .== "CONFIRMED") | (csv_data[:,koi_disposition_idx] .== "CANDIDATE")
   is_cand = (csv_data[:,koi_pdisposition_idx] .== "CANDIDATE")
 
-  idx_keep = is_cand & !isna(csv_data[:,koi_ror_idx]) & ([typeof(x) for x in csv_data[:,koi_ror_idx]] .== Float64)
-  idx_keep = idx_keep & !isna(csv_data[:,koi_period_err1_idx]) & ([typeof(x) for x in csv_data[:,koi_period_err1_idx]] .== Float64) # DR25 catalog missing uncertainties for some candidates
+  idx_keep = is_cand & !isna.(csv_data[:,koi_ror_idx]) & ([typeof(x) for x in csv_data[:,koi_ror_idx]] .== Float64)
+  idx_keep = idx_keep & !isna.(csv_data[:,koi_period_err1_idx]) & ([typeof(x) for x in csv_data[:,koi_period_err1_idx]] .== Float64) # DR25 catalog missing uncertainties for some candidates
   csv_data = csv_data[idx_keep,:]
  
   output = KeplerObsCatalog([])

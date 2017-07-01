@@ -6,6 +6,7 @@ if ! isdir( joinpath(Pkg.dir(),"ExoplanetsSysSim") )
      symlink( joinpath(Pkg.dir(),"exoplanetssyssim"), joinpath(Pkg.dir(),"ExoplanetsSysSim") )
 end
 
+startdir = pwd()
 # Code to be run once to install unregistered package dependencies
 # Code to be run once to install non-standard dependencies
 Pkg.clone("git@github.com:eford/ABC.jl.git")
@@ -13,10 +14,16 @@ Pkg.clone("git@github.com:eford/ABC.jl.git")
 
 Pkg.clone("git@github.com:jbrakensiek/CORBITS.git")
 
+
 # Compile CORBITS library and put it somewhere we can find
 cd(joinpath(Pkg.dir(),"CORBITS"))
 run(`make lib`)
-cd(homedir())
-symlink( joinpath(Pkg.dir(),"CORBITS/libcorbits.so"), joinpath(Pkg.dir(),"ExoplanetsSysSim/libcorbits.so") )
+#cd(homedir())
+cd(workdir)
 
+if !is_windows()
+   symlink( joinpath(Pkg.dir("CORBITS"),"libcorbits.so"), joinpath(Pkg.dir("ExoplanetsSysSim"),"libcorbits.so") )
+else
+   cp( joinpath(Pkg.dir("CORBITS"),"libcorbits.so"), joinpath(Pkg.dir("ExoplanetsSysSim"),"libcorbits.so") )
+end
 

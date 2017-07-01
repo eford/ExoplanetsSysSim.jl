@@ -51,7 +51,7 @@ dist_KS{T<:Real, S<:Real}(x::AbstractVector{T}, y::AbstractVector{S}, wx::Abstra
 
 # TODO SCI: IMPORTANT:  Replace this distance function with something well thought out
 function calc_distance_vector_demo(summary1::CatalogSummaryStatistics, summary2::CatalogSummaryStatistics, pass::Int64, sim_param::SimParam ; verbose::Bool = false)
-  d = Array{Float64{(0)
+  d = Array{Float64}(0)
   if pass == 1
     if verbose
       println("# Summary 1, pass 1: ",summary1)

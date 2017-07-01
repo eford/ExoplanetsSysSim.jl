@@ -5,7 +5,7 @@ module EvalSysSimModel
   export setup, get_param_vector, get_ss_obs #, evaluate_model
   export gen_data, calc_summary_stats, calc_distance, is_valid
   using ExoplanetsSysSim
-  include(joinpath(Pkg.dir(),"ExoplanetsSysSim","examples","KeplerK2SciCon", "model.jl"))
+  include(joinpath(Pkg.dir(),"ExoplanetsSysSim","examples","multiplanet_systems", "model.jl"))
   include(joinpath(pwd(), "param_file.jl"))
 
   sim_param_closure = SimParam()
@@ -48,7 +48,7 @@ module EvalSysSimModel
 
       if haskey(sim_param_closure,"fracs_num_planets")
          fracs::Array{Float64,1} = get(sim_param_closure,"fracs_num_planets",ones(1))
-         if any(!(0.0.<=fracs.<=1))
+         if any(.!(0.0.<=fracs.<=1))
             return false
          end
       end
@@ -174,7 +174,7 @@ module EvalSysSimModel
      cat_obs = gen_data(param)
      sum_stat_obs = calc_summary_stats(cat_obs)
      dist_test = calc_distance_model(sum_stat_obs,sum_stat_obs,sim_param_closure)
-     dist_arr = Array(Float64,(length(dist_test),n))
+     dist_arr = Array{Float64}(length(dist_test),n)
      for i in 1:n
         cat_sim = gen_data(param)
         sum_stat_sim = calc_summary_stats(cat_sim)
@@ -280,7 +280,7 @@ module SysSimABC
   using CompositeDistributions
   import ExoplanetsSysSim
   import EvalSysSimModel
-  include(joinpath(Pkg.dir(),"ExoplanetsSysSim","examples","KeplerK2SciCon", "model.jl"))
+  include(joinpath(Pkg.dir(),"ExoplanetsSysSim","examples","multiplanet_systems", "model.jl"))
   #include(joinpath(pwd(), "param_file.jl"))
 
   function setup_abc(num_dist::Integer = 0)
@@ -296,7 +296,7 @@ module SysSimABC
        "sigma_incl" => Distributions.Uniform(0.0,30.0)   # degrees; 0 = coplanar w/ generate_kepler_target_simple; ignored by generate_planetary_system_uncorrelated_incl
 )
     active_param_keys_sorted = make_vector_of_active_param_keys(EvalSysSimModel.sim_param_closure)
-    array_of_priors = Array(Distributions.ContinuousDistribution, length(active_param_keys_sorted) )
+    array_of_priors = Array{Distributions.ContinuousDistribution}(length(active_param_keys_sorted) )
     for i in 1:length(array_of_priors) 
         array_of_priors[i]  = prior_dict[active_param_keys_sorted[i]];
     end
@@ -326,7 +326,7 @@ module SysSimABC
        "sigma_hk" => Distributions.Uniform(0.0,1.0),  "sigma_hk_one" => Distributions.Uniform(0.0,1.0),  "sigma_hk_multi" => Distributions.Uniform(0.0,1.0),
 )
     active_param_keys_sorted = make_vector_of_active_param_keys(EvalSysSimModel.sim_param_closure)
-    array_of_priors = Array(Distributions.ContinuousDistribution, length(active_param_keys_sorted) )
+    array_of_priors = Array{Distributions.ContinuousDistribution}(length(active_param_keys_sorted) )
     for i in 1:length(array_of_priors) 
         array_of_priors[i]  = prior_dict[active_param_keys_sorted[i]];
     end
@@ -341,7 +341,7 @@ module SysSimABC
 
     println("# run_abc_largegen: ",EvalSysSimModel.sim_param_closure)
     sampler_plot = abc_plan.make_proposal_dist(pop, abc_plan.tau_factor)
-    theta_plot = Array(Float64,(size(pop.theta, 1), npart))
+    theta_plot = Array{Float64}(size(pop.theta, 1), npart)
     for i in 1:npart
       theta_plot[:,i], dist_plot, attempts_plot = ABC.generate_theta(abc_plan, sampler_plot, ss_true, epshist_targ)
     end
