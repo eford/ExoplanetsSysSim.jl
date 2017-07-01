@@ -22,7 +22,7 @@ function generate_kepler_physical_catalog(sim_param::SimParam)
    end
    num_sys = get_int(sim_param,"num_targets_sim_pass_one")
    generate_kepler_target = get_function(sim_param,"generate_kepler_target")
-   target_list = Array(KeplerTarget,num_sys)
+   target_list = Array{KeplerTarget}(num_sys)
    map!(generate_kepler_target, target_list, fill(sim_param,num_sys) )
   return KeplerPhysicalCatalog(target_list)
 end
@@ -42,13 +42,13 @@ function observe_kepler_targets(calc_target_obs::Function, input::KeplerPhysical
   #calc_target_obs = get_function(sim_param,"calc_target_obs_single_obs")
   output = KeplerObsCatalog([])
   if haskey(sim_param,"mem_kepler_target_obs")
-     output.target = get(sim_param,"mem_kepler_target_obs",Array(KeplerTargetObs,0) )
+     output.target = get(sim_param,"mem_kepler_target_obs",Array{KeplerTargetObs}(0) )
   end
   num_targets_sim_pass_one = get_int(sim_param,"num_targets_sim_pass_one")
   if length(output.target) < num_targets_sim_pass_one
-     output.target = Array(KeplerTargetObs, num_targets_sim_pass_one) 
+     output.target = Array{KeplerTargetObs}(num_targets_sim_pass_one) 
   end
-  #output.target = Array(KeplerTargetObs,length(input.target) )  # Replaced to reduce memory allocation
+  #output.target = Array{KeplerTargetObs}(length(input.target) )  # Replaced to reduce memory allocation
   map!(x::KeplerTarget->calc_target_obs(x,sim_param)::KeplerTargetObs, output.target, input.target)
   return output
 end
@@ -93,7 +93,7 @@ function simulated_read_kepler_observations(sim_param::SimParam ) # TODO SCI:  I
    end
    num_sys = get_int(sim_param,"num_kepler_targets")
    generate_kepler_target = get_function(sim_param,"generate_kepler_target")
-   target_list = Array(KeplerTarget,num_sys)
+   target_list = Array{KeplerTarget}(num_sys)
    map!(x->generate_kepler_target(sim_param), target_list, 1:num_sys ) 
 
    cat_phys_cut = generate_obs_targets(KeplerPhysicalCatalog(target_list), sim_param)
@@ -129,8 +129,8 @@ function setup_actual_planet_candidate_catalog(df_star::DataFrame, sim_param::Si
   #is_cand = (csv_data[:,koi_disposition_idx] .== "CONFIRMED") | (csv_data[:,koi_disposition_idx] .== "CANDIDATE")
   is_cand = (csv_data[:,koi_pdisposition_idx] .== "CANDIDATE")
 
-  idx_keep = is_cand & !isna(csv_data[:,koi_ror_idx]) & ([typeof(x) for x in csv_data[:,koi_ror_idx]] .== Float64)
-  idx_keep = idx_keep & !isna(csv_data[:,koi_period_err1_idx]) & ([typeof(x) for x in csv_data[:,koi_period_err1_idx]] .== Float64) # DR25 catalog missing uncertainties for some candidates
+  idx_keep = is_cand & !isna.(csv_data[:,koi_ror_idx]) & ([typeof(x) for x in csv_data[:,koi_ror_idx]] .== Float64)
+  idx_keep = idx_keep & !isna.(csv_data[:,koi_period_err1_idx]) & ([typeof(x) for x in csv_data[:,koi_period_err1_idx]] .== Float64) # DR25 catalog missing uncertainties for some candidates
   csv_data = csv_data[idx_keep,:]
  
   output = KeplerObsCatalog([])
@@ -226,7 +226,7 @@ function setup_actual_planet_candidate_catalog_csv(df_star::DataFrame, sim_param
        target_obs.obs[plid] = ExoplanetsSysSim.TransitPlanetObs(csv_data[i,koi_period_idx],csv_data[i,koi_time0bk_idx],csv_data[i,koi_depth_idx]/1.0e6,csv_data[i,koi_duration_idx])
        target_obs.sigma[plid] = ExoplanetsSysSim.TransitPlanetObs((abs(csv_data[i,koi_period_err1_idx])+abs(csv_data[i,koi_period_err2_idx]))/2,(abs(csv_data[i,koi_time0bk_err1_idx])+abs(csv_data[i,koi_time0bk_err2_idx]))/2,(abs(csv_data[i,koi_depth_err1_idx]/1.0e6)+abs(csv_data[i,koi_depth_err2_idx]/1.0e6))/2,(abs(csv_data[i,koi_duration_err1_idx])+abs(csv_data[i,koi_duration_err2_idx]))/2)
        target_obs.prob_detect = ExoplanetsSysSim.OneObserverSystemDetectionProbs(num_pl)
-# ExoplanetsSysSim.OneObserverSystemDetectionProbs( ones(num_pl), ones(num_pl,num_pl), ones(num_pl), fill(Array(Int64,0), 1) )
+# ExoplanetsSysSim.OneObserverSystemDetectionProbs( ones(num_pl), ones(num_pl,num_pl), ones(num_pl), fill(Array{Int64}(0), 1) )
      end
      push!(output.target,target_obs)
   end
@@ -237,7 +237,7 @@ end
 
 # Two functions below were just for debugging purposes
 function calc_snr_list(cat::KeplerPhysicalCatalog, sim_param::SimParam)
-  snrlist = Array(Float64,0)
+  snrlist = Array{Float64}(0)
   for t in 1:length(cat.target)
     for p in 1:length(cat.target[t].sys[1].planet)
       snr = calc_snr_if_transit(cat.target[t],1,p,sim_param)
@@ -250,7 +250,7 @@ function calc_snr_list(cat::KeplerPhysicalCatalog, sim_param::SimParam)
 end
 
 function calc_prob_detect_list(cat::KeplerPhysicalCatalog, sim_param::SimParam)
-  pdetectlist = Array(Float64,0)
+  pdetectlist = Array{Float64}(0)
   for t in 1:length(cat.target)
     for p in 1:length(cat.target[t].sys[1].planet)
       pdet = calc_prob_detect_if_transit(cat.target[t],1,p,sim_param)

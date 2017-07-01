@@ -226,10 +226,10 @@ end
 
 function preallocate_memory!(sim_param::SimParam)
   num_kepler_targets = get_int(sim_param,"num_kepler_targets")
-  add_param_fixed(sim_param,"mem_kepler_target_obs", Array(KeplerTargetObs, num_kepler_targets) )
+  add_param_fixed(sim_param,"mem_kepler_target_obs", Array{KeplerTargetObs}(num_kepler_targets) )
 end
 
-function setup_sim_param_demo(args::Vector{ASCIIString} = Array(ASCIIString,0) )   # allow this to take a list of parameter (e.g., from command line)
+function setup_sim_param_demo(args::Vector{ASCIIString} = Array{ASCIIString}(0) )   # allow this to take a list of parameter (e.g., from command line)
   sim_param = SimParam()
   add_param_fixed(sim_param,"max_tranets_in_sys",7)
   add_param_fixed(sim_param,"num_targets_sim_pass_one",190000)                      # Note this is used for the number of stars in the simulations, not necessarily related to number of Kepler targets

@@ -133,7 +133,7 @@ module SysSimABC
 
     println("# run_abc_largegen: ",EvalSysSimModel.sim_param_closure)
     sampler_plot = abc_plan.make_proposal_dist(pop, abc_plan.tau_factor)
-    theta_plot = Array(Float64,(size(pop.theta, 1), npart))
+    theta_plot = Array{Float64}(size(pop.theta, 1), npart)
     for i in 1:npart
       theta_plot[:,i], dist_plot, attempts_plot = ABC.generate_theta(abc_plan, sampler_plot, ss_true, epshist_targ)
     end

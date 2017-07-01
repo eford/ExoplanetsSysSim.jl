@@ -13,8 +13,8 @@ end
 export setup_star_table, star_table, num_usable_in_star_table, set_star_table
 
 df = DataFrame()
-usable = Array(Int64,0)
-#data = Array(Float64,0,0)
+usable = Array{Int64}(0)
+#data = Array{Float64}(0,0)
 #colid = Dict()
         
 function setup(sim_param::SimParam; force_reread::Bool = false)
