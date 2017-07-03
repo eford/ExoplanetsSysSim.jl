@@ -60,10 +60,17 @@ function generate_num_planets_poisson(lambda::Real, max_planets_in_sys::Integer;
      d = Distributions.Truncated(Distributions.Poisson(lambda),min_planets_in_sys,max_planets_in_sys)
      n = rand(d)
   else
+     if min_planets_in_sys == 0 
+        min_planets_in_sys = -1
+     end 
+     d = Distributions.Truncated(Distributions.Poisson(lambda),min_planets_in_sys,max_planets_in_sys)
+     n = rand(d)
+     #=
      n = -1
      while !(min_planets_in_sys<=n<=max_planets_in_sys)
         n = rand(Distributions.Poisson(lambda))
      end 
+     =#
   end
   return n
 end
