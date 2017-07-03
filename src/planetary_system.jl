@@ -54,15 +54,17 @@ function generate_num_planets_poisson(lambda::Real, max_planets_in_sys::Integer;
   if lambda < min_planets_in_sys*1e-3
       return min_planets_in_sys
   end
-  d = Distributions.Truncated(Distributions.Poisson(lambda),min_planets_in_sys,max_planets_in_sys)
-  n = rand(d)
-  #=
-  n = -1
-  while !(min_planets_in_sys<=n<=max_tranets_in_sys)
-     n = rand(Distributions.Poisson(lambda))
-  end 
-  =#
- return n
+  bug_fixed = true # TODO: true case should work, but Danley found bug in Distributions package.  Revert once fixed for speed.
+  if bug_fixed
+     d = Distributions.Truncated(Distributions.Poisson(lambda),min_planets_in_sys,max_planets_in_sys)
+  else
+     n = rand(d)
+     n = -1
+     while !(min_planets_in_sys<=n<=max_tranets_in_sys)
+        n = rand(Distributions.Poisson(lambda))
+     end 
+  end
+  return n
 end
 
 function generate_num_planets_poisson(s::Star, sim_param::SimParam)
