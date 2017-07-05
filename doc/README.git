@@ -1,0 +1,35 @@
+
+
+# General git resources that Darin liked
+#
+# http://ndpsoftware.com/git-cheatsheet.html#loc=workspace;
+# This website describes the different regimes (stash, workspace, index, local repo, global repo) and the commands
+# that go back and forth between them. Very helpful in visualizing what is going on. 
+# 
+# GitHub's official cheatsheet: https://training.github.com/kit/downloads/github-git-cheat-sheet.pdf
+# 
+# http://www.git-tower.com/blog/git-cheat-sheet/
+# Git cheat-sheet on the front, but back is most useful as it helps describes best practices (e.g., when to commit). 
+# 
+
+Cheatsheet on using git
+git checkout -b mybranch # create a "feature branch" named use_stellar_tables on your local machine
+cd src 
+#  Create new files and/or edit a file
+git add newfile.jl  # tell git to start tracking the file newfile.jl  
+git add -u # tell git to add all the changed files that it was previously tracking in this directory to the next commit
+git commit -m "First attempt at doing something new"  # Commit changes to your local repository
+git push -u origin mybranch # tell git to create a mybranch branch upstream (i.e., at bitbucket) and push your changes to there
+git checkout master # Resume working with the master branch on your local machine
+git checkout mybranch # Resume working with the use_stellar_tables branch on your local machine 
+# Make changes to the target.jl file to fix a bug
+git add target.jl   # tell git to include changes to target.jl in your next commit
+git commit -m "Fixed bug"  # Commit more changes to your local repository
+git push # Tell git to push bug fix to cloud
+
+
+One-time commands (per computer system, see http://julia.readthedocs.org/en/latest/manual/packages/#initial-setup )
+$ git config --global user.name "FULL NAME"
+$ git config --global user.email "EMAIL"
+$ git config --global github.user "USERNAME"
+
