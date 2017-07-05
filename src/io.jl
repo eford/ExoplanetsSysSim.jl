@@ -63,8 +63,8 @@ function write_sim_param(file::JLD.JldFile, p::SimParam)
       sim_param_real[k] = p.param[k]
    elseif typeof(p.param[k]) <: Function
       sim_param_function[k] = string(p.param[k])
-   elseif typeof(p.param[k]) <: ASCIIString
-      sim_param_string[k] = p.param[k]
+   elseif typeof(p.param[k]) <: AbstractString
+      sim_param_string[k] = convert(ASCIIString,p.param[k])
    else
 	  warn(string("Can't store value of >",k,"< due to type ", typeof(p.param[k])))
    end
