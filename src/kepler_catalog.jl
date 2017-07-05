@@ -179,8 +179,8 @@ function setup_actual_planet_candidate_catalog(df_star::DataFrame, sim_param::Si
 	 for (plid,i) in enumerate(plids)
 	   target_obs.obs[plid] = ExoplanetsSysSim.TransitPlanetObs(csv_data[i,koi_period_idx],csv_data[i,koi_time0bk_idx],csv_data[i,koi_depth_idx]/1.0e6,csv_data[i,koi_duration_idx])
            target_obs.sigma[plid] = ExoplanetsSysSim.TransitPlanetObs((abs(csv_data[i,koi_period_err1_idx])+abs(csv_data[i,koi_period_err2_idx]))/2,(abs(csv_data[i,koi_time0bk_err1_idx])+abs(csv_data[i,koi_time0bk_err2_idx]))/2,(abs(csv_data[i,koi_depth_err1_idx]/1.0e6)+abs(csv_data[i,koi_depth_err2_idx]/1.0e6))/2,(abs(csv_data[i,koi_duration_err1_idx])+abs(csv_data[i,koi_duration_err2_idx]))/2)
-	   target_obs.prob_detect = ExoplanetsSysSim.SimulatedSystemDetectionProbs{OneObserver}( ones(num_pl), ones(num_pl,num_pl), ones(num_pl), fill(Array{Int64}(0), 1) )
-           #target_obs.prob_detect = ExoplanetsSysSim.OneObserverSystemDetectionProbs(num_pl)
+	   #target_obs.prob_detect = ExoplanetsSysSim.SimulatedSystemDetectionProbs{OneObserver}( ones(num_pl), ones(num_pl,num_pl), ones(num_pl), fill(Array{Int64}(0), 1) )  # Made line below to simplify calling
+           target_obs.prob_detect = ExoplanetsSysSim.OneObserverSystemDetectionProbs(num_pl)
 	 end	
       push!(output.target,target_obs)
   end
