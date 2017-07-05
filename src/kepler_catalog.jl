@@ -3,7 +3,11 @@
 
 #using ExoplanetsSysSim
 #using DataFrames
-#using JLD
+using JLD
+
+if VERSION >= v"0.5-"
+  import Compat: UTF8String, ASCIIString
+end
 
 type KeplerPhysicalCatalog
   target::Array{KeplerTarget,1}
@@ -105,34 +109,65 @@ end
 
 # df_star is assumed to have fields kepid, mass and radius for all targets in the survey
 function setup_actual_planet_candidate_catalog(df_star::DataFrame, sim_param::SimParam)
+  local csv_data,kepid_idx,koi_period_idx,koi_time0bk_idx,koi_depth_idx,koi_duration_idx,koi_ror_idx,koi_period_err1_idx,koi_time0bk_err1_idx,koi_depth_err1_idx,koi_duration_err1_idx,koi_period_err2_idx,koi_time0bk_err2_idx,koi_depth_err2_idx,koi_duration_err2_idx 
   add_param_fixed(sim_param,"num_kepler_targets",num_usable_in_star_table())  # For "observed" catalog
   koi_catalog_file_in = convert(ASCIIString,joinpath(Pkg.dir("ExoplanetsSysSim"), "data", convert(ASCIIString,get(sim_param,"koi_catalog","q1_q17_dr25_koi.csv")) ) )
-  (csv_data,csv_header) =  readcsv(koi_catalog_file_in,header=true)
-  # Lookup header columns, since DataFrames doesn't like this file
-  kepid_idx = findfirst(x->x=="kepid",csv_header)
-  koi_period_idx = findfirst(x->x=="koi_period",csv_header)
-  koi_time0bk_idx = findfirst(x->x=="koi_time0bk",csv_header)
-  koi_depth_idx = findfirst(x->x=="koi_depth",csv_header)
-  koi_duration_idx = findfirst(x->x=="koi_duration",csv_header)
-  koi_ror_idx = findfirst(x->x=="koi_ror",csv_header)
-  koi_period_err1_idx = findfirst(x->x=="koi_period_err1",csv_header)
-  koi_time0bk_err1_idx = findfirst(x->x=="koi_time0bk_err1",csv_header)
-  koi_depth_err1_idx = findfirst(x->x=="koi_depth_err1",csv_header)
-  koi_duration_err1_idx = findfirst(x->x=="koi_duration_err1",csv_header)
-  koi_period_err2_idx = findfirst(x->x=="koi_period_err2",csv_header)
-  koi_time0bk_err2_idx = findfirst(x->x=="koi_time0bk_err2",csv_header)
-  koi_depth_err2_idx = findfirst(x->x=="koi_depth_err2",csv_header)
-  koi_duration_err2_idx = findfirst(x->x=="koi_duration_err2",csv_header)
-  koi_disposition_idx = findfirst(x->x=="koi_disposition",csv_header)
-  koi_pdisposition_idx = findfirst(x->x=="koi_pdisposition",csv_header)
-  # Choose which KOIs to keep
-  #is_cand = (csv_data[:,koi_disposition_idx] .== "CONFIRMED") | (csv_data[:,koi_disposition_idx] .== "CANDIDATE")
-  is_cand = (csv_data[:,koi_pdisposition_idx] .== "CANDIDATE")
 
-  idx_keep = is_cand & !isna.(csv_data[:,koi_ror_idx]) & ([typeof(x) for x in csv_data[:,koi_ror_idx]] .== Float64)
-  idx_keep = idx_keep & !isna.(csv_data[:,koi_period_err1_idx]) & ([typeof(x) for x in csv_data[:,koi_period_err1_idx]] .== Float64) # DR25 catalog missing uncertainties for some candidates
-  csv_data = csv_data[idx_keep,:]
- 
+  if ismatch(r".jld$",koi_catalog_file_in)
+  try 
+    data = load(koi_catalog_file_in)
+    csv_data = data["koi_catalog"]
+
+    kepid_idx = 1
+    koi_period_idx = 2
+    koi_time0bk_idx = 3
+    koi_depth_idx = 4
+    koi_duration_idx = 5
+    koi_ror_idx = 6
+    koi_period_err1_idx = 7
+    koi_time0bk_err1_idx = 8
+    koi_depth_err1_idx = 9
+    koi_duration_err1_idx = 10
+    koi_period_err2_idx = 11
+    koi_time0bk_err2_idx = 12
+    koi_depth_err2_idx = 13
+    koi_duration_err2_idx = 14
+  catch
+    error(string("# Failed to read koi catalog >",koi_catalog_file_in,"< in jld format."))
+  end
+  else
+  try 
+    (csv_data,csv_header) = readcsv(koi_catalog_file_in,header=true)
+  
+    # Lookup header columns, since DataFrames doesn't like this file
+    kepid_idx = findfirst(x->x=="kepid",csv_header)
+    koi_period_idx = findfirst(x->x=="koi_period",csv_header)
+    koi_time0bk_idx = findfirst(x->x=="koi_time0bk",csv_header)
+    koi_depth_idx = findfirst(x->x=="koi_depth",csv_header)
+    koi_duration_idx = findfirst(x->x=="koi_duration",csv_header)
+    koi_ror_idx = findfirst(x->x=="koi_ror",csv_header)
+    koi_period_err1_idx = findfirst(x->x=="koi_period_err1",csv_header)
+    koi_time0bk_err1_idx = findfirst(x->x=="koi_time0bk_err1",csv_header)
+    koi_depth_err1_idx = findfirst(x->x=="koi_depth_err1",csv_header)
+    koi_duration_err1_idx = findfirst(x->x=="koi_duration_err1",csv_header)
+    koi_period_err2_idx = findfirst(x->x=="koi_period_err2",csv_header)
+    koi_time0bk_err2_idx = findfirst(x->x=="koi_time0bk_err2",csv_header)
+    koi_depth_err2_idx = findfirst(x->x=="koi_depth_err2",csv_header)
+    koi_duration_err2_idx = findfirst(x->x=="koi_duration_err2",csv_header)
+    koi_disposition_idx = findfirst(x->x=="koi_disposition",csv_header)
+    koi_pdisposition_idx = findfirst(x->x=="koi_pdisposition",csv_header)
+    # Choose which KOIs to keep
+    #is_cand = (csv_data[:,koi_disposition_idx] .== "CONFIRMED") | (csv_data[:,koi_disposition_idx] .== "CANDIDATE")
+    is_cand = (csv_data[:,koi_pdisposition_idx] .== "CANDIDATE")
+  
+    idx_keep = is_cand & !isna(csv_data[:,koi_ror_idx]) & ([typeof(x) for x in csv_data[:,koi_ror_idx]] .== Float64)
+    idx_keep = idx_keep & !isna(csv_data[:,koi_period_err1_idx]) & ([typeof(x) for x in csv_data[:,koi_period_err1_idx]] .== Float64) # DR25 catalog missing uncertainties for some candidates
+    csv_data = csv_data[idx_keep,:]
+  catch
+    error(string("# Failed to read koi catalog >",koi_catalog_file_in,"< in ascii format."))
+  end
+  end
+
   output = KeplerObsCatalog([])
 
   for (j,kepid) in enumerate(df_star[:kepid])
@@ -144,7 +179,8 @@ function setup_actual_planet_candidate_catalog(df_star::DataFrame, sim_param::Si
 	 for (plid,i) in enumerate(plids)
 	   target_obs.obs[plid] = ExoplanetsSysSim.TransitPlanetObs(csv_data[i,koi_period_idx],csv_data[i,koi_time0bk_idx],csv_data[i,koi_depth_idx]/1.0e6,csv_data[i,koi_duration_idx])
            target_obs.sigma[plid] = ExoplanetsSysSim.TransitPlanetObs((abs(csv_data[i,koi_period_err1_idx])+abs(csv_data[i,koi_period_err2_idx]))/2,(abs(csv_data[i,koi_time0bk_err1_idx])+abs(csv_data[i,koi_time0bk_err2_idx]))/2,(abs(csv_data[i,koi_depth_err1_idx]/1.0e6)+abs(csv_data[i,koi_depth_err2_idx]/1.0e6))/2,(abs(csv_data[i,koi_duration_err1_idx])+abs(csv_data[i,koi_duration_err2_idx]))/2)
-	   target_obs.prob_detect = ExoplanetsSysSim.OneObserverSystemDetectionProbs(num_pl)
+	   target_obs.prob_detect = ExoplanetsSysSim.SimulatedSystemDetectionProbs{OneObserver}( ones(num_pl), ones(num_pl,num_pl), ones(num_pl), fill(Array{Int64}(0), 1) )
+           #target_obs.prob_detect = ExoplanetsSysSim.OneObserverSystemDetectionProbs(num_pl)
 	 end	
       push!(output.target,target_obs)
   end
@@ -154,7 +190,8 @@ end
 function setup_actual_planet_candidate_catalog_csv(df_star::DataFrame, sim_param::SimParam)
   add_param_fixed(sim_param,"num_kepler_targets",num_usable_in_star_table())  # For "observed" catalog
   koi_catalog_file_in = convert(ASCIIString,joinpath(Pkg.dir("ExoplanetsSysSim"), "data", convert(ASCIIString,get(sim_param,"koi_catalog","q1_q17_dr25_koi.csv")) ) )
-  (csv_data,csv_header) =  readcsv(koi_catalog_file_in,header=true)
+  (csv_data,csv_header) = readcsv(koi_catalog_file_in,header=true)
+
   # Lookup header columns, since DataFrames doesn't like this file
   kepid_idx = findfirst(x->x=="kepid",csv_header)
   koi_period_idx = findfirst(x->x=="koi_period",csv_header)
@@ -225,8 +262,8 @@ function setup_actual_planet_candidate_catalog_csv(df_star::DataFrame, sim_param
      for (plid,i) in enumerate(plids)
        target_obs.obs[plid] = ExoplanetsSysSim.TransitPlanetObs(csv_data[i,koi_period_idx],csv_data[i,koi_time0bk_idx],csv_data[i,koi_depth_idx]/1.0e6,csv_data[i,koi_duration_idx])
        target_obs.sigma[plid] = ExoplanetsSysSim.TransitPlanetObs((abs(csv_data[i,koi_period_err1_idx])+abs(csv_data[i,koi_period_err2_idx]))/2,(abs(csv_data[i,koi_time0bk_err1_idx])+abs(csv_data[i,koi_time0bk_err2_idx]))/2,(abs(csv_data[i,koi_depth_err1_idx]/1.0e6)+abs(csv_data[i,koi_depth_err2_idx]/1.0e6))/2,(abs(csv_data[i,koi_duration_err1_idx])+abs(csv_data[i,koi_duration_err2_idx]))/2)
-       target_obs.prob_detect = ExoplanetsSysSim.OneObserverSystemDetectionProbs(num_pl)
-# ExoplanetsSysSim.OneObserverSystemDetectionProbs( ones(num_pl), ones(num_pl,num_pl), ones(num_pl), fill(Array{Int64}(0), 1) )
+       target_obs.prob_detect = ExoplanetsSysSim.SimulatedSystemDetectionProbs{OneObserver}( ones(num_pl), ones(num_pl,num_pl), ones(num_pl), fill(Array{Int64}(0), 1) )
+       #target_obs.prob_detect = ExoplanetsSysSim.OneObserverSystemDetectionProbs(num_pl)
      end
      push!(output.target,target_obs)
   end
