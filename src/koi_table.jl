@@ -6,17 +6,19 @@ module KoiTable
 using ExoplanetsSysSim
 using DataFrames
 
-export setup_koi_table, koi_table, num_koi
+export setup_koi_table, koi_table, num_koi_for_kepid
 
 df = DataFrame()
 usable = Array(Int64,0)
         
-function setup(sim_param::SimParam; force_reread::Bool = false)
+default_koi_symbols_to_keep = [ :kepoi_name, :koi_vet_stat, :koi_pdisposition, :koi_period, :koi_time0bk, :koi_duration, :koi_ingress, :koi_depth, :koi_ror, :koi_prad, :koi_srad, :koi_smass, :koi_steff, :koi_slogg, :koi_smet ]
+
+function setup(sim_param::SimParam; force_reread::Bool = false, symbols_to_keep::Vector{Symbol} = default_koi_symbols_to_keep )
   global df, usable
   if haskey(sim_param,"read_koi_catalog") && !force_reread
      return df
   end
-  koi_catalog = joinpath(Pkg.dir("ExoplanetsSysSim"), "data", get(sim_param,"koi_catalog","q1_q12_koi.csv") )
+  koi_catalog = joinpath(Pkg.dir("ExoplanetsSysSim"), "data", get(sim_param,"koi_catalog","q1_q17_dr25_koi.csv") )
   add_param_fixed(sim_param,"read_koi_catalog",true)
   try 
     df = readtable(koi_catalog)
@@ -26,9 +28,8 @@ function setup(sim_param::SimParam; force_reread::Bool = false)
 
   has_planet = ! (isna(df[:koi_period]) | isna(df[:koi_time0bk]) | isna(df[:koi_duration]) | isna(:koi_depth) )
   has_star = ! ( isna(:koi_srad) )
-  is_usable = has_planet & has_star # & has_rest
+  is_usable = has_planet & has_star
 
-  symbols_to_keep = [ :kepoi_name, :koi_vet_stat, :koi_pdisposition, :koi_period, :koi_time0bk, :koi_duration, :koi_ingress, :koi_depth, :koi_ror, :koi_prad, :koi_srad, :koi_smass, :koi_steff, :koi_slogg, :koi_smet ]
   delete!(df, [~(x in symbols_to_keep) for x in names(df)])    # delete columns that we won't be using anyway
   usable = find(is_usable)
   df = df[usable, symbols_to_keep]

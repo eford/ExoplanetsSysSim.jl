@@ -23,8 +23,8 @@ function generate_kepler_physical_catalog(sim_param::SimParam)
    num_sys = get_int(sim_param,"num_targets_sim_pass_one")
    generate_kepler_target = get_function(sim_param,"generate_kepler_target")
    target_list = Array(KeplerTarget,num_sys)
-   map!(generate_kepler_target, target_list, fill(sim_param,num_sys) )
-  return KeplerPhysicalCatalog(target_list)
+   map!(x->generate_kepler_target(sim_param), target_list, 1:num_sys )
+   return KeplerPhysicalCatalog(target_list)
 end
 
 function observe_kepler_targets_sky_avg(input::KeplerPhysicalCatalog, sim_param::SimParam )
@@ -50,9 +50,11 @@ function observe_kepler_targets(calc_target_obs::Function, input::KeplerPhysical
   end
   #output.target = Array(KeplerTargetObs,length(input.target) )  # Replaced to reduce memory allocation
   map!(x::KeplerTarget->calc_target_obs(x,sim_param)::KeplerTargetObs, output.target, input.target)
+  resize!(output.target,length(input.target))
   return output
 end
 
+# Test if this planetary system has at least one planet that transits (assuming a single observer)
 function select_targets_one_obs(ps::PlanetarySystemAbstract)
  for pl in 1:length(ps.orbit)
    ecc::Float64 = ps.orbit[pl].ecc
@@ -66,11 +68,13 @@ function select_targets_one_obs(ps::PlanetarySystemAbstract)
  return false
 end
 
+# Remove undetected planets from physical catalog
+# TODO: OPT: Maybe create array of bools for which planets to keep, rather than splicing out non-detections?
 function generate_obs_targets(cat_phys::KeplerPhysicalCatalog, sim_param::SimParam )
   for t in 1:length(cat_phys.target)
     for ps in 1:length(cat_phys.target[t].sys)
       kep_targ = cat_phys.target[t].sys[ps]
-      for pl in length(kep_targ.orbit):-1:1
+      for pl in length(kep_targ.orbit):-1:1    # Going in reverse since removing planets from end of list first is cheaper than starting at beginning
         ecc::Float64 = kep_targ.orbit[pl].ecc
 	incl::Float64 = kep_targ.orbit[pl].incl
    	a::Float64 = semimajor_axis(kep_targ,pl)
@@ -173,6 +177,7 @@ function setup_actual_planet_candidate_catalog_csv(df_star::DataFrame, sim_param
   koi_disposition_idx = findfirst(x->x=="koi_disposition",csv_header)
   koi_pdisposition_idx = findfirst(x->x=="koi_pdisposition",csv_header)
 
+  # TODO:  Let's move this subset selection code to a separate function, so we don't have so much duplicate code in this and previous function
   koi_subset = fill(false, length(csv_data[:,kepid_idx]))
 
   if haskey(sim_param, "koi_subset_csv")
