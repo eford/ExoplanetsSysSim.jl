@@ -7,7 +7,7 @@ using DataFrames
 import Compat: UTF8String, ASCIIString
 
 ## simulation_parameters
-function setup_sim_param_model(args::Vector{ASCIIString} = Array(ASCIIString,0) )   # allow this to take a list of parameter (e.g., from command line)
+function setup_sim_param_model(args::Vector{ASCIIString} = Array{ASCIIString}(0) )   # allow this to take a list of parameter (e.g., from command line)
   sim_param = SimParam()
   #add_param_fixed(sim_param,"max_planets_in_sys",20)
   #add_param_fixed(sim_param,"max_tranets_in_sys",8)
@@ -90,7 +90,7 @@ using Distributions
 function generate_num_planets_categorical(s::Star, sim_param::SimParam)
   const n::Int64 = get_int(sim_param,"max_tranets_in_sys")
   fracs::Array{Float64,1} = get(sim_param,"fracs_num_planets", ones(n+1)/(n+1))
-  fracs = abs(fracs)
+  fracs = abs.(fracs)
   fracs ./= sum(fracs)
   n = rand(Distributions.Categorical(fracs))-1
 end
@@ -132,8 +132,8 @@ function generate_period_and_sizes_from_rate_table(s::Star, sim_param::SimParam;
 
   @assert ((length(limitP)-1) == size(rate_tab, 2))
   @assert ((length(limitRp)-1) == size(rate_tab, 1))
-  Plist = Array(Float64,num_pl)
-  Rplist = Array(Float64,num_pl)
+  Plist = Array{Float64}(num_pl)
+  Rplist = Array{Float64}(num_pl)
   rate_tab_1d = reshape(rate_tab,length(rate_tab))
   #logmaxcuml = logsumexp(rate_tab_1d)
   #cuml = cumsum_kbn(exp(rate_tab_1d-logmaxcuml))
@@ -300,13 +300,13 @@ function calc_summary_stats_duration_ratios_neighbors!(css::CatalogSummaryStatis
   for i in 2:length(idx_n_tranets)
      num_ratios += length(idx_n_tranets[i])*(i-1)
   end
-  duration_ratio_list = Array(Float64,num_ratios)
+  duration_ratio_list = Array{Float64}(num_ratios)
  
   k = 0
   for n in 2:length(idx_n_tranets)         # Loop over number of tranets in system
     for i in idx_n_tranets[n]              # Loop over systems with n tranets
-       period_in_sys = Array(Float64,n)
-       duration_in_sys = Array(Float64,n)
+       period_in_sys = Array{Float64}(n)
+       duration_in_sys = Array{Float64}(n)
        for j in 1:n                        # Loop over periods within a system
          period_in_sys[j] = cat_obs.target[i].obs[j].period
          duration_in_sys[j] = cat_obs.target[i].obs[j].duration
@@ -341,14 +341,14 @@ function calc_summary_stats_period_radius_ratios_neighbors_internal!(css::Catalo
   for i in 2:length(idx_n_tranets)
      num_ratios += length(idx_n_tranets[i])*(i-1)
   end
-  period_ratio_list = Array(Float64,num_ratios)
-  radius_ratio_list = Array(Float64,num_ratios)
+  period_ratio_list = Array{Float64}(num_ratios)
+  radius_ratio_list = Array{Float64}(num_ratios)
  
   k = 0
   for n in 2:length(idx_n_tranets)         # Loop over number of tranets in system
-    period_in_sys = Array(Float64,n)
-    #radius_in_sys = Array(Float64,n)
-    depth_in_sys = Array(Float64,n)
+    period_in_sys = Array{Float64}(n)
+    #radius_in_sys = Array{Float64}(n)
+    depth_in_sys = Array{Float64}(n)
     for i in idx_n_tranets[n]              # Loop over systems with n tranets
        for j in 1:n                        # Loop over periods within a system
          period_in_sys[j] = cat_obs.target[i].obs[j].period

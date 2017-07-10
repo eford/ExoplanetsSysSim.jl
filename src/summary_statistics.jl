@@ -73,8 +73,8 @@ function calc_summary_stats_sim_pass_one_demo(cat_obs::KeplerObsCatalog, cat_phy
   ssd["weight list"] = weight_list
 
   idx_good = Bool[ period_list[i]>0.0 && depth_list[i]>0.0 && weight_list[i]>0.0 for i in 1:length(period_list) ]
-  log_period_list = log10(period_list[idx_good])
-  log_depth_list = log10(depth_list[idx_good])
+  log_period_list = log10.(period_list[idx_good])
+  log_depth_list = log10.(depth_list[idx_good])
   weight_list = weight_list[idx_good]
   weight_sum = sum(weight_list)
   ssd["mean log10 P"]  =  mean_log_P = sum( weight_list .* log_period_list) / weight_sum                           # TODO TEST: Check that these four weighted mean and stddevs are working properly 
@@ -141,8 +141,8 @@ function calc_summary_stats_obs_demo(cat_obs::KeplerObsCatalog, param::SimParam 
   ssd["weight list"] = weight_list
 
   idx_good = Bool[ period_list[i]>0.0 && depth_list[i]>0.0 for i in 1:length(period_list) ]
-  log_period_list = log10(period_list[idx_good])
-  log_depth_list = log10(depth_list[idx_good])
+  log_period_list = log10.(period_list[idx_good])
+  log_depth_list = log10.(depth_list[idx_good])
   ssd["mean log10 P"]  =  mean_log_P = mean(log_period_list)                
   ssd["mean log10 depth"]  =  mean_log_depth = mean(log_depth_list)         
   ssd["std log10 P"]  =  stdm(log_period_list,mean_log_P)                   

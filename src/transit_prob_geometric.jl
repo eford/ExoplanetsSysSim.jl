@@ -77,10 +77,10 @@ end
 
 
 
-abstract SystemDetectionProbsAbstract 
-abstract SystemDetectionProbsTrait
-abstract SkyAveraged <: SystemDetectionProbsTrait
-abstract OneObserver <: SystemDetectionProbsTrait
+@compat abstract type SystemDetectionProbsAbstract  end
+@compat abstract type SystemDetectionProbsTrait end
+@compat abstract type SkyAveraged <: SystemDetectionProbsTrait end
+@compat abstract type OneObserver <: SystemDetectionProbsTrait end
 # Derived types will allow us to specialize depending on whether using sky-averaged values, values for actual geometry (both of which require the physical catalog), or estimates based on observed data
 
 type SimulatedSystemDetectionProbs{T<:SystemDetectionProbsTrait} <: SystemDetectionProbsAbstract         # To be used for simulated systems where we can calculat everything
@@ -102,11 +102,11 @@ end
 #OneObserverSystemDetectionProbs = SimulatedSystemDetectionProbs{OneObserver}
 
 function SimulatedSystemDetectionProbs(traits::Type, p::Vector{Float64}; num_samples::Integer = 1)
-  SimulatedSystemDetectionProbs{traits}( p, zeros(length(p),length(p)), zeros(length(p)),  fill(Array(Int64,0), num_samples) )
+  SimulatedSystemDetectionProbs{traits}( p, zeros(length(p),length(p)), zeros(length(p)),  fill(Array{Int64}(0), num_samples) )
 end
 
 function SimulatedSystemDetectionProbs(traits::Type, n::Integer; num_samples::Integer = 1)
-  SimulatedSystemDetectionProbs{traits}( ones(n), zeros(n,n), zeros(n), fill(Array(Int64,0), num_samples) )
+  SimulatedSystemDetectionProbs{traits}( ones(n), zeros(n,n), zeros(n), fill(Array{Int64}(0), num_samples) )
 end
 
 SkyAveragedSystemDetectionProbs(p::Vector{Float64}; num_samples::Integer = 1) = SimulatedSystemDetectionProbs( SkyAveraged, p, num_samples=num_samples) 
@@ -242,7 +242,7 @@ function combine_system_detection_probs{T}(prob::Vector{SimulatedSystemDetection
 	end
     end
     # Combine samples of detected planet combinations
-    prob_merged.combo_detected = fill(Array(Int64,0), min(length(prob[s1].combo_detected), length(prob[s2].combo_detected) ) )
+    prob_merged.combo_detected = fill(Array{Int64}(0), min(length(prob[s1].combo_detected), length(prob[s2].combo_detected) ) )
     for i in 1:length(prob_merged.combo_detected)
        prob_merged.combo_detected[i] = vcat( prob[s1].combo_detected, prob[s1].combo_detected+offset )
     end

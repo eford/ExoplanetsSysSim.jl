@@ -72,13 +72,16 @@ function detection_efficiency_christiansen2015(mes::Real; mes_threshold::Real = 
    return pdet
 end
 
-function detection_efficiency_dr25_simple(mes::Real)
+function detection_efficiency_dr25_simple(mes::Real; min_pdet_nonzero::Float64 = 0.0)
    const a =  30.87  # from pg 16 of https://exoplanetarchive.ipac.caltech.edu/docs/KSCI-19110-001.pdf
    const b =  0.271
    const c = 0.940
    pdet = c*cdf(Gamma(a,b), mes)
+   pdet = pdet >= min_pdet_nonzero ? pdet : 0.0
    return pdet
 end
+
+detection_efficiency_model = detection_efficiency_dr25_simple  #  WARNING: Hardcoded choice of transit deteciton efficiency here for speed and so as to not have it hardcoded in multiple places
 
 # Resume code original to SysSim
 
@@ -100,8 +103,7 @@ function calc_prob_detect_if_transit(t::KeplerTarget, snr::Real, sim_param::SimP
   const mes_threshold = 7.1                                                   # WARNING: Assuming 7.1 for all stars, durations
   const min_pdet_nonzero = 0.0                                                # TODO OPT: Figure out how to prevent a plethora of planets that are very unlikely to be detected due to using 0.0
   wf = kepler_window_function(num_transit, t.duty_cycle, min_transits=min_transits)   # TODO SCI DETAIL: Replace statistical model with checking actual transit times for long period planets
-  return wf*detection_efficiency_christiansen2015(snr, mes_threshold=mes_threshold, min_pdet_nonzero=min_pdet_nonzero)        # WARNING: I've hardcoded this choice, since this is called so frequently
-  #return wf*detection_efficiency_theory(snr, min_pdet_nonzero=min_pdet_nonzero)	     # WARNING: Hardcoded version of ideal detection efficiency
+  return wf*detection_efficiency_model(snr, min_pdet_nonzero=min_pdet_nonzero)	   
 end
 
 function calc_prob_detect_if_transit(t::KeplerTarget, depth::Real, duration::Real, sim_param::SimParam; num_transit::Real = 1)
@@ -123,13 +125,11 @@ function calc_ave_prob_detect_if_transit(t::KeplerTarget, snr_central::Real, sim
   const min_pdet_nonzero = 0.0                                                # TODO OPT: Figure out how to prevent a plethora of planets that are very unlikely to be detected due to using 0.0
   wf = kepler_window_function(num_transit, t.duty_cycle, min_transits=min_transits)   
   num_impact_param = 5
-  ave_detection_efficiency = 0.5*detection_efficiency_christiansen2015(snr_central, mes_threshold=mes_threshold, min_pdet_nonzero=min_pdet_nonzero)    # WARNING: Hardcoded Gamma CDF detection efficiency
-  #ave_detection_efficiency = 0.5*detection_efficiency_theory(snr_central, min_pdet_nonzero=min_pdet_nonzero)	  # WARNING: Hardcoded ideal detection efficiency
+  ave_detection_efficiency = 0.5*detection_efficiency_model(snr_central, min_pdet_nonzero=min_pdet_nonzero)	  
   for i in 1:(num_impact_param-1)
     b = i/num_impact_param
     snr = snr_central*sqrt(sqrt((1-b)*(1+b)))
-    ave_detection_efficiency += detection_efficiency_christiansen2015(snr, mes_threshold=mes_threshold, min_pdet_nonzero=min_pdet_nonzero)   # WARNING: Hardcoded Gamma CDF detection efficiency
-    #ave_detection_efficiency += detection_efficiency_theory(snr, min_pdet_nonzero=min_pdet_nonzero)   # WARNING: Hardcoded ideal detection efficiency
+    ave_detection_efficiency += detection_efficiency_model(snr, min_pdet_nonzero=min_pdet_nonzero)
   end
   ave_detection_efficiency /= num_impact_param
   return wf*ave_detection_efficiency

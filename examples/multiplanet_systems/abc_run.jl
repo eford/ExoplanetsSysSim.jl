@@ -1,7 +1,7 @@
 ## ExoplanetsSysSim/examples/run_abc.jl
 ## (c) 2015 Eric B. Ford
 
-include(joinpath(Pkg.dir(),"ExoplanetsSysSim","examples","KeplerK2SciCon", "model.jl"))
+include(joinpath(Pkg.dir(),"ExoplanetsSysSim","examples","multiplanet_systems", "model.jl"))
 include("abc_setup.jl")
 
 using SysSimABC

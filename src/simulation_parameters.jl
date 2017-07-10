@@ -226,10 +226,10 @@ end
 
 function preallocate_memory!(sim_param::SimParam)
   num_kepler_targets = get_int(sim_param,"num_kepler_targets")
-  add_param_fixed(sim_param,"mem_kepler_target_obs", Array(KeplerTargetObs, num_kepler_targets) )
+  add_param_fixed(sim_param,"mem_kepler_target_obs", Array{KeplerTargetObs}(num_kepler_targets) )
 end
 
-function setup_sim_param_demo(args::Vector{ASCIIString} = Array(ASCIIString,0) )   # allow this to take a list of parameter (e.g., from command line)
+function setup_sim_param_demo(args::Vector{ASCIIString} = Array{ASCIIString}(0) )   # allow this to take a list of parameter (e.g., from command line)
   sim_param = SimParam()
   add_param_fixed(sim_param,"max_tranets_in_sys",7)
   add_param_fixed(sim_param,"num_targets_sim_pass_one",190000)                      # Note this is used for the number of stars in the simulations, not necessarily related to number of Kepler targets
@@ -279,12 +279,15 @@ end
 
 
 function test_sim_param_constructors()
-  sim_param = SimParam( Dict([ ("version",version_id_str), ("num_kepler_targets",190000), ("log_eta_pl",log(2.0)), ("max_tranets_in_sys",7)] ) )
+  oldval = log(2.0)
+  sim_param = SimParam( Dict([ ("version",version_id_str), ("num_kepler_targets",190000), ("log_eta_pl",oldval), ("max_tranets_in_sys",7)] ) )
   get(sim_param,"version","")
-  set_active(sim_param,"eta_pl")
+  set_active(sim_param,"log_eta_pl")
   sp_vec = make_vector_of_sim_param(sim_param)
   sp_vec .+= 0.1
   update_sim_param_from_vector!(sp_vec,sim_param)
+  newval = get_real(sim_param,"log_eta_pl")
+  isapprox(oldval,newval,atol=0.001)
 end
 
 #test_sim_param_constructors()

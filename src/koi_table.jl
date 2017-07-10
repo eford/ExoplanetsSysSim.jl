@@ -9,7 +9,7 @@ using DataFrames
 export setup_koi_table, koi_table, num_koi_for_kepid
 
 df = DataFrame()
-usable = Array(Int64,0)
+usable = Array{Int64}(0)
         
 default_koi_symbols_to_keep = [ :kepoi_name, :koi_vet_stat, :koi_pdisposition, :koi_period, :koi_time0bk, :koi_duration, :koi_ingress, :koi_depth, :koi_ror, :koi_prad, :koi_srad, :koi_smass, :koi_steff, :koi_slogg, :koi_smet ]
 
