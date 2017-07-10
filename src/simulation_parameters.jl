@@ -279,12 +279,15 @@ end
 
 
 function test_sim_param_constructors()
-  sim_param = SimParam( Dict([ ("version",version_id_str), ("num_kepler_targets",190000), ("log_eta_pl",log(2.0)), ("max_tranets_in_sys",7)] ) )
+  oldval = log(2.0)
+  sim_param = SimParam( Dict([ ("version",version_id_str), ("num_kepler_targets",190000), ("log_eta_pl",oldval), ("max_tranets_in_sys",7)] ) )
   get(sim_param,"version","")
-  set_active(sim_param,"eta_pl")
+  set_active(sim_param,"log_eta_pl")
   sp_vec = make_vector_of_sim_param(sim_param)
   sp_vec .+= 0.1
   update_sim_param_from_vector!(sp_vec,sim_param)
+  newval = get_real(sim_param,"log_eta_pl")
+  isapprox(oldval,newval,atol=0.001)
 end
 
 #test_sim_param_constructors()

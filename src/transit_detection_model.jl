@@ -72,7 +72,7 @@ function detection_efficiency_christiansen2015(mes::Real; mes_threshold::Real = 
    return pdet
 end
 
-function detection_efficiency_dr25_simple(mes::Real; , min_pdet_nonzero::Float64 = 0.0)
+function detection_efficiency_dr25_simple(mes::Real; min_pdet_nonzero::Float64 = 0.0)
    const a =  30.87  # from pg 16 of https://exoplanetarchive.ipac.caltech.edu/docs/KSCI-19110-001.pdf
    const b =  0.271
    const c = 0.940
