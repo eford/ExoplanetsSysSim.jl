@@ -17,6 +17,10 @@ Pkg.clone("git@github.com:jbrakensiek/CORBITS.git")
 cd(joinpath(Pkg.dir(),"CORBITS"))
 run(`make lib`)
 cd(homedir())
-symlink( joinpath(Pkg.dir(),"CORBITS/libcorbits.so"), joinpath(Pkg.dir(),"ExoplanetsSysSim/libcorbits.so") )
+if !is_windows()
+   symlink( joinpath(Pkg.dir("CORBITS"),"libcorbits.so"), joinpath(Pkg.dir("ExoplanetsSysSim"),"libcorbits.so") )
+else
+   cp( joinpath(Pkg.dir("CORBITS"),"libcorbits.so"), joinpath(Pkg.dir("ExoplanetsSysSim"),"libcorbits.so") )
+end
 
 
