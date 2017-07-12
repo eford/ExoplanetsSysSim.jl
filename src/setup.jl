@@ -6,12 +6,14 @@ if ! isdir( joinpath(Pkg.dir(),"ExoplanetsSysSim") )
      symlink( joinpath(Pkg.dir(),"exoplanetssyssim"), joinpath(Pkg.dir(),"ExoplanetsSysSim") )
 end
 
+startdir = pwd()
 # Code to be run once to install unregistered package dependencies
 # Code to be run once to install non-standard dependencies
 Pkg.clone("git@github.com:eford/ABC.jl.git")
 # switch to dragozzine's fork for any minor SysSim specific ABC changes
 
 Pkg.clone("git@github.com:jbrakensiek/CORBITS.git")
+
 
 # Compile CORBITS library and put it somewhere we can find
 cd(joinpath(Pkg.dir(),"CORBITS"))
@@ -22,5 +24,4 @@ if !is_windows()
 else
    cp( joinpath(Pkg.dir("CORBITS"),"libcorbits.so"), joinpath(Pkg.dir("ExoplanetsSysSim"),"libcorbits.so") )
 end
-
 

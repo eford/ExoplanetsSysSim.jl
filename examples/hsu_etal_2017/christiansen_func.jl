@@ -7,7 +7,7 @@ using DataFrames
 import Compat: UTF8String, ASCIIString
 
 ## simulation_parameters
-function setup_sim_param_christiansen(args::Vector{ASCIIString} = Array(ASCIIString,0) )   # allow this to take a list of parameter (e.g., from command line)
+function setup_sim_param_christiansen(args::Vector{ASCIIString} = Array{ASCIIString}(0) )   # allow this to take a list of parameter (e.g., from command line)
   sim_param = setup_sim_param_demo()
   
   set_inactive(sim_param,["log_eta_pl","power_law_P","power_law_r"])
@@ -303,7 +303,7 @@ end
 
 ## abc_distance
 function calc_distance_vector_binned(summary1::CatalogSummaryStatistics, summary2::CatalogSummaryStatistics, pass::Int64, sim_param::SimParam ; verbose::Bool = false)
-  d = Array(Float64,0)
+  d = Array{Float64}(0)
   if pass == 1
     if verbose
       println("# Summary 1, pass 1: ",summary1)
@@ -383,8 +383,8 @@ function inv_det_prob(cat_obs::KeplerObsCatalog, param::SimParam)
 	  contam = 0.0
 	  data_span = star_table(star_id, :dataspan)
 	  duty_cycle = star_table(star_id, :dutycycle)
-	  pl_arr = Array(Planet, 1)
-	  orbit_arr = Array(Orbit, 1)
+	  pl_arr = Array{Planet}( 1)
+	  orbit_arr = Array{Orbit}( 1)
           incl = acos(rand()*star.radius*ExoplanetsSysSim.rsol_in_au/ExoplanetsSysSim.semimajor_axis(pper, star.mass))
 	  orbit_arr[1] = Orbit(pper, 0., incl, 0., 0., rand()*2.*pi)
 	  pl_arr[1] = Planet(prad, 1.0e-6)
@@ -471,8 +471,8 @@ function stellar_ess(param::SimParam)
           pgeo = ExoplanetsSysSim.calc_transit_prob_single_planet_approx(pper, star.radius, star.mass)
 	  pdet = 0.0
 	
-	  pl_arr = Array(Planet, 1)
-	  orbit_arr = Array(Orbit, 1)
+	  pl_arr = Array{Planet}(1)
+	  orbit_arr = Array{Orbit}(1)
           incl = acos(rand()*star.radius*ExoplanetsSysSim.rsol_in_au/ExoplanetsSysSim.semimajor_axis(pper, star.mass))
 	  orbit_arr[1] = Orbit(pper, 0., incl, 0., 0., rand()*2.*pi)
 	  pl_arr[1] = Planet(prad, 1.0e-6)
