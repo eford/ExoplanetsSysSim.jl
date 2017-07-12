@@ -90,11 +90,13 @@ function load_sim_param(filename::ASCIIString)
   merge!(p.param, jld_data["sim_param_int"])
   merge!(p.param, jld_data["sim_param_string"])
   merge!(p.param, jld_data["sim_param_real"])
-  # merge!(p.param, jld_data["sim_param_function"]) 
+  #=
+   merge!(p.param, jld_data["sim_param_function"]) 
   df = jld_data["sim_param_function"]
   for k in keys(df)
     p.param[k]::Function = symbol(df[k])
   end
+  =#
   merge!(p.param, jld_data["sim_param_bool"])
   return p
 end
@@ -130,4 +132,3 @@ function test_io()
 end
 
 end # module SysSimIO
-
