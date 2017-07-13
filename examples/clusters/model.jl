@@ -9,232 +9,295 @@ import Compat: UTF8String, ASCIIString
 ## simulation_parameters
 function setup_sim_param_model(args::Vector{ASCIIString} = Array{ASCIIString}(0) )   # allow this to take a list of parameter (e.g., from command line)
   sim_param = SimParam()
-  #add_param_fixed(sim_param,"max_planets_in_sys",20)
-  #add_param_fixed(sim_param,"max_tranets_in_sys",8)
-  add_param_fixed(sim_param,"max_planets_in_sys",2)
-  add_param_fixed(sim_param,"max_tranets_in_sys",2)
-  add_param_fixed(sim_param,"num_targets_sim_pass_one",150969)                      # Note this is used for the number of stars in the simulations, not necessarily related to number of Kepler targets
+  # How many tatrges to generate
+  #add_param_fixed(sim_param,"num_targets_sim_pass_one",150969)                      # Note this is used for the number of stars in the simulations, not necessarily related to number of Kepler targets
+  add_param_fixed(sim_param,"num_targets_sim_pass_one",15096)                      # Note this is used for the number of stars in the simulations, not necessarily related to number of Kepler targets
   add_param_fixed(sim_param,"num_kepler_targets",150969)                            # Note this is used for the number of Kepler targets for the observational catalog
-  #add_param_fixed(sim_param,"generate_star",generate_star_dumb)
-  add_param_fixed(sim_param,"generate_planetary_system", ExoplanetsSysSim.generate_planetary_system_simple)
-  #add_param_fixed(sim_param,"generate_planetary_system", ExoplanetsSysSim.generate_planetary_system_uncorrelated_incl)
 
-  # add_param_fixed(sim_param,"generate_kepler_target",ExoplanetsSysSim.generate_kepler_target_simple)
+  # For generating target star properties
   add_param_fixed(sim_param,"generate_kepler_target",generate_kepler_target_from_table)
-  #= 
-  add_param_fixed(sim_param,"generate_num_planets",ExoplanetsSysSim.generate_num_planets_poisson)
-  add_param_active(sim_param,"log_eta_pl",log(2.0))
-  =#
-  #=
-  add_param_fixed(sim_param,"generate_num_planets",generate_num_planets_poisson_mixture)
-  add_param_active(sim_param,"frac_zero_planet",0.3)
-  add_param_active(sim_param,"frac_one_planet",0.4)
-  add_param_active(sim_param,"frac_multi_planet",0.3)
-  add_param_active(sim_param,"eta_pl",4.0)
-  =#
-  add_param_fixed(sim_param,"generate_num_planets",generate_num_planets_categorical)
-  add_param_active(sim_param,"fracs_num_planets",ones(get_int(sim_param,"max_planets_in_sys")+1)/(1+get_int(sim_param,"max_planets_in_sys")))
-   
-  add_param_fixed(sim_param,"generate_planet_mass_from_radius",ExoplanetsSysSim.generate_planet_mass_from_radius_powerlaw)
-  add_param_fixed(sim_param,"mr_power_index",2.0)
-  add_param_fixed(sim_param,"mr_const",1.0)
-  #add_param_fixed(sim_param,"generate_period_and_sizes",ExoplanetsSysSim.generate_period_and_sizes_log_normal)
-  #add_param_active(sim_param,"mean_log_planet_radius",log(2.0*ExoplanetsSysSim.earth_radius))
-  #add_param_active(sim_param,"sigma_log_planet_radius",log(2.0))
-  ##add_param_fixed(sim_param,"sigma_log_planet_radius",log(2.0))
-  #add_param_active(sim_param,"mean_log_planet_period",log(10.0))
-  #add_param_active(sim_param,"sigma_log_planet_period",log(2.0))
-  ##add_param_fixed(sim_param,"sigma_log_planet_period",log(2.0))
-  #add_param_fixed(sim_param,"generate_period_and_sizes", ExoplanetsSysSim.generate_period_and_sizes_power_law)
-  #add_param_active(sim_param,"power_law_P",0.3)
-  #add_param_active(sim_param,"power_law_r",-2.44)
+  add_param_fixed(sim_param,"star_table_setup",setup_star_table_christiansen)
+  add_param_fixed(sim_param,"stellar_catalog","q1_q17_dr25_stellar.jld")
+  # add_param_fixed(sim_param,"generate_kepler_target",ExoplanetsSysSim.generate_kepler_target_simple)  # An alternative that alternative can be used for testing if above breaks
+
+  # For generating planetary system properties
+  add_param_fixed(sim_param,"generate_planetary_system", generate_planetary_system_clustered)
+
+  add_param_fixed(sim_param,"generate_num_clusters",generate_num_clusters_poisson) 
+  add_param_fixed(sim_param,"generate_num_planets_in_cluster",generate_num_planets_in_cluster_poisson)
+  add_param_active(sim_param,"log_rate_clusters",log(2.0))
+  add_param_fixed(sim_param,"max_clusters_in_sys",10)
+  add_param_active(sim_param,"log_rate_planets_per_cluster",log(3.0))
+  add_param_fixed(sim_param,"max_planets_in_cluster",10)
+
+  # generate_num_planets_in_cluster currently calls: generate_periods_power_law & generate_sizes_power_law
+  add_param_fixed(sim_param,"power_law_P",0.3)
+  add_param_fixed(sim_param,"power_law_r",-2.44)
   add_param_fixed(sim_param,"min_period",1.0)
   add_param_fixed(sim_param,"max_period",400.0)
   add_param_fixed(sim_param,"min_radius",0.5*ExoplanetsSysSim.earth_radius)
-  add_param_fixed(sim_param,"max_radius",10.0*ExoplanetsSysSim.earth_radius)
+  add_param_fixed(sim_param,"max_radius",20.*ExoplanetsSysSim.earth_radius)
+
+  # generate_num_planets_in_cluster currently use these for the Inclination distribution
+  add_param_fixed(sim_param,"sigma_incl",3.0) # degrees; 0 = coplanar w/ generate_kepler_target_simple; ignored by generate_planetary_system_uncorrelated_incl
+  add_param_fixed(sim_param,"sigma_incl_near_mmr",0.0)
+
+  # generate_num_planets_in_cluster currently use these for the Eccentricity distribution
   add_param_fixed(sim_param,"generate_e_omega",ExoplanetsSysSim.generate_e_omega_rayleigh)
   add_param_fixed(sim_param,"sigma_hk",0.03)
-  #add_param_fixed(sim_param,"sigma_hk_one",0.3)
+  #add_param_fixed(sim_param,"sigma_hk_one",0.1)
   #add_param_fixed(sim_param,"sigma_hk_multi",0.03)
-  add_param_fixed(sim_param,"sigma_incl",0.0)   # degrees; 0 = coplanar w/ generate_kepler_target_simple; ignored by generate_planetary_system_uncorrelated_incl
-  add_param_fixed(sim_param,"calc_target_obs_sky_ave",ExoplanetsSysSim.calc_target_obs_sky_ave)
-  add_param_fixed(sim_param,"calc_target_obs_single_obs",ExoplanetsSysSim.calc_target_obs_single_obs)
-  add_param_fixed(sim_param,"read_target_obs",ExoplanetsSysSim.simulated_read_kepler_observations)
+
+  # generate_num_planets_in_cluster currently use these for the Stability tests
+  add_param_fixed(sim_param,"num_mutual_hill_radii",10.0)
+  add_param_fixed(sim_param,"generate_planet_mass_from_radius",ExoplanetsSysSim.generate_planet_mass_from_radius_powerlaw)
+  add_param_fixed(sim_param,"mr_power_index",2.0)
+  add_param_fixed(sim_param,"mr_const",1.0)
+  add_param_fixed(sim_param,"sigma_log_radius_in_cluster",1.0)
+  add_param_fixed(sim_param,"sigma_logperiod_per_pl_in_cluster",1.0)
+
+  # Functions to calculate observables from physical system properties
+  add_param_fixed(sim_param,"calc_target_obs_single_obs",ExoplanetsSysSim.calc_target_obs_single_obs)   
+  add_param_fixed(sim_param,"max_tranets_in_sys",8)     # SysSim ignores some planets in any systems with more than this many transiting planets to avoid wasting time on unphysical parameter values
   add_param_fixed(sim_param,"transit_noise_model",ExoplanetsSysSim.transit_noise_model_fixed_noise)
   #add_param_fixed(sim_param,"transit_noise_model",ExoplanetsSysSim.transit_noise_model_diagonal)
   # add_param_fixed(sim_param,"rng_seed",1234)   # If you want to be able to reproduce simulations
+  add_param_fixed(sim_param,"read_target_obs",ExoplanetsSysSim.simulated_read_kepler_observations)  # Read Kepler observations to compare to from disk
   
-  #set_inactive(sim_param,["eta_pl","power_law_P","power_law_r"])
-  add_param_fixed(sim_param,"star_table_setup",setup_star_table_christiansen)
-  add_param_fixed(sim_param,"stellar_catalog","q1_q17_dr25_stellar.jld")
-  p_lim_arr_num = [0.5, 1.25, 2.5, 5., 10., 20., 40., 80., 160., 320.]
-  r_lim_arr_num = [1., 1.25, 1.5, 1.75, 2.]
-  add_param_fixed(sim_param, "p_lim_arr", p_lim_arr_num)
-  add_param_fixed(sim_param, "r_lim_arr", r_lim_arr_num*ExoplanetsSysSim.earth_radius)
-  #add_param_fixed(sim_param,"generate_num_planets",generate_num_planets_from_rate_table)
-  add_param_fixed(sim_param,"generate_period_and_sizes", generate_period_and_sizes_from_rate_table)
-  #=
-  rate_tab_init = [0.027 0.149 0.354 1.37 2.56 1.96 2.85 4.77 0.0001 ;
-                   0.02 0.063 0.432 0.9 1.72 1.46 2.4 5.42 3.63 ;
-                   0.0074 0.032 0.389 0.545 1.32 1.65 1.96 1.69 1.17 ;
-                   0.0001 0.017 0.156 0.542 0.777 1.35 0.965 1.22 2.49]*0.01
-
-  add_param_active(sim_param,"obs_par", rate_tab_init)
-  =#
   return sim_param
 end
 
 
-## planetary_system
-using Distributions
-function generate_num_planets_categorical(s::Star, sim_param::SimParam)
-  const n::Int64 = get_int(sim_param,"max_tranets_in_sys")
-  fracs::Array{Float64,1} = get(sim_param,"fracs_num_planets", ones(n+1)/(n+1))
-  fracs = abs.(fracs)
-  fracs ./= sum(fracs)
-  n = rand(Distributions.Categorical(fracs))-1
+# Code for generating clustered planetary systems (once stable can move to src/planetary_system.jl)
+
+function calc_hill_sphere(a::Float64, mu::Float64)
+  a*(mu/3)^(1//3)
 end
 
-function generate_num_planets_poisson_mixture(s::Star, sim_param::SimParam)
-  frac_zero::Float64 = min(max(get_real(sim_param,"frac_zero_planet"), 0.0),1.0)
-  frac_one::Float64  = min(max(get_real(sim_param,"frac_one_planet"), 0.0),1.0)
-  frac_multi::Float64  = min(max(get_real(sim_param,"frac_multi_planet"),0.0), 1.0)
-  frac_sum = frac_zero+frac_one+frac_multi
-  frac_zero /= frac_sum
-  frac_one /= frac_sum
-  frac_multi /= frac_sum
-  u = rand()
-  if u <= frac_zero 
-     return 0
-  elseif u<= frac_zero+frac_one
-     return 1
-  else
-     const lambda::Float64 = get_real(sim_param,"eta_pl")
-     const max_planets_in_sys::Int64 = get_int(sim_param,"max_planets_in_sys")
-     return ExoplanetsSysSim.generate_num_planets_poisson(lambda,max_planets_in_sys,min_planets=2)
-  end
+function calc_mutual_hill_radii{StarT<:StarAbstract}(ps::PlanetarySystem{StarT},pl1::Int64, pl2::Int64)
+  mu = (ps.planet[pl1].mass+ps.planet[pl2].mass)/ps.star.mass
+  a = 0.5*(ps.orbit[pl1].a+ps.orbit[pl2].a)
+  calc_hill_sphere(a,mu)
 end
 
-
-function generate_num_planets_from_rate_table(s::Star, sim_param::SimParam)
-  const max_planets_in_sys::Int64 = get_int(sim_param,"max_planets_in_sys")
-  rate_tab::Array{Float64,2} = get_any(sim_param, "obs_par", Array{Float64,2})
-  lambda = sum_kbn(rate_tab)
-  #println("# lambda= ", lambda)
-  ExoplanetsSysSim.generate_num_planets_poisson(lambda,max_planets_in_sys)
+function test_stability_circular(P::Vector{Float64},mass::Vector{Float64},star_mass::Float64, sim_param::SimParam)
+   @assert length(P) == length(mass)
+   const min_num_mutual_hill_radii = get_real(sim_param,"num_mutual_hill_radii")
+   #println("# test_stability_circ: mass= ",mass," star_mass=",star_mass)
+   #println("# test_stability_circ: mu= ",mass/star_mass, "; P= ",P)
+   #print(  "# (aratio,Delta_H)= ")
+   found_instability = false
+   order = sortperm(P)
+   a2 = semimajor_axis(P[order[1]],star_mass)
+   for pl in 1:(length(P)-1)
+       a1 = a2   # semimajor_axis(P[order[pl]],star_mass)
+       a2 = semimajor_axis(P[order[pl+1]],star_mass)
+       a = 0.5*(a1+a2)
+       mu = (mass[order[pl]]+mass[order[pl+1]])/star_mass
+       mutual_hill_radius = calc_hill_sphere(a,mu)
+       #print("(",a2/a1,", ",(a2-a1)/mutual_hill_radius,"), ")
+       if ! ( a2-a1  >= min_num_mutual_hill_radii*mutual_hill_radius )
+          found_instability = true
+          break
+       end
+   end # loop over neighboring planet pairs within cluster
+   #println("# test_stability_circ = ",!found_instability)
+   return !found_instability
 end
 
-function generate_period_and_sizes_from_rate_table(s::Star, sim_param::SimParam; num_pl::Integer = 1)
-  rate_tab::Array{Float64,2} = get_any(sim_param, "obs_par", Array{Float64,2})
-  
-  limitP::Array{Float64,1} = get_any(sim_param, "p_lim_arr", Array{Float64,1})
-  limitRp::Array{Float64,1} = get_any(sim_param, "r_lim_arr", Array{Float64,1})
-
-  @assert ((length(limitP)-1) == size(rate_tab, 2))
-  @assert ((length(limitRp)-1) == size(rate_tab, 1))
-  Plist = Array{Float64}(num_pl)
-  Rplist = Array{Float64}(num_pl)
-  rate_tab_1d = reshape(rate_tab,length(rate_tab))
-  #logmaxcuml = logsumexp(rate_tab_1d)
-  #cuml = cumsum_kbn(exp(rate_tab_1d-logmaxcuml))
-  maxcuml = sum(rate_tab_1d)
-  cuml = cumsum_kbn(rate_tab_1d/maxcuml)
-
-  for n in 1:num_pl
-    rollp = rand()
-    idx = findfirst(x -> x > rollp, cuml)
-    i_idx = (idx-1)%size(rate_tab,1)+1
-    j_idx = floor(Int64,(idx-1)//size(rate_tab,1))+1
-    ### TODO: Keep uniform log sampling here?
-    Rp = exp(rand()*(log(limitRp[i_idx+1]/limitRp[i_idx]))+log(limitRp[i_idx]))
-    P = exp(rand()*(log(limitP[j_idx+1]/limitP[j_idx]))+log(limitP[j_idx]))
-    #push!(Plist, P)
-    #push!(Rplist, Rp)
-    if !(0<P<Inf)
-       println("# BAD P: ",P," should be in ", limitP[j_idx], " - ", limitP[j_idx+1])
-    end
-    Plist[n] = P
-    Rplist[n] = Rp
-  end
-  return Plist, Rplist
+function test_stability(P::Vector{Float64},mass::Vector{Float64},star_mass::Float64, sim_param::SimParam; ecc::Vector{Float64} = zeros(length(P)))
+   @assert length(P) == length(mass) == length(ecc)
+   const min_num_mutual_hill_radii = get_real(sim_param,"num_mutual_hill_radii")
+   found_instability = false
+   order = sortperm(P)
+   a2 = semimajor_axis(P[order[1]],star_mass)
+   for pl in 1:(length(P)-1)
+       a1 = a2   # semimajor_axis(P[order[pl]],star_mass)
+       a2 = semimajor_axis(P[order[pl+1]],star_mass)
+       a = 0.5*(a1+a2)
+       mu = (mass[order[pl]]+mass[order[pl+1]])/star_mass
+       mutual_hill_radius = calc_hill_sphere(a,mu)
+       e1 = ecc[order[pl]]
+       e2 = ecc[order[pl+1]]
+       if ! ( a2*(1-e2)-a1*(1+e1)  >= min_num_mutual_hill_radii*mutual_hill_radius )
+          found_instability = true
+          break
+       end
+   end # loop over neighboring planet pairs within cluster
+   return !found_instability
 end
 
-
-## stellar_table
-function setup_star_table_christiansen(sim_param::SimParam; force_reread::Bool = false)
-  #global df
-  df = ExoplanetsSysSim.StellarTable.df
-  if haskey(sim_param,"read_stellar_catalog") && !force_reread
-     return df
-     #return data
-  end
-  stellar_catalog_filename = convert(ASCIIString,joinpath(Pkg.dir("ExoplanetsSysSim"), "data", convert(ASCIIString,get(sim_param,"stellar_catalog","q1_q17_dr25_stellar.csv")) ) )
-  df = setup_star_table_christiansen(stellar_catalog_filename)
-  add_param_fixed(sim_param,"read_stellar_catalog",true)
-  set_star_table(df)
-  return df  
+function calc_if_near_resonance(P::Vector{Float64})
+   @assert issorted(P)   # TODO: OPT: Could remove once know it is safe
+   const resonance_width = 0.05   # TODO: FEATURE Make a model parameter?  Would need sim_param
+   const resonance_width_factor = 1+resonance_width
+   const period_ratios_to_check = [ 2.0, 1.5, 4/3, 5/4 ]
+   result = falses(length(P))
+   if length(P) >= 2
+      for i in 1:(length(P)-1)
+          for period_ratio in period_ratios_to_check
+              if P[i]*period_ratio <= P[i+1] <= P[i]*period_ratio*resonance_width_factor
+                 result[i] = true
+                 result[i+1] = true
+                 break
+              end # if near resonance
+          end # period_ratio
+      end # planets
+   end # at least two planets
+   return result
 end
 
-function setup_star_table_christiansen(filename::ASCIIString; force_reread::Bool = false)
-  #global df, usable
-  df = ExoplanetsSysSim.StellarTable.df
-  usable = ExoplanetsSysSim.StellarTable.usable
-  if ismatch(r".jld$",filename)
-  try 
-    data = load(filename)
-    df::DataFrame = data["stellar_catalog"]
-    usable::Array{Int64,1} = data["stellar_catalog_usable"]
-    set_star_table(df, usable)
-  catch
-    error(string("# Failed to read stellar catalog >",filename,"< in jld format."))
-  end
-  else
-  try 
-    df = readtable(filename)
-  catch
-    error(string("# Failed to read stellar catalog >",filename,"< in ascii format."))
-  end
+function generate_planet_periods_sizes_masses_in_cluster( star::StarAbstract, sim_param::SimParam; n::Int64 = 1 )  # TODO: IMPORTANT: Make this function work and test before using for science
+   @assert n>=1
+   const generate_planet_mass_from_radius = get_function(sim_param,"generate_planet_mass_from_radius")
 
-  has_mass = ! (isna(df[:mass]) | isna(df[:mass_err1]) | isna(df[:mass_err2]))
-  has_radius = ! (isna(df[:radius]) | isna(df[:radius_err1]) | isna(df[:radius_err2]))
-  has_dens = ! (isna(df[:dens]) | isna(df[:dens_err1]) | isna(df[:dens_err2]))
-  has_rest = ! (isna(df[:rrmscdpp04p5]) | isna(df[:dataspan]) | isna(df[:dutycycle]))
-  in_Q1Q12 = []
-  for x in df[:st_quarters]
-    subx = string(x)
-    subx = ("0"^(17-length(subx)))*subx
-    indQ = search(subx, '1')
-    if ((indQ < 1) | (indQ > 12))
-      push!(in_Q1Q12, false)
-    else
-      push!(in_Q1Q12, true)
-    end
-  end
-  is_FGK = []
-  for x in 1:length(df[:teff])
-    if ((df[x,:teff] > 4000.0) & (df[x,:teff] < 7000.0) & (df[x,:logg] > 4.0))
-      push!(is_FGK, true)
-    else
-      push!(is_FGK, false)
-    end
-  end
-  is_usable = has_radius & is_FGK & has_mass & has_rest #& in_Q1Q12 # & has_dens
-  #if contains(filename,"q1_q12_christiansen.jld")
-  if contains(filename,"q1_q12_christiansen")   # TODO: Ask Danely what he's trying to do here.
-    is_usable = is_usable & in_Q1Q12
-  end
-  # See options at: http://exoplanetarchive.ipac.caltech.edu/docs/API_keplerstellar_columns.html
-  # TODO SCI DETAIL or IMPORTANT?: Read in all CDPP's, so can interpolate?
-  symbols_to_keep = [ :kepid, :mass, :mass_err1, :mass_err2, :radius, :radius_err1, :radius_err2, :dens, :dens_err1, :dens_err2, :rrmscdpp04p5, :dataspan, :dutycycle ]
-  delete!(df, [~(x in symbols_to_keep) for x in names(df)])    # delete columns that we won't be using anyway
-  usable = find(is_usable)
-  df = df[usable, symbols_to_keep]
-  set_star_table(df, usable)
-  end
-  return df
+   if n==1
+      R = ExoplanetsSysSim.generate_sizes_power_law(star,sim_param)[1]
+      mass = map(r->generate_planet_mass_from_radius(r,sim_param),R)
+      P = [1.0] # generate_periods_power_law(star,sim_param)
+      return P, R, mass
+   end
+
+   # If reach here, then at least 2 planets in cluster
+
+   mean_R = ExoplanetsSysSim.generate_sizes_power_law(star,sim_param)[1]
+   const sigma_log_radius_in_cluster = get_real(sim_param,"sigma_log_radius_in_cluster")
+   #println("# mean_R = ",mean_R," sigma_log_radius_in_cluster= ",sigma_log_radius_in_cluster)
+   Rdist = LogNormal(log(mean_R),sigma_log_radius_in_cluster)
+   R = rand(Rdist,n)
+
+   #println("# Rp = ", R)
+   mass = map(r->generate_planet_mass_from_radius(r,sim_param),R)
+   #println("# mass = ", mass)
+
+   const sigma_logperiod_per_pl_in_cluster = get_real(sim_param,"sigma_logperiod_per_pl_in_cluster")
+   log_mean_P = 0.0 # log(generate_periods_power_law(star,sim_param))
+   # Note: Currently, drawing all periods within a cluster at once and either keeping or rejecting the whole cluster
+   #       Should we instead draw periods one at a time?
+   Pdist = LogNormal(log_mean_P,sigma_logperiod_per_pl_in_cluster*n)
+   local P
+   found_good_periods = false
+   attempts = 0
+   max_attempts = 100  # Note: Should this be a parameter?
+   while !found_good_periods && attempts<max_attempts
+      attempts += 1
+      P = rand(Pdist,n)
+      if test_stability_circular(P,mass,star.mass,sim_param)
+        found_good_periods = true
+     end
+   end # while trying to draw periods
+   if !found_good_periods
+      println("# Warning: Did not find a good set of periods, sizes and masses for one cluster.")
+      return fill(NaN,n), R, mass  # Return NaNs for periods to indicate failed
+   end
+   return P, R, mass    # Note can also return earlier if only one planet in cluster or if fail to generate a good set of values
 end
 
-## summary_statistics
+function generate_num_planets_in_cluster_poisson(s::Star, sim_param::SimParam)
+  const lambda::Float64 = exp(get_real(sim_param,"log_rate_planets_per_cluster"))
+  const max_planets_in_cluster::Int64 = get_int(sim_param,"max_planets_in_cluster")
+  ExoplanetsSysSim.generate_num_planets_poisson(lambda,max_planets_in_cluster,min_planets=1)
+end
+
+function generate_num_clusters_poisson(s::Star, sim_param::SimParam)
+  const lambda::Float64 = exp(get_real(sim_param,"log_rate_clusters"))
+  const max_clusters_in_sys::Int64 = get_int(sim_param,"max_clusters_in_sys")
+  ExoplanetsSysSim.generate_num_planets_poisson(lambda,max_clusters_in_sys)
+end
+
+# This version generates clustered planetary systems, adaptation of python code from Matthias He
+function generate_planetary_system_clustered(star::StarAbstract, sim_param::SimParam; verbose::Bool = false)  # TODO: Make this function work and test before using for science
+  # load functions to use for drawing parameters
+  const generate_num_clusters = get_function(sim_param,"generate_num_clusters")
+  const generate_num_planets_in_cluster = get_function(sim_param,"generate_num_planets_in_cluster")
+
+  # Generate a set of periods, planet radii, and planet masses.
+  attempt_system = 0
+  max_attempts_system = 100
+  local num_pl, Plist, Rlist, masslist
+  valid_system = false
+  while !valid_system && attempt_system <= max_attempts_system
+
+     # First, generate number of clusters (to attempt) and planets (to attempt) in each cluster
+     num_clusters = generate_num_clusters(star,sim_param)::Int64
+     num_pl_in_cluster = map(x->generate_num_planets_in_cluster(star, sim_param)::Int64, 1:num_clusters)
+     num_pl = sum(num_pl_in_cluster)
+
+     if( num_pl==0 )
+       return PlanetarySystem(star)
+     end
+     Plist = Array{Float64}(num_pl)
+     Rlist = Array{Float64}(num_pl)
+     masslist = Array{Float64}(num_pl)
+     @assert num_pl_in_cluster[1] >= 1
+     pl_start = 1
+     pl_stop = 0
+     for c in 1:num_clusters
+         pl_stop  += num_pl_in_cluster[c]
+         Plist_tmp, Rlist[pl_start:pl_stop], masslist[pl_start:pl_stop] = generate_planet_periods_sizes_masses_in_cluster(star, sim_param, n = num_pl_in_cluster[c])
+         valid_cluster = !any(isnan.(Plist))
+         valid_period_scale = false
+         attempt_period_scale = 0
+         max_attempts_period_scale = 100
+         while !valid_period_scale && attempt_period_scale<=max_attempts_period_scale && valid_cluster
+             attempt_period_scale += 1
+             period_scale = ExoplanetsSysSim.generate_periods_power_law(star,sim_param)
+             Plist[pl_start:pl_stop] = Plist_tmp .* period_scale
+             if test_stability_circular(Plist[1:pl_stop],masslist[1:pl_stop],star.mass,sim_param)  # Note: Should we include eccentricities in this test?
+                valid_period_scale = true
+             end
+         end  # while !valid_period_scale...
+         if !valid_period_scale
+            Plist[pl_start:pl_stop] = NaN
+         end
+         pl_start += num_pl_in_cluster[c]
+     end # for c in 1:num_clusters
+     if any(isnan.(Plist))  # If any loop failed to generate valid planets, it should set a NaN in the period list
+        keep = .!(isnan.(Plist))  # Currently, keeping clusters that could be fit, rather than throwing out entirely and starting from scratch.  Is this a good idea?  Matthias tried the other approach in his python code.
+        num_pl = sum(keep)
+        Plist = Plist[keep]
+        Rlist = Rlist[keep]
+        masslist = masslist[keep]
+     end
+     valid_system = true
+     #= Note: This would be for drawing each cluster separately and then accepting or rejecting the whole lot.
+             By testing for stability before adding each cluster, this last test should be unnecessary.
+     if test_stability(Plist,masslist,star.mass,sim_param)
+        valid_system = true
+     end
+     =#
+     attempt_system += 1
+  end # while !valid_system...
+
+  # Now assign orbits with given periods, sizes, and masses.
+  const generate_e_omega = get_function(sim_param,"generate_e_omega")
+  const sigma_ecc::Float64 = haskey(sim_param,"sigma_hk") ? get_real(sim_param,"sigma_hk") : 0.0
+  const sigma_incl = deg2rad(get_real(sim_param,"sigma_incl"))
+  const sigma_incl_near_mmr = deg2rad(get_real(sim_param,"sigma_incl_near_mmr"))
+    pl = Array{Planet}(num_pl)
+    orbit = Array{Orbit}(num_pl)
+    incl_sys = acos(rand())
+    idx = sortperm(Plist)       # TODO OPT: Check to see if sorting is significant time sink.  If so, could reduce redundant sortperm
+    is_near_resonance = calc_if_near_resonance(Plist[idx])
+    for i in 1:num_pl
+      # if verbose   println("i=",i," idx=",idx," Plist=",Plist[idx] );     end
+      if haskey(sim_param,"sigma_hk_one") && haskey(sim_param,"sigma_hk_multi")
+         sigma_ecc = num_pl == 1 ? get_real(sim_param,"sigma_hk_one") : get_real(sim_param,"sigma_hk_multi")
+      end
+      (ecc,  omega) = generate_e_omega(sigma_ecc)::Tuple{Float64,Float64}  # WARNING: Not testing for stability after eccentricites drawn.
+      sigma_incl_use = is_near_resonance[i] ? sigma_incl_near_mmr : sigma_incl
+      incl_mut = sigma_incl_use*sqrt(randn()^2+randn()^2) # rand(Distributions.Rayleigh(sigma_incl))
+      asc_node = 2pi*rand()
+      mean_anom = 2pi*rand()
+      incl =  incl_mut!=zero(incl_mut) ? acos( cos(incl_sys)*cos(incl_mut) + sin(incl_sys)*sin(incl_mut)*cos(asc_node) ) : incl_sys
+      orbit[idx[i]] = Orbit(Plist[idx[i]],ecc,incl,omega,asc_node,mean_anom)
+      pl[i] = Planet( Rlist[idx[i]],  masslist[idx[i]] )
+    end # for i in 1:num_pl
+
+  return PlanetarySystem(star,pl,orbit)
+end
+
+## summary_statistics borrowed from multiple_planets example, eventually should be merged into main branch
 
 # Compile indices for N-tranet systems
 function calc_summary_stats_idx_n_tranets!(css::CatalogSummaryStatistics, cat_obs::KeplerObsCatalog, param::SimParam)
@@ -459,7 +522,7 @@ function calc_summary_stats_obs_binned_rates!(css::CatalogSummaryStatistics, cat
   idx_n_tranets = calc_summary_stats_idx_n_tranets!(css, cat_obs, param)
 
   idx_tranets = find(x::KeplerTargetObs-> length(x.obs) > 0, cat_obs.target)::Array{Int64,1}             # Find indices of systems with at least 1 tranet = potentially detectable transiting planet
-  css.cache["idx_tranets"] = idx_tranets                                   # We can save lists of indices to summary stats for pass 2, even though we won't use these for computing a distance or probability
+  css.cache["idx_tranets"] = idx_tranets                                   # We can save lists of indices to summary stats for pass 2, even though we will not use these for computing a distance or probability
 
   #=
   max_tranets_in_sys = get_int(param,"max_tranets_in_sys")    # Demo that simulation parameters can specify how to evalute models, too
@@ -479,7 +542,7 @@ function calc_summary_stats_obs_binned_rates!(css::CatalogSummaryStatistics, cat
   if ( length( find(x::KeplerTargetObs-> length(x.obs) > max_tranets_in_sys, cat_obs.target ) ) > 0)   # Make sure max_tranets_in_sys is at least big enough for observed systems
     warn("Observational data has more transiting planets in one systems than max_tranets_in_sys allows.")
   end
-  num_tranets  = convert(Int64,num_tranets)            # TODO OPT: Figure out why isn't this already an Int.  I may be doing something that prevents some optimizations
+  num_tranets  = convert(Int64,num_tranets)            # TODO OPT: Figure out why is not this already an Int.  I may be doing something that prevents some optimizations
   css.cache["num_tranets"] = num_tranets                                   
 
   num_sys_tranets = zeros(max_tranets_in_sys)                           # Since observed data, don't need to calculate probabilities.
@@ -774,19 +837,94 @@ function calc_distance_kl_duration_ratios(summary1::CatalogSummaryStatistics, su
 end
 
 
+## Old code for generating stellar properties # TODO: WARNING: Should eventually use version in main branch to make sure have recent improvements
 
-## eval_model
+## stellar_table
+function setup_star_table_christiansen(sim_param::SimParam; force_reread::Bool = false)
+  #global df
+  df = ExoplanetsSysSim.StellarTable.df
+  if haskey(sim_param,"read_stellar_catalog") && !force_reread
+     return df
+     #return data
+  end
+  stellar_catalog_filename = convert(ASCIIString,joinpath(Pkg.dir("ExoplanetsSysSim"), "data", convert(ASCIIString,get(sim_param,"stellar_catalog","q1_q17_dr25_stellar.csv")) ) )
+  df = setup_star_table_christiansen(stellar_catalog_filename)
+  add_param_fixed(sim_param,"read_stellar_catalog",true)
+  set_star_table(df)
+  return df  
+end
+
+function setup_star_table_christiansen(filename::ASCIIString; force_reread::Bool = false)
+  #global df, usable
+  df = ExoplanetsSysSim.StellarTable.df
+  usable = ExoplanetsSysSim.StellarTable.usable
+  if ismatch(r".jld$",filename)
+  try 
+    data = load(filename)
+    df::DataFrame = data["stellar_catalog"]
+    usable::Array{Int64,1} = data["stellar_catalog_usable"]
+    set_star_table(df, usable)
+  catch
+    error(string("# Failed to read stellar catalog >",filename,"< in jld format."))
+  end
+  else
+  try 
+    df = readtable(filename)
+  catch
+    error(string("# Failed to read stellar catalog >",filename,"< in ascii format."))
+  end
+
+  has_mass = ! (isna(df[:mass]) | isna(df[:mass_err1]) | isna(df[:mass_err2]))
+  has_radius = ! (isna(df[:radius]) | isna(df[:radius_err1]) | isna(df[:radius_err2]))
+  has_dens = ! (isna(df[:dens]) | isna(df[:dens_err1]) | isna(df[:dens_err2]))
+  has_rest = ! (isna(df[:rrmscdpp04p5]) | isna(df[:dataspan]) | isna(df[:dutycycle]))
+  in_Q1Q12 = []
+  for x in df[:st_quarters]
+    subx = string(x)
+    subx = ("0"^(17-length(subx)))*subx
+    indQ = search(subx, '1')
+    if ((indQ < 1) | (indQ > 12))
+      push!(in_Q1Q12, false)
+    else
+      push!(in_Q1Q12, true)
+    end
+  end
+  is_FGK = []
+  for x in 1:length(df[:teff])
+    if ((df[x,:teff] > 4000.0) & (df[x,:teff] < 7000.0) & (df[x,:logg] > 4.0))
+      push!(is_FGK, true)
+    else
+      push!(is_FGK, false)
+    end
+  end
+  is_usable = has_radius & is_FGK & has_mass & has_rest #& in_Q1Q12 # & has_dens
+  #if contains(filename,"q1_q12_christiansen.jld")
+  if contains(filename,"q1_q12_christiansen")   # TODO: Ask Danely what he's trying to do here.
+    is_usable = is_usable & in_Q1Q12
+  end
+  # See options at: http://exoplanetarchive.ipac.caltech.edu/docs/API_keplerstellar_columns.html
+  # TODO SCI DETAIL or IMPORTANT?: Read in all CDPP's, so can interpolate?
+  symbols_to_keep = [ :kepid, :mass, :mass_err1, :mass_err2, :radius, :radius_err1, :radius_err2, :dens, :dens_err1, :dens_err2, :rrmscdpp04p5, :dataspan, :dutycycle ]
+  delete!(df, [~(x in symbols_to_keep) for x in names(df)])    # delete columns that we won't be using anyway
+  usable = find(is_usable)
+  df = df[usable, symbols_to_keep]
+  set_star_table(df, usable)
+  end
+  return df
+end
+
+
+## eval_model   # TODO: Update to test code in this model
 function test_model()
   global sim_param_closure = setup_sim_param_model()
   cat_phys = generate_kepler_physical_catalog(sim_param_closure)
   cat_obs = observe_kepler_targets_single_obs(cat_phys,sim_param_closure)
-  global summary_stat_ref_closure = calc_summary_stats_obs_demo(cat_obs,sim_param_closure)
-  global cat_phys_try_closure = generate_kepler_physical_catalog(sim_param_closure)
-  global cat_obs_try_closure  = observe_kepler_targets_sky_avg(cat_phys_try_closure,sim_param_closure)
-  global summary_stat_try_closure  = calc_summary_stats_sim_pass_one_demo(cat_obs_try_closure,cat_phys_try_closure,sim_param_closure)
-  summary_stat_try_closure   = calc_summary_stats_sim_pass_two_demo(cat_obs_try_closure,cat_phys_try_closure,summary_stat_try_closure,sim_param_closure)
-  param_guess = make_vector_of_sim_param(sim_xparam_closure)
-  evaluate_model_scalar_ret( param_guess)
+  global summary_stat_ref_closure = calc_summary_stats_model(cat_obs,sim_param_closure)
+  #global cat_phys_try_closure = generate_kepler_physical_catalog(sim_param_closure)
+  #global cat_obs_try_closure  = observe_kepler_targets_single_obs(cat_phys_try_closure,sim_param_closure)
+  #global summary_stat_try_closure  = calc_summary_stats_model(cat_obs_try_closure,cat_phys_try_closure,sim_param_closure)
+  #param_guess = make_vector_of_sim_param(sim_param_closure)
+  #evaluate_model_scalar_ret( param_guess)
 end
 
 
