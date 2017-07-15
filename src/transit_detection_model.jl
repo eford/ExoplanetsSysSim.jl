@@ -18,8 +18,7 @@ function real_binom(k::Real, BigM::Real, f::Real)
 end
   
 function kepler_window_function(num_transits_no_gaps::Real, duty_cycle::Real; min_transits::Real = 3.0)
-  if num_transits_no_gaps < min_transits
-     return 0.0
+  if num_transits_no_gaps < min_transits                                             return 0.0
   else
      return max(1.0 - real_binom(min_transits,num_transits_no_gaps,duty_cycle), 0.0)
   end
