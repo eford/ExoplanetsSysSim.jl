@@ -46,15 +46,11 @@ end
 function generate_planet_mass_from_radius_powerlaw(r::Float64, s::Star, o::Orbit, sim_param::SimParam) # TODO SCI: IMPORTANT once have stability criteria, replace w/ better M-R relationship
   const mr_power_index::Float64 = get_real(sim_param,"mr_power_index")
   const mr_const::Float64 = get_real(sim_param,"mr_const")
-<<<<<<< HEAD
   const mr_max_mass::Float64 = get_real(sim_param,"mr_max_mass")
   m = mr_const*earth_mass*(r/earth_radius)^mr_power_index
   if m > mr_max_mass
      m = mr_max_mass
   end
-=======
-  m = mr_const*earth_mass*(r/earth_radius)^mr_power_index
->>>>>>> origin/master
   return m
 end
 
@@ -136,7 +132,6 @@ function draw_power_law(n::Real, x0::Real, x1::Real, num_pl::Integer)
      ((x1^(n+1) - x0^(n+1))*rand(num_pl) + x0^(n+1)).^(1/(n+1))
 end
 
-<<<<<<< HEAD
 function generate_periods_power_law(s::Star, sim_param::SimParam; num_pl::Integer = 1) 
     const power_law_P::Float64 = get_real(sim_param,"power_law_P")
     const min_period::Float64 = get_real(sim_param,"min_period")
@@ -158,20 +153,6 @@ function generate_period_and_sizes_power_law(s::Star, sim_param::SimParam; num_p
 end
 
 
-=======
-function generate_period_and_sizes_power_law(s::Star, sim_param::SimParam; num_pl::Integer = 1) 
-    const power_law_r::Float64 = get_real(sim_param,"power_law_r")
-    const power_law_P::Float64 = get_real(sim_param,"power_law_P")
-    const min_period::Float64 = get_real(sim_param,"min_period")
-    const max_period::Float64 = get_real(sim_param,"max_period")
-    const min_radius::Float64 = get_real(sim_param,"min_radius")
-    const max_radius::Float64 = get_real(sim_param,"max_radius")
-    Rlist = power_law_r!=-1.0 ? draw_power_law(power_law_r,min_radius,max_radius, num_pl) : exp(log(min_radius).+rand()*log(max_radius/min_radius))
-    Plist = power_law_P!=-1.0 ? draw_power_law(power_law_P,min_period,max_period, num_pl) : exp(log(min_period).+rand()*log(max_period/min_period))
-    return Plist, Rlist
-end
-
->>>>>>> origin/master
 function generate_e_omega_rayleigh(sigma_hk::Float64)
   h = k = 1.0
   while h*h+k*k >= 1.0
@@ -305,7 +286,6 @@ function generate_planetary_system_simple(star::StarAbstract, sim_param::SimPara
   end
 end
 
-<<<<<<< HEAD
 # NEW STUFF FOR Matthias BELOW
 
 function calc_hill_sphere(a::Float64, mu::Float64)
@@ -518,8 +498,6 @@ end
 
 
 
-=======
->>>>>>> origin/master
 function test_planetary_system_constructors(sim_param::SimParam)
   generate_star = get_function(sim_param,"generate_star")
   star = generate_star(sim_param)
@@ -530,7 +508,3 @@ function test_planetary_system_constructors(sim_param::SimParam)
   m = generate_planet_mass_from_radius_powerlaw(0.02,star,earth_orbit,sim_param)/earth_mass
   generate_planetary_system_simple(star,sim_param,verbose=true)
 end
-<<<<<<< HEAD
-
-=======
->>>>>>> origin/master
