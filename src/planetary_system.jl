@@ -508,3 +508,4 @@ function test_planetary_system_constructors(sim_param::SimParam)
   m = generate_planet_mass_from_radius_powerlaw(0.02,star,earth_orbit,sim_param)/earth_mass
   generate_planetary_system_simple(star,sim_param,verbose=true)
 end
+

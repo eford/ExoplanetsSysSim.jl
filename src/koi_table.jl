@@ -29,6 +29,7 @@ function setup(sim_param::SimParam; force_reread::Bool = false, symbols_to_keep:
   has_planet = ! (isna(df[:koi_period]) | isna(df[:koi_time0bk]) | isna(df[:koi_duration]) | isna(:koi_depth) )
   has_star = ! ( isna(:koi_srad) )
   is_usable = has_planet & has_star
+
   delete!(df, [~(x in symbols_to_keep) for x in names(df)])    # delete columns that we won't be using anyway
   usable = find(is_usable)
   df = df[usable, symbols_to_keep]
