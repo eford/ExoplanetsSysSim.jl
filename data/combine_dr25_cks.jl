@@ -3,7 +3,7 @@ using HDF5, JLD, DataFrames
 
 filename = joinpath(Pkg.dir("ExoplanetsSysSim"), "data", "q1_q17_dr25_stellar.csv")
 cks_filename = joinpath(Pkg.dir("ExoplanetsSysSim"), "data", "cks_physical_merged.csv")
-stellar_catalog_file_out = joinpath(Pkg.dir("ExoplanetsSysSim"), "data", "q1_q17_dr25_cks_stellar.jld")
+stellar_catalog_file_out = joinpath(Pkg.dir("ExoplanetsSysSim"), "data", "q1_q17_dr25_cks_christiansen.jld")
 
   df = readtable(filename)
   cks_df = readtable(cks_filename)
@@ -43,7 +43,7 @@ stellar_catalog_file_out = joinpath(Pkg.dir("ExoplanetsSysSim"), "data", "q1_q17
       push!(is_FGK, false)
     end
   end
-  is_usable = has_radius & has_mass & has_rest & has_dens #& is_FGK & in_Q1Q12
+  is_usable = has_radius & has_mass & has_rest & has_dens & is_FGK #& in_Q1Q12
   if contains(filename,"q1_q12_christiansen.jld")
     is_usable = is_usable & in_Q1Q12
   end
