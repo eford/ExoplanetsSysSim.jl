@@ -1,17 +1,16 @@
 # ExoplanetsSysSim
-The package does not yet work.
-Currently, we're implementing a generic framework.
+The package is still considered experimental, while we work to implement a generic framework.
 
 # How to get started:
-* Create bitbucket.org account, get permission to access this repository
+* Create github.com account, and (until it's made public) get permission to access this repository
 * Make sure you have julia and git installed, and an ssh key
-* Person Icon (up, right), Manage Account, SSH keys, Add Key.  Paste contents of cat ~/.ssh/id_rsa.pub into box. Ok. Also need to set this up for GitHub because you'll use Eric's ABC package there.
+* Person Icon (upper right), Settings, SSH & GPG keys, New SSH Key.  Entry a name in the title box and paste the contents of `cat ~/.ssh/id_rsa.pub` into the "Key" box. Add SSH Key.  
 * Install this repo as a package and it's non-standard dependencies (ABC, CORBITS)
 ```
 #!julia
 
    julia
-   Pkg.clone("git@bitbucket.org:eford/exoplanetssyssim.git")
+   Pkg.clone("git@github.com:eford/ExoplanetsSysSim.jl.git")
    include(joinpath(Pkg.dir(),"exoplanetssyssim/src/setup.jl"))   
 
 ```
@@ -24,7 +23,7 @@ Currently, we're implementing a generic framework.
    include(joinpath(Pkg.dir(),"exoplanetssyssim/examples/test.jl"))   
 ```
 * Run some simple "applications" (after exiting out of Julia and going to 
-~/.julia/v0.4/ExoplanetsSysSim (or the similar appropriate path).
+~/.julia/v0.6/ExoplanetsSysSim (or the similar appropriate path).
 
 ```
 #!csh
@@ -62,4 +61,3 @@ julia syssim_dist.jl demo_param.in demo_ss.out
 * Florida Institute of Technology
 * University of Florida
 * Statistical and Applied Mathematical Sciences Institute
-
