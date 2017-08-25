@@ -17,8 +17,7 @@ function calc_sum_stats_pr(cat_obs::KeplerObsCatalog, param::SimParam, trueobs_c
   max_tranets_in_sys = get_int(param,"max_tranets_in_sys")    # Demo that simulation parameters can specify how to evalute models, too
   @assert max_tranets_in_sys >= 1
   idx_tranets = find(x::KeplerTargetObs-> length(x.obs) > 0, cat_obs.target)::Array{Int64,1}             # Find indices of systems with at least 1 tranet = potentially detectable transiting planet
-
-  # Count total number of tranets and compile indices for N-tranet systems
+# Count total number of tranets and compile indices for N-tranet systems
   num_tranets = 0
   idx_n_tranets = Vector{Int64}[ Int64[] for m = 1:max_tranets_in_sys]
   for n in 1:max_tranets_in_sys-1
@@ -65,15 +64,13 @@ function calc_sum_stats_pr(cat_obs::KeplerObsCatalog, param::SimParam, trueobs_c
     ssd["multiplicity_true"] = mult_true
 
   else  #Here we'll calculate periods and radii for the physical and observed catalogs as well as their planet multiplicities.
- 
     period_phys_list = Float64[] # zeros(length(idx_phys))      #Holds the periods for every planet in the physical catalog
     radius_phys_list = Float64[] # zeros(length(idx_phys))	#Holds the radii for every planet in the physical catalog
     mult_phys        = zeros(max_tranets_in_sys) 		#Holds the number of systems for each variation of planet multiplicity in the physical catalog
     mult_obs         = zeros(max_tranets_in_sys) 		#Holds the number of systems for each variation of planet multiplicity in the observed catalog     
-
     a = 1    # tranet id
     b = 1    # tranet id
-    for i in 1:length(cat_phys.target) #get from physical catalog
+    for i in 1:length(cat_phys.target) 				#get from physical catalog
        for s in 1:length(cat_phys.target[i].sys)
          if length(cat_phys.target[i].sys)==0 continue end
 	 for p in 1:length(cat_phys.target[i].sys[s].planet)
