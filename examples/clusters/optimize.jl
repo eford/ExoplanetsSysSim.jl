@@ -1,6 +1,6 @@
 include("clusters.jl")
 sim_param = setup_sim_param_model()
-add_param_fixed(sim_param,"num_targets_sim_pass_one",150969)   # For "observed" data, use a realistic number of targets (after any cuts you want to perform)
+add_param_fixed(sim_param,"num_targets_sim_pass_one",15096) #9)   # For "observed" data, use a realistic number of targets (after any cuts you want to perform)
 
 # For now we're creating a simualted catalog that we fit to.  
 # One of Danley/Darin/Keir probably have code to read in a Kepler catalog, so can compute summary statistics from it.
@@ -38,6 +38,7 @@ end
 
 
 tic()
+println("# Active parameters: ", make_vector_of_active_param_keys(sim_param) )
 active_param_true = make_vector_of_sim_param(sim_param)
 println("# True values: ", active_param_true)
 num_eval = 20
