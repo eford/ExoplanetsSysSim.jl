@@ -78,7 +78,8 @@ function setup_sum_stats(sim_arr::Array{Any,1}, sim_true::ExoplanetsSysSim.SimPa
   ss_arr = Array{Any}(length(sim_arr))
   for i in 1:length(sim_arr)
     cat_phys = generate_kepler_physical_catalog(sim_arr[i])
-    cat_obs = ExoplanetsSysSim.observe_kepler_targets_single_obs(cat_phys, sim_arr[i])
+    cat_phys_cut = ExoplanetsSysSim.generate_obs_targets(cat_phys, sim_arr[i])  
+    cat_obs = ExoplanetsSysSim.observe_kepler_targets_single_obs(cat_phys_cut, sim_arr[i])
     ss_arr[i] = calc_sum_stats_pr(cat_obs, sim_arr[i], false, cat_phys)
   end
   return(ss_arr, ss_true)
