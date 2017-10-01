@@ -111,7 +111,7 @@ function generate_num_planets_poisson_mixture(s::Star, sim_param::SimParam)
   else
      const lambda::Float64 = get_real(sim_param,"eta_pl")
      const max_planets_in_sys::Int64 = get_int(sim_param,"max_planets_in_sys")
-     return ExoplanetsSysSim.generate_num_planets_poisson(lambda,max_planets_in_sys,min_planets_in_sys=2)
+     return ExoplanetsSysSim.generate_num_planets_poisson(lambda,max_planets_in_sys,min_planets=2)
   end
 end
 

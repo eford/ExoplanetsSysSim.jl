@@ -21,6 +21,10 @@ immutable StarObs
 end
 
 
+period(obs::TransitPlanetObs) = obs.period
+depth(obs::TransitPlanetObs) = obs.depth
+duration(obs::TransitPlanetObs) = obs.duration
+
 semimajor_axis(P::Float64, M::Float64) = (grav_const/(4pi^2)*M*P*P)^(1/3)
 
 function semimajor_axis(ps::PlanetarySystemAbstract, id::Integer)

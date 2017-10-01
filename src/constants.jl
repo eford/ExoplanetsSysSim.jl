@@ -1,31 +1,39 @@
 ## ExoplanetsSysSim/src/mission_constants.jl
 ## (c) 2015 Eric B. Ford
 
-const global num_channels = 84
- const global num_modules = 42
- const global num_quarters = 17              # QUERY:  I'm favoring leaving out quarter 0, since that was engineering data.  Agree?
- const global num_cdpp_timescales = 1        # TODO SCI: Increase if incorporate CDPPs for multiple timescales, also LC/SC issue
- const global mission_data_span = 1459.789   # maximum(ExoplanetsSysSim.StellarTable.df[:dataspan])
- const global mission_duty_cycle = 0.8751    # median(ExoplanetsSysSim.StellarTable.df[:dutycycle])
+#module KeplerConstants
+ const num_channels = 84
+ const num_modules = 42
+ const num_quarters = 17              # QUERY:  I'm favoring leaving out quarter 0, since that was engineering data.  Agree?
+ const num_cdpp_timescales = 1        # TODO SCI: Increase if incorporate CDPPs for multiple timescales, also LC/SC issue
+ const mission_data_span = 1459.789   # maximum(ExoplanetsSysSim.StellarTable.df[:dataspan])
+ const mission_duty_cycle = 0.8751    # median(ExoplanetsSysSim.StellarTable.df[:dutycycle])
 
- const global kepler_exp_time_internal  =  6.019802903/(24*60*60)    # https://archive.stsci.edu/kepler/manuals/archive_manual.pdf
- const global kepler_read_time_internal = 0.5189485261/(24*60*60)    # https://archive.stsci.edu/kepler/manuals/archive_manual.pdf
- const global num_exposures_per_LC = 270
- const global num_exposures_per_SC = 9
- const global LC_integration_time = kepler_exp_time_internal*num_exposures_per_LC
- const global SC_integration_time = kepler_exp_time_internal*num_exposures_per_SC
- const global LC_read_time = kepler_read_time_internal*num_exposures_per_LC
- const global SC_read_time = kepler_read_time_internal*num_exposures_per_SC
- const global LC_duration = LC_integration_time +  LC_read_time 
- const global SC_duration = SC_integration_time +  SC_read_time
- const global LC_rate = 1.0/LC_duration
- const global SC_rate = 1.0/SC_duration
+ const kepler_exp_time_internal  =  6.019802903/(24*60*60)    # https://archive.stsci.edu/kepler/manuals/archive_manual.pdf
+ const kepler_read_time_internal = 0.5189485261/(24*60*60)    # https://archive.stsci.edu/kepler/manuals/archive_manual.pdf
+ const num_exposures_per_LC = 270
+ const num_exposures_per_SC = 9
+ const LC_integration_time = kepler_exp_time_internal*num_exposures_per_LC
+ const SC_integration_time = kepler_exp_time_internal*num_exposures_per_SC
+ const LC_read_time = kepler_read_time_internal*num_exposures_per_LC
+ const SC_read_time = kepler_read_time_internal*num_exposures_per_SC
+ const LC_duration = LC_integration_time +  LC_read_time 
+ const SC_duration = SC_integration_time +  SC_read_time
+ const LC_rate = 1.0/LC_duration
+ const SC_rate = 1.0/SC_duration
+ 
+# export num_channels,num_modules,num_quarters,num_cdpp_timescales,mission_data_span,mission_duty_cycle
+# export kepler_exp_time_internal,kepler_read_time_internal,num_exposures_per_LC,num_exposures_per_SC
+# export LC_integration_time,SC_integration_time,LC_read_time,SC_read_time,LC_duration,SC_duration,LC_rate,SC_rate
+#end
+
+#using KeplerConstants
 
 # Standard conversion factors on which unit system is based
 const global AU_in_m_IAU2012 = 149597870700.0
  const global G_in_mks_IAU2015 = 6.67384e-11
  const global G_mass_sun_in_mks = 1.3271244e20
- const global G_mass_earth_in_mks = 3.986004e8
+ const global G_mass_earth_in_mks = 3.986004e14
  const global sun_radius_in_m_IAU2015 = 6.9566e8
  const global earth_radius_eq_in_m_IAU2015 = 6.3781e6
  const global sun_mass_in_kg_IAU2010 = 1.988547e30
