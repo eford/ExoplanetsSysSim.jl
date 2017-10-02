@@ -14,7 +14,6 @@ Pkg.clone("git@github.com:eford/ABC.jl.git")
 
 Pkg.clone("git@github.com:jbrakensiek/CORBITS.git")
 
-
 # Compile CORBITS library and put it somewhere we can find
 cd(joinpath(Pkg.dir(),"CORBITS"))
 run(`make lib`)
@@ -24,4 +23,3 @@ if !is_windows()
 else
    cp( joinpath(Pkg.dir("CORBITS"),"libcorbits.so"), joinpath(Pkg.dir("ExoplanetsSysSim"),"libcorbits.so") )
 end
-

@@ -45,7 +45,7 @@ function df_for_kepid(kepid::Integer)
   df[df[:kepid].==kepid,:]
 end
 
-function num_koi_for_kepid(kepid::Integer)
+function num_koi(kepid::Integer)
   sum(df[:kepid].==kepid)
 end
 
