@@ -18,7 +18,7 @@ function real_binom(k::Real, BigM::Real, f::Real)
 end
   
 function kepler_window_function(num_transits_no_gaps::Real, duty_cycle::Real; min_transits::Real = 3.0)
-  if num_transits_no_gaps < min_transits                                                   
+  if num_transits_no_gaps < min_transits
      return 0.0
   else
      return max(1.0 - real_binom(min_transits,num_transits_no_gaps,duty_cycle), 0.0)
@@ -103,7 +103,7 @@ function calc_prob_detect_if_transit(t::KeplerTarget, snr::Real, sim_param::SimP
   const mes_threshold = 7.1                                                   # WARNING: Assuming 7.1 for all stars, durations
   const min_pdet_nonzero = 0.0                                                # TODO OPT: Figure out how to prevent a plethora of planets that are very unlikely to be detected due to using 0.0
   wf = kepler_window_function(num_transit, t.duty_cycle, min_transits=min_transits)   # TODO SCI DETAIL: Replace statistical model with checking actual transit times for long period planets
-  return wf*detection_efficiency_model(snr, min_pdet_nonzero=min_pdet_nonzero)	   
+  return wf*detection_efficiency_model(snr, min_pdet_nonzero=min_pdet_nonzero)	
 end
 
 function calc_prob_detect_if_transit(t::KeplerTarget, depth::Real, duration::Real, sim_param::SimParam; num_transit::Real = 1)
@@ -146,4 +146,3 @@ function calc_ave_prob_detect_if_transit(t::KeplerTarget, s::Integer, p::Integer
   ntr = calc_expected_num_transits(t,s,p,sim_param)
   calc_ave_prob_detect_if_transit(t,depth,duration_central, sim_param, num_transit=ntr)
 end
-

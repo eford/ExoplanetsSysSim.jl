@@ -378,4 +378,3 @@ function transit_noise_model_diagonal(t::KeplerTarget, s::Integer, p::Integer, d
         end
   	return obs, sigma
 end
-

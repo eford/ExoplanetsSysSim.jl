@@ -2,6 +2,8 @@
 ## (c) 2015 Eric B. Ford
 
 include(joinpath(Pkg.dir(),"ExoplanetsSysSim","examples","hsu_etal_2017", "abc_setup_christiansen.jl"))
+include(joinpath(Pkg.dir(),"ExoplanetsSysSim","examples","hsu_etal_2017", "process_abc_output.jl"))
+
 
 using SysSimABC
 using JLD
@@ -12,6 +14,7 @@ final_ind = 1
 for n in start_ind:final_ind
   abc_plan = setup_abc(1)
   @time output = SysSimABC.run_abc(abc_plan)
+  make_plots(output, EvalSysSimModel.get_ss_obs(), n)
 
   println("")
   println("Test ", n)
