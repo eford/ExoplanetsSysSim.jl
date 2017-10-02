@@ -2,7 +2,7 @@
 #using StatsFuns
 if !isdefined(:JLD) using JLD end
 if !isdefined(:DataFrames) using DataFrames end
-import DataFrames.DataFrame
+import DataFrames.DataFrame, DataFrames.isna
 #import ExoplanetsSysSim.StellarTable.df
 #import ExoplanetsSysSim.StellarTable.usable
 import Compat: UTF8String, ASCIIString
@@ -37,19 +37,21 @@ function setup_star_table_christiansen(filename::ASCIIString; force_reread::Bool
   catch
     error(string("# Failed to read stellar catalog >",filename,"< in jld format."))
   end
+  println("Test 1?")
   else
   try 
-    df = readtable(filename)
+    df = DataFrames.readtable(filename)
   catch
     error(string("# Failed to read stellar catalog >",filename,"< in ascii format."))
   end
-
-  has_mass = ! (isna(df[:mass]) | isna(df[:mass_err1]) | isna(df[:mass_err2]))
-  has_radius = ! (isna(df[:radius]) | isna(df[:radius_err1]) | isna(df[:radius_err2]))
-  has_dens = ! (isna(df[:dens]) | isna(df[:dens_err1]) | isna(df[:dens_err2]))
-  has_rest = ! (isna(df[:rrmscdpp04p5]) | isna(df[:dataspan]) | isna(df[:dutycycle]))
+  end # if ismatch
+  println("Test 2?")
+  has_mass = ! (isna.(df[:mass]) | isna.(df[:mass_err1]) | isna.(df[:mass_err2]))
+  has_radius = ! (isna.(df[:radius]) | isna.(df[:radius_err1]) | isna.(df[:radius_err2]))
+  has_dens = ! (isna.(df[:dens]) | isna.(df[:dens_err1]) | isna.(df[:dens_err2]))
+  has_rest = ! (isna.(df[:rrmscdpp04p5]) | isna.(df[:dataspan]) | isna.(df[:dutycycle]))
   in_Q1Q12 = []
-  for x in df[:st_quarters]
+#=for x in df[:st_quarters]
     subx = string(x)
     subx = ("0"^(17-length(subx)))*subx
     indQ = search(subx, '1')
@@ -59,19 +61,21 @@ function setup_star_table_christiansen(filename::ASCIIString; force_reread::Bool
       push!(in_Q1Q12, true)
     end
   end
+=#
   is_FGK = []
   for x in 1:length(df[:teff])
     if ((df[x,:teff] > 4000.0) & (df[x,:teff] < 7000.0) & (df[x,:logg] > 4.0))
+#println("logg?: ", df[x,:logg])
       push!(is_FGK, true)
     else
       push!(is_FGK, false)
     end
-  end
+  end   
   is_usable = has_radius & is_FGK & has_mass & has_rest #& in_Q1Q12 # & has_dens
   #if contains(filename,"q1_q12_christiansen.jld")
-  if contains(filename,"q1_q12_christiansen")   # TODO: Ask Danely what he's trying to do here.
-    is_usable = is_usable & in_Q1Q12
-  end
+#if contains(filename,"q1_q12_christiansen")   # TODO: Ask Danely what he's trying to do here.
+#is_usable = is_usable #& in_Q1Q12
+#end
   # See options at: http://exoplanetarchive.ipac.caltech.edu/docs/API_keplerstellar_columns.html
   # TODO SCI DETAIL or IMPORTANT?: Read in all CDPP's, so can interpolate?
   symbols_to_keep = [ :kepid, :mass, :mass_err1, :mass_err2, :radius, :radius_err1, :radius_err2, :dens, :dens_err1, :dens_err2, :rrmscdpp04p5, :dataspan, :dutycycle ]
@@ -79,10 +83,9 @@ function setup_star_table_christiansen(filename::ASCIIString; force_reread::Bool
   usable = find(is_usable)
   df = df[usable, symbols_to_keep]
   set_star_table(df, usable)
-  end
+#end
   return df
 end
-
 
 function test_stellar_table() # TODO: Write test for stellar catalog functions
 end
