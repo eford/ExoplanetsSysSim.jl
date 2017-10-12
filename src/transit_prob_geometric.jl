@@ -368,5 +368,3 @@ function calc_observed_system_detection_probs(kto::KeplerTargetObs, sim_param::S
   ObservedSystemDetectionProbs( ptr, pdet )
 end
 end
-
-
