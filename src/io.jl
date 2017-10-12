@@ -5,13 +5,13 @@ module SysSimIO
 using ExoplanetsSysSim
 using HDF5, JLD
 
-if VERSION >= v"0.5-"
-  import Compat: UTF8String, ASCIIString
-end
+#if VERSION >= v"0.5-"
+#  import Compat: UTF8String, ASCIIString
+#end
 
 export save_sim_param, save_sim_results, load_sim_param, load_distances, load_summary_stats
 
-function save_sim_param(filename::ASCIIString, p::SimParam)
+function save_sim_param(filename::String, p::SimParam)
  local file
  try
    file = JLD.jldopen(filename,"w")
@@ -25,7 +25,7 @@ function save_sim_param(filename::ASCIIString, p::SimParam)
  return true
 end
 
-function save_sim_results(filename::ASCIIString, p::SimParam; distances::Vector{Float64}=Array(Float64,0), summary_stats::CatalogSummaryStatistics = CatalogSummaryStatistics() )
+function save_sim_results(filename::String, p::SimParam; distances::Vector{Float64}=Array{Float64}(0), summary_stats::CatalogSummaryStatistics = CatalogSummaryStatistics() )
  local file
  try
    file = JLD.jldopen(filename,"w")
@@ -48,11 +48,11 @@ function write_sim_summary_stats(file::JLD.JldFile, ss::CatalogSummaryStatistics
 end
 
 function write_sim_param(file::JLD.JldFile, p::SimParam)
- sim_param_bool = Dict{ASCIIString,Bool}()
- sim_param_int = Dict{ASCIIString,Integer}()
- sim_param_real = Dict{ASCIIString,Real}()
- sim_param_function = Dict{ASCIIString,ASCIIString}()
- sim_param_string = Dict{ASCIIString,ASCIIString}()
+ sim_param_bool = Dict{String,Bool}()
+ sim_param_int = Dict{String,Integer}()
+ sim_param_real = Dict{String,Real}()
+ sim_param_function = Dict{String,String}()
+ sim_param_string = Dict{String,String}()
  for k in keys(p.param)
    #println("# k=",k,".  v=",p.param[k])
    if typeof(p.param[k]) <: Bool
@@ -63,8 +63,8 @@ function write_sim_param(file::JLD.JldFile, p::SimParam)
       sim_param_real[k] = p.param[k]
    elseif typeof(p.param[k]) <: Function
       sim_param_function[k] = string(p.param[k])
-   elseif typeof(p.param[k]) <: ASCIIString
-      sim_param_string[k] = p.param[k]
+   elseif typeof(p.param[k]) <: AbstractString
+      sim_param_string[k] = convert(String,p.param[k])
    else
 	  warn(string("Can't store value of >",k,"< due to type ", typeof(p.param[k])))
    end
@@ -78,7 +78,7 @@ function write_sim_param(file::JLD.JldFile, p::SimParam)
 end
 
 
-function load_sim_param(filename::ASCIIString)
+function load_sim_param(filename::String)
   local jld_data
   try  
     jld_data = load(filename)
@@ -101,7 +101,7 @@ function load_sim_param(filename::ASCIIString)
   return p
 end
 
-function load_distances(filename::ASCIIString)
+function load_distances(filename::String)
   local jld_data
   try  
     jld_data = load(filename)
@@ -112,7 +112,7 @@ function load_distances(filename::ASCIIString)
   return d
 end
 
-function load_summary_stats(filename::ASCIIString)
+function load_summary_stats(filename::String)
   local jld_data
   try  
     jld_data = load(filename)

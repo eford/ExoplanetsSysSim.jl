@@ -23,13 +23,13 @@ if length(ARGS)<2
    # exit(255)
 end
 
-param_file = convert(ASCIIString,ARGS[1])
+param_file = convert(String,ARGS[1])
 if !isreadable(param_file) || !isfile(param_file)
    warn(string("Can't read ",param_file))
    exit(255)
 end
 
-comp_file = convert(ASCIIString,ARGS[2])
+comp_file = convert(String,ARGS[2])
 if !isreadable(comp_file) || !isfile(comp_file)
    warn(string("Can't read ",comp_file))
    exit(255)
@@ -45,7 +45,7 @@ if verbose println("# Reading parameter file ", param_file,"."); end
 include(param_file)
 
 if verbose println("# Calling setup_sim_param( ", ARGS[3:end], " )."); end
-sim_param = setup_sim_param( convert(Array{ASCIIString,1},ARGS[3:end]) )
+sim_param = setup_sim_param( convert(Array{String,1},ARGS[3:end]) )
 if verbose println("# Active parameter values: ", make_vector_of_sim_param(sim_param) ); end
 
 if verbose println("# Loading summary statistics from ", comp_file,"."); end
@@ -53,11 +53,11 @@ ss_comp = load_summary_stats(comp_file)
 
 # Maybe? 
 type PlotSummaryStatistics
-  plotnames::Dict{ASCIIString,Any}  	# For storing names of plots
-  plotfilenames::Dict{ASCIIString,Any}  # For storing filenames of plots
+  plotnames::Dict{String,Any}  	# For storing names of plots
+  plotfilenames::Dict{String,Any}  # For storing filenames of plots
 end
 function PlotSummaryStatistics()
-  PlotSummaryStatistics( Dict{ASCIIString,Any}(), Dict{ASCIIString,Any}() )
+  PlotSummaryStatistics( Dict{String,Any}(), Dict{String,Any}() )
 end
 
 function plot_all_summary_stats(ss::CatalogSummaryStatistics, 

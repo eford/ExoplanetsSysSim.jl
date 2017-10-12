@@ -6,17 +6,17 @@ const global version_id_pair = ("version",version_id_str)
 const global julia_version_pair = ("version_julia",string(VERSION))
 
 type SimParam
-  param::Dict{ASCIIString,Any}
-  active::Dict{ASCIIString,Bool}
+  param::Dict{String,Any}
+  active::Dict{String,Bool}
 end
 copy(p::SimParam) = SimParam(copy(p.param),copy(p.active))
 
 @doc """
-### SimParam(p::Dict{ASCIIString,Any})
+### SimParam(p::Dict{String,Any})
 Creates a SimParam object from the dictionary p, with all parameter defaulting to inactive.
 """ ->
-function SimParam(p::Dict{ASCIIString,Any})   # By default all parameters are set as inactive (i.e., not allowed to be optimized)
-  a = Dict{ASCIIString,Bool}()
+function SimParam(p::Dict{String,Any})   # By default all parameters are set as inactive (i.e., not allowed to be optimized)
+  a = Dict{String,Bool}()
   for k in keys(p)
     a[k] = false
   end
@@ -27,96 +27,96 @@ end
 ### SimParam()
 Creates a nearly empty SimParam object, with just the version id and potentially other information about the code, system, runtime, etc.
 """ ->
-SimParam() = SimParam( Dict{ASCIIString,Any}([version_id_pair,julia_version_pair,("hostname",gethostname()), ("date",chomp(@compat readstring(`date`))),("time",time())]) )
+SimParam() = SimParam( Dict{String,Any}([version_id_pair,julia_version_pair,("hostname",gethostname()), ("date",chomp(@compat readstring(`date`))),("time",time())]) )
 
 @doc """
-### add_param_fixed(sim::SimParam, key::ASCIIString,val::Any)
+### add_param_fixed(sim::SimParam, key::String,val::Any)
 Adds (or overwrites) key with value val to the SimParam object, sim, and sets the parameter set to inactive.
 """ ->
-function add_param_fixed(sim::SimParam, key::ASCIIString,val::Any)
+function add_param_fixed(sim::SimParam, key::String,val::Any)
   sim.param[key] = val
   sim.active[key] = false
 end
 
 @doc """
-### add_param_active(sim::SimParam, key::ASCIIString,val::Any)
+### add_param_active(sim::SimParam, key::String,val::Any)
 Adds (or overwrites) key with value val to the SimParam object, sim, and sets the parameter set to active.
 """ ->
-function add_param_active(sim::SimParam, key::ASCIIString,val::Any)
+function add_param_active(sim::SimParam, key::String,val::Any)
   sim.param[key] = val
   sim.active[key] = true
 end
 
 @doc """
-### update_param(sim::SimParam, key::ASCIIString,val::Any)
+### update_param(sim::SimParam, key::String,val::Any)
 Overwrites key with value val to the SimParam object, sim
 """ ->
-function update_param(sim::SimParam, key::ASCIIString,val::Any)
+function update_param(sim::SimParam, key::String,val::Any)
   @assert haskey(sim.param,key)
   sim.param[key] = val
 end
 
 @doc """
-### set_active(sim::SimParam, key::ASCIIString)
+### set_active(sim::SimParam, key::String)
 Sets the key parameter to be active in sim.
 """ ->
-function set_active(sim::SimParam,key::ASCIIString)
+function set_active(sim::SimParam,key::String)
   @assert haskey(sim.param,key)
   sim.active[key] = true
 end
 
 @doc """
-### set_active(sim::SimParam, keys::Vector{ASCIIString})
+### set_active(sim::SimParam, keys::Vector{String})
 Sets each of the key parameters to be active in sim.
 """ ->
-function set_active(sim::SimParam,keys::Vector{ASCIIString})
+function set_active(sim::SimParam,keys::Vector{String})
   for k in keys
     set_active(sim,k)
   end
 end
 
 @doc """
-### set_inactive(sim::SimParam, key::ASCIIString)
+### set_inactive(sim::SimParam, key::String)
 Sets the key parameter to be inactive in sim.
 """ ->
-function set_inactive(sim::SimParam,key::ASCIIString)
+function set_inactive(sim::SimParam,key::String)
   @assert haskey(sim.param,key)
   sim.active[key] = false
 end
 
 @doc """
-### set_inactive(sim::SimParam, keys::Vector{ASCIIString})
+### set_inactive(sim::SimParam, keys::Vector{String})
 Sets each of the key parameters to be inactive in sim.
 """ ->
-function set_inactive(sim::SimParam,keys::Vector{ASCIIString})
+function set_inactive(sim::SimParam,keys::Vector{String})
   for k in keys
     set_inactive(sim,k)
   end
 end
 
-function is_active(sim::SimParam,key::ASCIIString)
+function is_active(sim::SimParam,key::String)
   @assert haskey(sim.active,key)
   sim.active[key]
 end
 
 import Base.get
-function get{T}(sim::SimParam, key::ASCIIString, default_val::T) 
+function get{T}(sim::SimParam, key::String, default_val::T) 
   val::T = get(sim.param,key,default_val)::T
   return val
 end
 
-function get_any(sim::SimParam, key::ASCIIString, default_val::Any) 
+function get_any(sim::SimParam, key::String, default_val::Any) 
   val = get(sim.param,key,default_val)
   return val
 end
 
-function get_real(sim::SimParam, key::ASCIIString)
+function get_real(sim::SimParam, key::String)
   val::Float64 = get(sim.param,key,convert(Float64,NaN) )::Float64
   @assert(val!=convert(Float64,NaN))
   return val
 end
 
-function get_int(sim::SimParam, key::ASCIIString)
+function get_int(sim::SimParam, key::String)
   val::Int64 = get(sim.param,key,zero(Int64))
   #@assert(val!=nan(zero(Int64)))
   #@assert(val!=oftype(x,NaN))
@@ -126,7 +126,7 @@ end
 function noop() 
 end
 
-function get_function(sim::SimParam, key::ASCIIString)
+function get_function(sim::SimParam, key::String)
   val::Function = Base.get(sim.param,key,noop)::Function
   #val = Base.get(sim.param,key,null)
   @assert((val!=nothing) && (val!=noop))
@@ -134,7 +134,7 @@ function get_function(sim::SimParam, key::ASCIIString)
 end
 
 import Base.haskey
-haskey(sim::SimParam, key::ASCIIString) = return haskey(sim.param,key)
+haskey(sim::SimParam, key::String) = return haskey(sim.param,key)
 
 function make_vector_of_active_param_keys(sim::SimParam)
   sortedkeys = sort(collect(keys(sim.param)))
@@ -167,7 +167,7 @@ function make_vector_of_sim_param(sim::SimParam)
   return param_vector
 end
 
-function get_range_for_sim_param(key::ASCIIString, sim::SimParam)
+function get_range_for_sim_param(key::String, sim::SimParam)
   sorted_keys = sort(collect(keys(sim.param)))
   i = 1
   for k in 1:length(sorted_keys)
@@ -229,7 +229,7 @@ function preallocate_memory!(sim_param::SimParam)
   add_param_fixed(sim_param,"mem_kepler_target_obs", Array{KeplerTargetObs}(num_kepler_targets) )
 end
 
-function setup_sim_param_demo(args::Vector{ASCIIString} = Array{ASCIIString}(0) )   # allow this to take a list of parameter (e.g., from command line)
+function setup_sim_param_demo(args::Vector{String} = Array{String}(0) )   # allow this to take a list of parameter (e.g., from command line)
   sim_param = SimParam()
   add_param_fixed(sim_param,"max_tranets_in_sys",7)
   add_param_fixed(sim_param,"num_targets_sim_pass_one",190000)                      # Note this is used for the number of stars in the simulations, not necessarily related to number of Kepler targets

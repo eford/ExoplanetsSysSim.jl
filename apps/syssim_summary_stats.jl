@@ -13,9 +13,9 @@ if length(ARGS)<2
 end
 
 using Compat
-import Compat: UTF8String, ASCIIString
+#import Compat: UTF8String, ASCIIString
 
-param_file = convert(Compat.ASCIIString,ARGS[1])
+param_file = convert(String,ARGS[1])
 if !isfile(param_file)
    warn(string("Can't read ",param_file))
    exit(255)
@@ -27,7 +27,7 @@ using ExoplanetsSysSim
 if verbose println("# Reading parameter file ", param_file,"."); end 
 include(param_file)
 if verbose println("# Calling setup_sim_param( ", ARGS[3:end], " )."); end
-sim_param = setup_sim_param( convert(Array{Compat.ASCIIString,1},ARGS[3:end]) )
+sim_param = setup_sim_param( convert(Array{String,1},ARGS[3:end]) )
 if verbose println("# Active parameter values: ", make_vector_of_sim_param(sim_param) ); end
 
 if haskey(sim_param,"rng_seed")
@@ -53,7 +53,7 @@ else
 end
 
 if length(ARGS)>=2 
-  output_file = convert(Compat.ASCIIString,ARGS[2])
+  output_file = convert(String,ARGS[2])
   if verbose println("# Writing summary statistics to ", output_file,"."); end
   try 
      save_sim_results(output_file,sim_param,summary_stats=ss)

@@ -4,10 +4,10 @@ using JLD
 using DataFrames
 #import ExoplanetsSysSim.StellarTable.df
 #import ExoplanetsSysSim.StellarTable.usable
-import Compat: UTF8String, ASCIIString
+#import Compat: UTF8String, ASCIIString
 
 ## simulation_parameters
-function setup_sim_param_model(args::Vector{ASCIIString} = Array{ASCIIString}(0) )   # allow this to take a list of parameter (e.g., from command line)
+function setup_sim_param_model(args::Vector{String} = Array{String}(0) )   # allow this to take a list of parameter (e.g., from command line)
   sim_param = SimParam()
   #add_param_fixed(sim_param,"max_planets_in_sys",20)
   #add_param_fixed(sim_param,"max_tranets_in_sys",8)
@@ -168,14 +168,14 @@ function setup_star_table_christiansen(sim_param::SimParam; force_reread::Bool =
      return df
      #return data
   end
-  stellar_catalog_filename = convert(ASCIIString,joinpath(Pkg.dir("ExoplanetsSysSim"), "data", convert(ASCIIString,get(sim_param,"stellar_catalog","q1_q17_dr25_stellar.csv")) ) )
+  stellar_catalog_filename = convert(String,joinpath(Pkg.dir("ExoplanetsSysSim"), "data", convert(String,get(sim_param,"stellar_catalog","q1_q17_dr25_stellar.csv")) ) )
   df = setup_star_table_christiansen(stellar_catalog_filename)
   add_param_fixed(sim_param,"read_stellar_catalog",true)
   set_star_table(df)
   return df  
 end
 
-function setup_star_table_christiansen(filename::ASCIIString; force_reread::Bool = false)
+function setup_star_table_christiansen(filename::String; force_reread::Bool = false)
   #global df, usable
   df = ExoplanetsSysSim.StellarTable.df
   usable = ExoplanetsSysSim.StellarTable.usable

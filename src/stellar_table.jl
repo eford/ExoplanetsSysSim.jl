@@ -6,9 +6,9 @@ using ExoplanetsSysSim
 using DataFrames
 using JLD
 
-if VERSION >= v"0.5-"
-  import Compat: UTF8String, ASCIIString
-end
+#if VERSION >= v"0.5-"
+#  import Compat: UTF8String, ASCIIString
+#end
 
 export setup_star_table, star_table, num_usable_in_star_table, set_star_table
 
@@ -23,13 +23,13 @@ function setup(sim_param::SimParam; force_reread::Bool = false)
      return df
      #return data
   end
-  stellar_catalog_filename = convert(ASCIIString,joinpath(Pkg.dir("ExoplanetsSysSim"), "data", convert(ASCIIString,get(sim_param,"stellar_catalog","q1_q17_dr24_stellar.csv")) ) )
+  stellar_catalog_filename = convert(String,joinpath(Pkg.dir("ExoplanetsSysSim"), "data", convert(String,get(sim_param,"stellar_catalog","q1_q17_dr24_stellar.csv")) ) )
   df = setup(stellar_catalog_filename)
   add_param_fixed(sim_param,"read_stellar_catalog",true)
   return df  
 end
 
-function setup(filename::ASCIIString; force_reread::Bool = false)
+function setup(filename::String; force_reread::Bool = false)
   global df, usable
   if ismatch(r".jld$",filename)
   try 
@@ -67,7 +67,7 @@ function setup(filename::ASCIIString; force_reread::Bool = false)
 end
 
 setup_star_table(sim_param::SimParam; force_reread::Bool = false) = setup(sim_param, force_reread=force_reread)
-setup_star_table(filename::ASCIIString; force_reread::Bool = false) = setup(filename, force_reread=force_reread)
+setup_star_table(filename::String; force_reread::Bool = false) = setup(filename, force_reread=force_reread)
 
 function num_usable()
   global usable

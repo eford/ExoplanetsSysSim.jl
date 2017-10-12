@@ -1,6 +1,6 @@
 # This "parameter file" defines a function that will be used to set the simulation parameters
 
-function setup_sim_param( argv::Vector{ASCIIString} )               # in principle could do something with command line information
+function setup_sim_param( argv::Vector{String} )               # in principle could do something with command line information
   sim_param = SimParam()
   add_param_fixed(sim_param,"max_tranets_in_sys",7)
   add_param_fixed(sim_param,"num_targets_sim_pass_one",19000)        

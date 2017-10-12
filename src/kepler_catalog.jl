@@ -5,9 +5,9 @@
 #using DataFrames
 using JLD
 
-if VERSION >= v"0.5-"
-  import Compat: UTF8String, ASCIIString
-end
+#if VERSION >= v"0.5-"
+#  import Compat: UTF8String, ASCIIString
+#end
 
 type KeplerPhysicalCatalog
   target::Array{KeplerTarget,1}
@@ -115,7 +115,7 @@ end
 function setup_actual_planet_candidate_catalog(df_star::DataFrame, sim_param::SimParam)
   local csv_data,kepid_idx,koi_period_idx,koi_time0bk_idx,koi_depth_idx,koi_duration_idx,koi_ror_idx,koi_period_err1_idx,koi_time0bk_err1_idx,koi_depth_err1_idx,koi_duration_err1_idx,koi_period_err2_idx,koi_time0bk_err2_idx,koi_depth_err2_idx,koi_duration_err2_idx 
   add_param_fixed(sim_param,"num_kepler_targets",num_usable_in_star_table())  # For "observed" catalog
-  koi_catalog_file_in = convert(ASCIIString,joinpath(Pkg.dir("ExoplanetsSysSim"), "data", convert(ASCIIString,get(sim_param,"koi_catalog","q1_q17_dr25_koi.csv")) ) )
+  koi_catalog_file_in = convert(String,joinpath(Pkg.dir("ExoplanetsSysSim"), "data", convert(String,get(sim_param,"koi_catalog","q1_q17_dr25_koi.csv")) ) )
 
   if ismatch(r".jld$",koi_catalog_file_in)
   try 
@@ -164,8 +164,8 @@ function setup_actual_planet_candidate_catalog(df_star::DataFrame, sim_param::Si
     #is_cand = (csv_data[:,koi_disposition_idx] .== "CONFIRMED") | (csv_data[:,koi_disposition_idx] .== "CANDIDATE")
     is_cand = (csv_data[:,koi_pdisposition_idx] .== "CANDIDATE")
   
-    idx_keep = is_cand & !isna(csv_data[:,koi_ror_idx]) & ([typeof(x) for x in csv_data[:,koi_ror_idx]] .== Float64)
-    idx_keep = idx_keep & !isna(csv_data[:,koi_period_err1_idx]) & ([typeof(x) for x in csv_data[:,koi_period_err1_idx]] .== Float64) # DR25 catalog missing uncertainties for some candidates
+    idx_keep = is_cand .& .!isna.(csv_data[:,koi_ror_idx]) .& ([typeof(x) for x in csv_data[:,koi_ror_idx]] .== Float64)
+    idx_keep = idx_keep .& .!isna.(csv_data[:,koi_period_err1_idx]) .& ([typeof(x) for x in csv_data[:,koi_period_err1_idx]] .== Float64) # DR25 catalog missing uncertainties for some candidates
     csv_data = csv_data[idx_keep,:]
   catch
     error(string("# Failed to read koi catalog >",koi_catalog_file_in,"< in ascii format."))
@@ -193,7 +193,7 @@ end
 
 function setup_actual_planet_candidate_catalog_csv(df_star::DataFrame, sim_param::SimParam)
   add_param_fixed(sim_param,"num_kepler_targets",num_usable_in_star_table())  # For "observed" catalog
-  koi_catalog_file_in = convert(ASCIIString,joinpath(Pkg.dir("ExoplanetsSysSim"), "data", convert(ASCIIString,get(sim_param,"koi_catalog","q1_q17_dr25_koi.csv")) ) )
+  koi_catalog_file_in = convert(String,joinpath(Pkg.dir("ExoplanetsSysSim"), "data", convert(String,get(sim_param,"koi_catalog","q1_q17_dr25_koi.csv")) ) )
   (csv_data,csv_header) = readcsv(koi_catalog_file_in,header=true)
 
   # Lookup header columns, since DataFrames doesn't like this file
@@ -218,7 +218,7 @@ function setup_actual_planet_candidate_catalog_csv(df_star::DataFrame, sim_param
   koi_subset = fill(false, length(csv_data[:,kepid_idx]))
 
   if haskey(sim_param, "koi_subset_csv")
-    subset_df = readtable(convert(ASCIIString,get(sim_param,"koi_subset_csv", "christiansen_kov.csv")), header=true, separator=' ')
+    subset_df = readtable(convert(String,get(sim_param,"koi_subset_csv", "christiansen_kov.csv")), header=true, separator=' ')
 
     col_idx = findfirst(x->x==string(names(subset_df)[1]),csv_header)
     for n in 1:length(subset_df[:,1])
