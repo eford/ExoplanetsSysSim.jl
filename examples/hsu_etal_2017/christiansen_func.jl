@@ -4,10 +4,10 @@ using JLD
 using DataFrames
 #import ExoplanetsSysSim.StellarTable.df
 #import ExoplanetsSysSim.StellarTable.usable
-import Compat: UTF8String, ASCIIString
+#import Compat: UTF8String, ASCIIString
 
 ## simulation_parameters
-function setup_sim_param_christiansen(args::Vector{ASCIIString} = Array{ASCIIString}(0) )   # allow this to take a list of parameter (e.g., from command line)
+function setup_sim_param_christiansen(args::Vector{String} = Array{String}(0) )   # allow this to take a list of parameter (e.g., from command line)
   sim_param = setup_sim_param_demo()
   
   set_inactive(sim_param,["log_eta_pl","power_law_P","power_law_r"])
@@ -80,14 +80,14 @@ function setup_christiansen(sim_param::SimParam; force_reread::Bool = false)
      return df
      #return data
   end
-  stellar_catalog_filename = convert(ASCIIString,joinpath(Pkg.dir("ExoplanetsSysSim"), "data", convert(ASCIIString,get(sim_param,"stellar_catalog","q1_q17_dr25_stellar.csv")) ) )
+  stellar_catalog_filename = convert(String,joinpath(Pkg.dir("ExoplanetsSysSim"), "data", convert(String,get(sim_param,"stellar_catalog","q1_q17_dr25_stellar.csv")) ) )
   df = setup_christiansen(stellar_catalog_filename)
   add_param_fixed(sim_param,"read_stellar_catalog",true)
   set_star_table(df)
   return df  
 end
 
-function setup_christiansen(filename::ASCIIString; force_reread::Bool = false)
+function setup_christiansen(filename::String; force_reread::Bool = false)
   #global df, usable
   df = ExoplanetsSysSim.StellarTable.df
   usable = ExoplanetsSysSim.StellarTable.usable
@@ -149,13 +149,13 @@ function setup_christiansen(filename::ASCIIString; force_reread::Bool = false)
 end
 
 setup_star_table_christiansen(sim_param::SimParam; force_reread::Bool = false) = setup_christiansen(sim_param, force_reread=force_reread)
-setup_star_table_christiansen(filename::ASCIIString; force_reread::Bool = false) = setup_christiansen(filename, force_reread=force_reread)
+setup_star_table_christiansen(filename::String; force_reread::Bool = false) = setup_christiansen(filename, force_reread=force_reread)
 
 
 ## summary_statistics
 function calc_summary_stats_sim_pass_one_binned_rates(cat_obs::KeplerObsCatalog, cat_phys::KeplerPhysicalCatalog, param::SimParam )      # Version for simulated data, since includes cat_phys
-  ssd = Dict{ASCIIString,Any}()
-  cache = Dict{ASCIIString,Any}()
+  ssd = Dict{String,Any}()
+  cache = Dict{String,Any}()
 
   max_tranets_in_sys = get_int(param,"max_tranets_in_sys")    # Demo that simulation parameters can specify how to evalute models, too
   @assert max_tranets_in_sys >= 1
@@ -228,8 +228,8 @@ function calc_summary_stats_sim_pass_one_binned_rates(cat_obs::KeplerObsCatalog,
 end
 
 function calc_summary_stats_obs_binned_rates(cat_obs::KeplerObsCatalog, param::SimParam; trueobs_cat::Bool = false)
-  ssd = Dict{ASCIIString,Any}()
-  cache = Dict{ASCIIString,Any}()
+  ssd = Dict{String,Any}()
+  cache = Dict{String,Any}()
 
   if !trueobs_cat
     ssd["num targets"] = get_int(param,"num_targets_sim_pass_one")
