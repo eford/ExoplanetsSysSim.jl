@@ -33,7 +33,7 @@
 const global AU_in_m_IAU2012 = 149597870700.0
  const global G_in_mks_IAU2015 = 6.67384e-11
  const global G_mass_sun_in_mks = 1.3271244e20
- const global G_mass_earth_in_mks = 3.986004e8
+ const global G_mass_earth_in_mks = 3.986004e14
  const global sun_radius_in_m_IAU2015 = 6.9566e8
  const global earth_radius_eq_in_m_IAU2015 = 6.3781e6
  const global sun_mass_in_kg_IAU2010 = 1.988547e30

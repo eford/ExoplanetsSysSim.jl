@@ -290,7 +290,6 @@ function generate_planetary_system_simple(star::StarAbstract, sim_param::SimPara
   end
 end
 
-
 function test_planetary_system_constructors(sim_param::SimParam)
   generate_star = get_function(sim_param,"generate_star")
   star = generate_star(sim_param)

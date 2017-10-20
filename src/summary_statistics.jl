@@ -2,17 +2,17 @@
 ## (c) 2015 Eric B. Ford
 
 type CatalogSummaryStatistics
-  stat::Dict{ASCIIString,Any}          # For storing summary statistics
-  cache::Dict{ASCIIString,Any}         # For caching data that's not a summary statistic
+  stat::Dict{String,Any}          # For storing summary statistics
+  cache::Dict{String,Any}         # For caching data that's not a summary statistic
 end
 
 function CatalogSummaryStatistics()    # Constructor for empty CatalogSummaryStatistics objects for creating globals to be used by closure
-  CatalogSummaryStatistics( Dict{ASCIIString,Any}(), Dict{ASCIIString,Any}() )
+  CatalogSummaryStatistics( Dict{String,Any}(), Dict{String,Any}() )
 end
 
 function calc_summary_stats_sim_pass_one_demo(cat_obs::KeplerObsCatalog, cat_phys::KeplerPhysicalCatalog, param::SimParam )      # Version for simulated data, since includes cat_phys
-  ssd = Dict{ASCIIString,Any}()
-  cache = Dict{ASCIIString,Any}()
+  ssd = Dict{String,Any}()
+  cache = Dict{String,Any}()
 
   max_tranets_in_sys = get_int(param,"max_tranets_in_sys")    # Demo that simulation parameters can specify how to evalute models, too
   @assert max_tranets_in_sys >= 1
@@ -87,8 +87,8 @@ end
 
 
 function calc_summary_stats_obs_demo(cat_obs::KeplerObsCatalog, param::SimParam )      # Version for observed data, thus no use of cat_phys
-  ssd = Dict{ASCIIString,Any}()
-  cache = Dict{ASCIIString,Any}()
+  ssd = Dict{String,Any}()
+  cache = Dict{String,Any}()
 
   max_tranets_in_sys = get_int(param,"max_tranets_in_sys")                  # Demo that simulation parameters can specify how to evalute models, too
   idx_tranets = find(x::KeplerTargetObs-> length(x.obs) > 0, cat_obs.target)             # Find indices of systems with at least 1 tranet = potentially detectable transiting planet

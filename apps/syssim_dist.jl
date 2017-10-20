@@ -15,15 +15,15 @@ if length(ARGS)<2
 end
 
 using Compat
-import Compat: UTF8String, ASCIIString
+#import Compat: UTF8String, ASCIIString
 
-param_file = convert(Compat.ASCIIString,ARGS[1])
+param_file = convert(String,ARGS[1])
 if !isfile(param_file)
    warn(string("Can't read ",param_file))
    exit(255)
 end
 
-comp_file = convert(Compat.ASCIIString,ARGS[2])
+comp_file = convert(String,ARGS[2])
 if !isfile(comp_file)
    warn(string("Can't read ",comp_file))
    exit(255)
@@ -35,7 +35,7 @@ using ExoplanetsSysSim
 if verbose println("# Reading parameter file ", param_file,"."); end 
 include(param_file)
 if verbose println("# Calling setup_sim_param( ", ARGS[3:end], " )."); end
-sim_param = setup_sim_param( convert(Array{Compat.ASCIIString,1},ARGS[3:end]) )
+sim_param = setup_sim_param( convert(Array{String,1},ARGS[3:end]) )
 if verbose println("# Active parameter values: ", make_vector_of_sim_param(sim_param) ); end
 
 #add_param_fixed(sim_param,"rng_seed",1234)   # If you want to be able to reproduce simulations

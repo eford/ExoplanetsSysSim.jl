@@ -1,0 +1,16 @@
+# This directory contains data files likely to be commonly used with SysSim
+# The commands below were used to get the table of stellar properties.  
+# For more info about these, see:
+# http://exoplanetarchive.ipac.caltech.edu/docs/Kepler_stellar_docs.html
+# http://exoplanetarchive.ipac.caltech.edu/docs/API_keplerstellar_columns.html
+wget "http://exoplanetarchive.ipac.caltech.edu/cgi-bin/nstedAPI/nph-nstedAPI?table=q1_q17_dr24_stellar&format=csv&select=*"
+mv nph-nstedAPI\?table=q1_q17_dr24_stellar\&format=csv\&select=\* q1_q17_dr24_stellar.csv
+
+# I don't know how to script the downloading of the KOI tables from:
+# http://exoplanetarchive.ipac.caltech.edu/cgi-bin/TblView/nph-tblView?app=ExoTbls&config=koi
+# When you download via the interactive table, I suggest selecting all rows and all columns to make sure you don't miss something
+# See info at:
+# http://exoplanetarchive.ipac.caltech.edu/docs/API_kepcandidate_columns.html
+# http://exoplanetarchive.ipac.caltech.edu/docs/Kepler_KOI_docs.html
+# http://exoplanetarchive.ipac.caltech.edu/docs/PurposeOfKOITable.html
+
