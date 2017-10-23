@@ -322,10 +322,12 @@ function calc_distance_vector_binned(summary1::CatalogSummaryStatistics, summary
 
     np_bin = zeros(length(np1))
     for n in 1:length(np1)
-      np_bin[n] = dist_L1_abs(np1[n]/summary1.stat["num targets"], np2[n]/summary2.stat["num targets"])
+        #np_bin[n] = dist_L1_abs(np1[n]/summary1.stat["num targets"], np2[n]/summary2.stat["num targets"])
+        np_bin[n] = dist_L2_abs(np1[n]/summary1.stat["num targets"], np2[n]/summary2.stat["num targets"])
       #println("True # [Bin ", n,"] = ",np1[n],", Expected # [Bin ", n,"] = ",np2[n])
     end
-    d[1] = maximum(np_bin)
+      #d[1] = maximum(np_bin)
+      d[1] = sum(np_bin)
     else
     println("# calc_distance_vector_demo doesn't know what to do for pass= ", pass)
   end
