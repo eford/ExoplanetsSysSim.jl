@@ -81,7 +81,7 @@ function detection_efficiency_dr25_simple(mes::Real; min_pdet_nonzero::Float64 =
    return pdet
 end
 
-detection_efficiency_model = detection_efficiency_dr25_simple  #  WARNING: Hardcoded choice of transit deteciton efficiency here for speed and so as to not have it hardcoded in multiple places
+detection_efficiency_model = detection_efficiency_christiansen2015  #  WARNING: Hardcoded choice of transit detection efficiency here for speed and so as to not have it hardcoded in multiple places
 
 # Resume code original to SysSim
 
