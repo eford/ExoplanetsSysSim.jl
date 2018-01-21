@@ -86,7 +86,7 @@ detection_efficiency_model = detection_efficiency_christiansen2015  #  WARNING: 
 # Resume code original to SysSim
 
 function calc_snr_if_transit(t::KeplerTarget, depth::Real, duration::Real, sim_param::SimParam; num_transit::Real = 1)
-  cdpp = t.cdpp[1,1]                                                            # TODO: Make CDPP lookup based on season/quarter/month and timescale.  Is CDPP timescale IMPORTANT or DETAIL?
+  cdpp = t.cdpp[1,1]                                                                # TODO: Make CDPP lookup based on season/quarter/month and timescale.  Is CDPP timescale IMPORTANT or DETAIL?
   depth_tps = frac_depth_to_tps_depth(depth)                                        # WARNING: Hardcoded this conversion
   snr = depth_tps*sqrt(num_transit*duration*LC_rate)/cdpp              # WARNING: Assumes measurement uncertainties are uncorrelated & CDPP based on LC
 end

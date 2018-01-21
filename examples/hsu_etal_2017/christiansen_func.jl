@@ -2,6 +2,7 @@ using ExoplanetsSysSim
 using StatsFuns
 using JLD
 using DataFrames
+using Distributions
 #import ExoplanetsSysSim.StellarTable.df
 #import ExoplanetsSysSim.StellarTable.usable
 #import Compat: UTF8String, ASCIIString

@@ -18,8 +18,7 @@
 
 module purge
 module load git             # to put git in path
-module load julia/0.4.3     # to put a specific version of julia into your path
 
 cd $PBS_O_WORKDIR          # change into same directory as job was submitted from
 
-julia ../abc_run_christiansen.jl
+julia ../abc_run.jl
