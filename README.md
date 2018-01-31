@@ -42,6 +42,7 @@ julia syssim_dist.jl demo_param.in demo_ss.out
   * Darin Ragozzine
 # Other Contributors/Consultants:
   * Robert Morehead
+  * Keir Ashby
   * Jessi Cisewski
   * Chad Schafer
   * Tom Loredo
