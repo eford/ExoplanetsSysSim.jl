@@ -11,16 +11,17 @@ The package is still considered experimental, while we work to implement a gener
 
    julia
    Pkg.clone("git@github.com:eford/ExoplanetsSysSim.jl.git")
-   include(joinpath(Pkg.dir(),"exoplanetssyssim/src/setup.jl"))   
+   include(joinpath(Pkg.dir(),"ExoplanetsSysSim/src/setup.jl"))   
 
 ```
+* If you are using windows, you might encoutner an issue with capitalization of package names.
 * If you have some issues with Blosc, you might need to follow the instructions here: https://github.com/stevengj/Blosc.jl/issues/5
 * Run some tests, e.g. 
 ```
 #!julia
 
    using ExoplanetsSysSim
-   include(joinpath(Pkg.dir(),"exoplanetssyssim/examples/test.jl"))   
+   include(joinpath(Pkg.dir(),"exoplanetssyssim/examples/basic/test.jl"))   
 ```
 * Run some simple "applications" (after exiting out of Julia and going to 
 ~/.julia/v0.6/ExoplanetsSysSim (or the similar appropriate path).
@@ -36,10 +37,12 @@ julia syssim_dist.jl demo_param.in demo_ss.out
 # Team:
 # Developers:
   * Eric Ford
+  * Matthias He
   * Danley Hsu
   * Darin Ragozzine
 # Other Contributors/Consultants:
   * Robert Morehead
+  * Keir Ashby
   * Jessi Cisewski
   * Chad Schafer
   * Tom Loredo

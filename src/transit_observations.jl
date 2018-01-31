@@ -260,7 +260,7 @@ function transit_noise_model_fixed_noise(t::KeplerTarget, s::Integer, p::Integer
 
   sigma_period = 1e-6
   sigma_t0 = 1e-4
-  sigma_depth =  0.01
+  sigma_depth =  0.1
   sigma_duration =  0.01
 
   sigma = TransitPlanetObs( sigma_period, sigma_t0, sigma_depth, sigma_duration)
