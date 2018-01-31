@@ -1,7 +1,7 @@
 ## ExoplanetsSysSim/examples/abc_run.jl
 ## (c) 2015 Eric B. Ford
 
-include(joinpath(dirname(pwd()), "abc_setup.jl"))
+include(joinpath(pwd(), "abc_setup.jl"))
 
 using SysSimABC
 using JLD
