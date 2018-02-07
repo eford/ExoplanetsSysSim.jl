@@ -24,8 +24,8 @@ flux(t::KeplerTarget) = sum(flux,t.sys)+t.contam
 
 
 function draw_asymmetric_normal(mu::Real, sig_plus::Real, sig_minus::Real)
-  stdn = rand()
-  mu + ( (stdn>=0.0) ? sig_plus*stdn : sig_minus*stdn )
+  stdn = randn()
+  mu + ( (stdn>=zero(stdn)) ? sig_plus*stdn : sig_minus*stdn )
 end
 
 function generate_kepler_target_from_table(sim_param::SimParam)  
@@ -33,7 +33,10 @@ function generate_kepler_target_from_table(sim_param::SimParam)
   const  generate_planetary_system = get_function(sim_param,"generate_planetary_system")
   const use_star_table_sigmas = false
 
-  max_star_id = num_usable_in_star_table()
+  max_star_id = StellarTable.num_usable_in_star_table()
+
+  star_table(id::Integer,sym::Symbol) = StellarTable.star_table(id,sym)
+
   @assert(1<=max_star_id)
   star_id = rand(1:max_star_id)
   mass = 0.0

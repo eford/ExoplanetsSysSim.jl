@@ -1,0 +1,12 @@
+
+To do the ABC runs, you have to run abc_setup first. As follows: 
+> cd examples/basic # make sure you are in the examples directory
+> julia 
+> include("abc_setup.jl")
+> include("abc_run.jl")
+
+# Note: Is this still true? -> Not entirely sure why it doesn't work without abc_setup.jl first.  
+
+CURRENTLY, (4/14/16), abc_run_parallel and abc_run don't give consistent
+solutions. This is probably a bug. We'll return to parallelism later.
+
