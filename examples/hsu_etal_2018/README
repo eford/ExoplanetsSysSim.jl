@@ -1,0 +1,10 @@
+To reproduce a calculation from Hsu et al. (2018), you first need to create a jld version of the Q1-16 stellar catalog that has been filtered to include a subset of stars (similar to that of Christianset et al. (201X) by running:  
+> julia make_q1_q16_christiansen.jl
+That only needs to be done once.
+
+Then to perform the actual calculations, you run:
+> julia abc_run.jl
+
+This defaults to computing a planet occurence rate (IS THAT THE RIGHT NAME?) for a period-radius bin of X-X R_Earth and X-X days.
+For other ranges, you'd edit the values in XXXXXXXX.
+
