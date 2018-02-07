@@ -114,7 +114,7 @@ end
 # df_star is assumed to have fields kepid, mass and radius for all targets in the survey
 function setup_actual_planet_candidate_catalog(df_star::DataFrame, sim_param::SimParam)
   local csv_data,kepid_idx,koi_period_idx,koi_time0bk_idx,koi_depth_idx,koi_duration_idx,koi_ror_idx,koi_period_err1_idx,koi_time0bk_err1_idx,koi_depth_err1_idx,koi_duration_err1_idx,koi_period_err2_idx,koi_time0bk_err2_idx,koi_depth_err2_idx,koi_duration_err2_idx 
-  add_param_fixed(sim_param,"num_kepler_targets",num_usable_in_star_table())  # For "observed" catalog
+  add_param_fixed(sim_param,"num_kepler_targets",StellarTable.num_usable_in_star_table())  # For "observed" catalog
   koi_catalog_file_in = convert(String,joinpath(Pkg.dir("ExoplanetsSysSim"), "data", convert(String,get(sim_param,"koi_catalog","q1_q17_dr25_koi.csv")) ) )
 
   if ismatch(r".jld$",koi_catalog_file_in)
@@ -192,7 +192,7 @@ function setup_actual_planet_candidate_catalog(df_star::DataFrame, sim_param::Si
 end
 
 function setup_actual_planet_candidate_catalog_csv(df_star::DataFrame, sim_param::SimParam)
-  add_param_fixed(sim_param,"num_kepler_targets",num_usable_in_star_table())  # For "observed" catalog
+  add_param_fixed(sim_param,"num_kepler_targets",StellarTable.num_usable_in_star_table())  # For "observed" catalog
   koi_catalog_file_in = convert(String,joinpath(Pkg.dir("ExoplanetsSysSim"), "data", convert(String,get(sim_param,"koi_catalog","q1_q17_dr25_koi.csv")) ) )
   (csv_data,csv_header) = readcsv(koi_catalog_file_in,header=true)
 
