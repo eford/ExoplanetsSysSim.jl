@@ -2,7 +2,6 @@
 ## (c) 2015 Eric B. Ford
 
 include(joinpath(pwd(), "abc_setup.jl"))
-EvalSysSimModel.add_param_fixed(EvalSysSimModel.sim_param_closure,"num_targets_sim_pass_one",1000)  # Set universal simulated catalog size
 
 
 using SysSimABC
@@ -13,7 +12,9 @@ final_ind = 1
 
 for n in start_ind:final_ind
   abc_plan = setup_abc(1)
+  EvalSysSimModel.add_param_fixed(EvalSysSimModel.sim_param_closure,"num_targets_sim_pass_one",10000)  # Set universal simulated catalog size
   @time output = SysSimABC.run_abc(abc_plan)
+
 
   println("")
   println("Test ", n)
