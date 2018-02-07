@@ -240,7 +240,7 @@ function setup_sim_param_demo(args::Vector{String} = Array{String}(0) )   # allo
 
   # add_param_fixed(sim_param,"generate_kepler_target",generate_kepler_target_simple)
   add_param_fixed(sim_param,"generate_kepler_target",generate_kepler_target_from_table)
-  add_param_fixed(sim_param,"star_table_setup",setup_star_table)
+  add_param_fixed(sim_param,"star_table_setup",StellarTable.setup_star_table)
   add_param_fixed(sim_param,"stellar_catalog","q1_q17_dr24_stellar.jld")
   add_param_fixed(sim_param,"generate_num_planets",generate_num_planets_poisson)
   add_param_active(sim_param,"log_eta_pl",log(2.0))

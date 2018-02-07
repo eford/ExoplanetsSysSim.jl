@@ -134,5 +134,24 @@ end
 
 end # module StellarTable
 
-using ExoplanetsSysSim.StellarTable
+# using ExoplanetsSysSim.StellarTable
+
+function generate_star_from_table(sim_param::SimParam, id::Integer)
+  mu_r = StellarTable.star_table(id,:radius)
+  sig_r1 = StellarTable.star_table(id,:radius_err1)
+  sig_r2 = StellarTable.star_table(id,:radius_err2)
+  z = randn() 
+  r += (z>0) ?  z*sig_r1 : z*sig_r2
+  m = rand(Normal(r,0.1))::Float64
+  while m<0.0
+    m = rand(Normal(r,0.1))::Float64
+  end
+  f = rand(Normal(1.0,0.1))::Float64
+  while f<0.0
+    f = 1.0+0.1*randn()
+  end
+  # ld = LimbDarkeningParamQuadratic(0.5,0.5)
+  return SingleStar(r,m,f,0)
+end
+
 
