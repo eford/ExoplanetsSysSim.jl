@@ -5,7 +5,7 @@ function setup_sim_param( argv::Vector{String} )               # in principle co
   add_param_fixed(sim_param,"max_tranets_in_sys",7)
   add_param_fixed(sim_param,"num_targets_sim_pass_one",19000)        
   add_param_fixed(sim_param,"num_kepler_targets",19000)             
-  add_param_fixed(sim_param,"star_table_setup",setup_star_table)
+  add_param_fixed(sim_param,"star_table_setup",ExoplanetsSysSim.StellarTable.setup_star_table)
   # Since we're not exporting these simplistic functions, have to include module when specifying them 
   add_param_fixed(sim_param,"generate_star",ExoplanetsSysSim.generate_star_dumb)
   # add_param_fixed(sim_param,"generate_planetary_system", ExoplanetsSysSim.generate_planetary_system_simple)
