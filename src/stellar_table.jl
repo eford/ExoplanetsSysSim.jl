@@ -48,11 +48,11 @@ function setup(filename::String; force_reread::Bool = false)
     error(string("# Failed to read stellar catalog >",filename,"< in ascii format."))
   end
 
-  has_mass = ! (isna(df[:mass]) | isna(df[:mass_err1]) | isna(df[:mass_err2]))
-  has_radius = ! (isna(df[:radius]) | isna(df[:radius_err1]) | isna(df[:radius_err2]))
-  has_dens = ! (isna(df[:dens]) | isna(df[:dens_err1]) | isna(df[:dens_err2]))
-  has_rest = ! (isna(df[:rrmscdpp04p5]) | isna(df[:dataspan]) | isna(df[:dutycycle]))
-  is_usable = has_mass & has_radius & has_dens & has_rest
+  has_mass = .!(isna.(df[:mass]) .| isna.(df[:mass_err1]) .| isna.(df[:mass_err2]))
+  has_radius = .!(isna.(df[:radius]) .| isna.(df[:radius_err1]) .| isna.(df[:radius_err2]))
+  has_dens = .!(isna.(df[:dens]) .| isna.(df[:dens_err1]) .| isna.(df[:dens_err2]))
+  has_rest = .!(isna.(df[:rrmscdpp04p5]) .| isna.(df[:dataspan]) .| isna.(df[:dutycycle]))
+  is_usable = .&(has_mass, has_radius, has_dens, has_rest)
   # See options at: http://exoplanetarchive.ipac.caltech.edu/docs/API_keplerstellar_columns.html
   # TODO SCI DETAIL or IMPORTANT?: Read in all CDPP's, so can interpolate?
   symbols_to_keep = [ :kepid, :mass, :mass_err1, :mass_err2, :radius, :radius_err1, :radius_err2, :dens, :dens_err1, :dens_err2, :rrmscdpp04p5, :dataspan, :dutycycle ]

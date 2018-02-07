@@ -353,7 +353,9 @@ end
 
 ## inverse_detection
 function inv_det_prob(param::SimParam)
-  cat_obs = setup_actual_planet_candidate_catalog(setup_star_table_christiansen(param), param)
+  df_star = setup_star_table_christiansen(param)
+  df_koi,usable_koi = read_koi_catalog(param)
+  cat_obs = setup_actual_planet_candidate_catalog(df_star, df_koi, usable_koi, param)
   inv_det_prob(cat_obs, param)
 end
 

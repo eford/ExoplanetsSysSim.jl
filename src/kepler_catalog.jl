@@ -111,171 +111,109 @@ function simulated_read_kepler_observations(sim_param::SimParam ) # TODO SCI:  I
    return output
 end
 
-# df_star is assumed to have fields kepid, mass and radius for all targets in the survey
-function setup_actual_planet_candidate_catalog(df_star::DataFrame, sim_param::SimParam)
-  local csv_data,kepid_idx,koi_period_idx,koi_time0bk_idx,koi_depth_idx,koi_duration_idx,koi_ror_idx,koi_period_err1_idx,koi_time0bk_err1_idx,koi_depth_err1_idx,koi_duration_err1_idx,koi_period_err2_idx,koi_time0bk_err2_idx,koi_depth_err2_idx,koi_duration_err2_idx 
-  add_param_fixed(sim_param,"num_kepler_targets",StellarTable.num_usable_in_star_table())  # For "observed" catalog
-  koi_catalog_file_in = convert(String,joinpath(Pkg.dir("ExoplanetsSysSim"), "data", convert(String,get(sim_param,"koi_catalog","q1_q17_dr25_koi.csv")) ) )
-
-  if ismatch(r".jld$",koi_catalog_file_in)
-  try 
-    data = load(koi_catalog_file_in)
-    csv_data = data["koi_catalog"]
-
-    kepid_idx = 1
-    koi_period_idx = 2
-    koi_time0bk_idx = 3
-    koi_depth_idx = 4
-    koi_duration_idx = 5
-    koi_ror_idx = 6
-    koi_period_err1_idx = 7
-    koi_time0bk_err1_idx = 8
-    koi_depth_err1_idx = 9
-    koi_duration_err1_idx = 10
-    koi_period_err2_idx = 11
-    koi_time0bk_err2_idx = 12
-    koi_depth_err2_idx = 13
-    koi_duration_err2_idx = 14
-  catch
-    error(string("# Failed to read koi catalog >",koi_catalog_file_in,"< in jld format."))
-  end
-  else
-  try 
-    (csv_data,csv_header) = readcsv(koi_catalog_file_in,header=true)
-  
-    # Lookup header columns, since DataFrames doesn't like this file
-    kepid_idx = findfirst(x->x=="kepid",csv_header)
-    koi_period_idx = findfirst(x->x=="koi_period",csv_header)
-    koi_time0bk_idx = findfirst(x->x=="koi_time0bk",csv_header)
-    koi_depth_idx = findfirst(x->x=="koi_depth",csv_header)
-    koi_duration_idx = findfirst(x->x=="koi_duration",csv_header)
-    koi_ror_idx = findfirst(x->x=="koi_ror",csv_header)
-    koi_period_err1_idx = findfirst(x->x=="koi_period_err1",csv_header)
-    koi_time0bk_err1_idx = findfirst(x->x=="koi_time0bk_err1",csv_header)
-    koi_depth_err1_idx = findfirst(x->x=="koi_depth_err1",csv_header)
-    koi_duration_err1_idx = findfirst(x->x=="koi_duration_err1",csv_header)
-    koi_period_err2_idx = findfirst(x->x=="koi_period_err2",csv_header)
-    koi_time0bk_err2_idx = findfirst(x->x=="koi_time0bk_err2",csv_header)
-    koi_depth_err2_idx = findfirst(x->x=="koi_depth_err2",csv_header)
-    koi_duration_err2_idx = findfirst(x->x=="koi_duration_err2",csv_header)
-    koi_disposition_idx = findfirst(x->x=="koi_disposition",csv_header)
-    koi_pdisposition_idx = findfirst(x->x=="koi_pdisposition",csv_header)
-    # Choose which KOIs to keep
-    #is_cand = (csv_data[:,koi_disposition_idx] .== "CONFIRMED") | (csv_data[:,koi_disposition_idx] .== "CANDIDATE")
-    is_cand = (csv_data[:,koi_pdisposition_idx] .== "CANDIDATE")
-  
-    idx_keep = is_cand .& .!isna.(csv_data[:,koi_ror_idx]) .& ([typeof(x) for x in csv_data[:,koi_ror_idx]] .== Float64)
-    idx_keep = idx_keep .& .!isna.(csv_data[:,koi_period_err1_idx]) .& ([typeof(x) for x in csv_data[:,koi_period_err1_idx]] .== Float64) # DR25 catalog missing uncertainties for some candidates
-    csv_data = csv_data[idx_keep,:]
-  catch
-    error(string("# Failed to read koi catalog >",koi_catalog_file_in,"< in ascii format."))
-  end
-  end
-
-  output = KeplerObsCatalog([])
-
-  for (j,kepid) in enumerate(df_star[:kepid])
-     plids = find(x->x==kepid,csv_data[:,kepid_idx])
-	 num_pl = length(plids)
-	 if num_pl ==0 continue end
-	 target_obs = KeplerTargetObs(num_pl)
-	 target_obs.star = ExoplanetsSysSim.StarObs(df_star[j,:radius],df_star[j,:mass])
-	 for (plid,i) in enumerate(plids)
-	   target_obs.obs[plid] = ExoplanetsSysSim.TransitPlanetObs(csv_data[i,koi_period_idx],csv_data[i,koi_time0bk_idx],csv_data[i,koi_depth_idx]/1.0e6,csv_data[i,koi_duration_idx])
-           target_obs.sigma[plid] = ExoplanetsSysSim.TransitPlanetObs((abs(csv_data[i,koi_period_err1_idx])+abs(csv_data[i,koi_period_err2_idx]))/2,(abs(csv_data[i,koi_time0bk_err1_idx])+abs(csv_data[i,koi_time0bk_err2_idx]))/2,(abs(csv_data[i,koi_depth_err1_idx]/1.0e6)+abs(csv_data[i,koi_depth_err2_idx]/1.0e6))/2,(abs(csv_data[i,koi_duration_err1_idx])+abs(csv_data[i,koi_duration_err2_idx]))/2)
-	   #target_obs.prob_detect = ExoplanetsSysSim.SimulatedSystemDetectionProbs{OneObserver}( ones(num_pl), ones(num_pl,num_pl), ones(num_pl), fill(Array{Int64}(0), 1) )  # Made line below to simplify calling
-           target_obs.prob_detect = ExoplanetsSysSim.OneObserverSystemDetectionProbs(num_pl)
-	 end	
-      push!(output.target,target_obs)
-  end
-  return output
+function read_koi_catalog(sim_param::SimParam, force_reread::Bool = false)
+    filename = convert(String,joinpath(Pkg.dir("ExoplanetsSysSim"), "data", convert(String,get(sim_param,"koi_catalog","q1_q17_dr25_koi.csv")) ) )
+    return read_koi_catalog(filename, force_reread)
 end
 
-function setup_actual_planet_candidate_catalog_csv(df_star::DataFrame, sim_param::SimParam)
-  add_param_fixed(sim_param,"num_kepler_targets",StellarTable.num_usable_in_star_table())  # For "observed" catalog
-  koi_catalog_file_in = convert(String,joinpath(Pkg.dir("ExoplanetsSysSim"), "data", convert(String,get(sim_param,"koi_catalog","q1_q17_dr25_koi.csv")) ) )
-  (csv_data,csv_header) = readcsv(koi_catalog_file_in,header=true)
-
-  # Lookup header columns, since DataFrames doesn't like this file
-  kepid_idx = findfirst(x->x=="kepid",csv_header)
-  koi_period_idx = findfirst(x->x=="koi_period",csv_header)
-  koi_time0bk_idx = findfirst(x->x=="koi_time0bk",csv_header)
-  koi_depth_idx = findfirst(x->x=="koi_depth",csv_header)
-  koi_duration_idx = findfirst(x->x=="koi_duration",csv_header)
-  koi_ror_idx = findfirst(x->x=="koi_ror",csv_header)
-  koi_period_err1_idx = findfirst(x->x=="koi_period_err1",csv_header)
-  koi_time0bk_err1_idx = findfirst(x->x=="koi_time0bk_err1",csv_header)
-  koi_depth_err1_idx = findfirst(x->x=="koi_depth_err1",csv_header)
-  koi_duration_err1_idx = findfirst(x->x=="koi_duration_err1",csv_header)
-  koi_period_err2_idx = findfirst(x->x=="koi_period_err2",csv_header)
-  koi_time0bk_err2_idx = findfirst(x->x=="koi_time0bk_err2",csv_header)
-  koi_depth_err2_idx = findfirst(x->x=="koi_depth_err2",csv_header)
-  koi_duration_err2_idx = findfirst(x->x=="koi_duration_err2",csv_header)
-  koi_disposition_idx = findfirst(x->x=="koi_disposition",csv_header)
-  koi_pdisposition_idx = findfirst(x->x=="koi_pdisposition",csv_header)
-
-  # TODO:  Let's move this subset selection code to a separate function, so we don't have so much duplicate code in this and previous function
-  koi_subset = fill(false, length(csv_data[:,kepid_idx]))
-
-  if haskey(sim_param, "koi_subset_csv")
-    subset_df = readtable(convert(String,get(sim_param,"koi_subset_csv", "christiansen_kov.csv")), header=true, separator=' ')
-
-    col_idx = findfirst(x->x==string(names(subset_df)[1]),csv_header)
-    for n in 1:length(subset_df[:,1])
-      subset_colnum = 1
-      subset_entry = find(x->x==subset_df[n,1], csv_data[:,col_idx])
-      # println("Initial cut: ", subset_entry)
-      while (length(subset_entry) > 1) & (subset_colnum < length(names(subset_df)))
-        subset_colnum += 1
-        col_idx = findfirst(x->x==string(names(subset_df)[subset_colnum]),csv_header)
-        subsubset = find(x->round(x*10.)==round(subset_df[n,subset_colnum]*10.), csv_data[subset_entry,col_idx])
-	# println("Extra cut: ", subset_df[n,subset_colnum], " / ", csv_data[subset_entry,col_idx], " = ", subsubset)
-	subset_entry = subset_entry[subsubset]
-      end
-      if subset_colnum > 1
- 	col_idx = findfirst(x->x==string(names(subset_df)[1]),csv_header)
-      end
-      if length(subset_entry) > 1
-	cand_sub = find(x->x == "CANDIDATE",csv_data[subset_entry,koi_pdisposition_idx])
-	subset_entry = subset_entry[cand_sub]
-	if length(subset_entry) > 1
-          println("Multiple planets found in final cut: ", subset_df[n,1])
+function read_koi_catalog(filename::String, force_reread::Bool = false)
+    local df, usable
+    
+    if ismatch(r".jld$",filename) && !force_reread
+        try 
+            data = load(filename)
+            df = data["koi_catalog"]
+            usable = data["koi_catalog_usable"]
+            Core.typeassert(df,DataFrame)
+            Core.typeassert(usable,Array{Int64,1})
+        catch
+            error(string("# Failed to read koi catalog >",koi_catalog_file_in,"< in jld format."))
         end
-      end
-      if length(subset_entry) < 1
-        println("No planets found in final cut: ", subset_df[n,:])
-      end
-      koi_subset[subset_entry] = true
+    else
+        try
+            tmp_koi_cat = readlines(filename)
+            tmp_ind = 1
+            num_skip = 0
+            while tmp_koi_cat[tmp_ind][1] == '#'
+                num_skip += 1
+                tmp_ind += 1
+            end
+
+            df = readtable(filename, skipstart=num_skip)
+
+            # Choose which KOIs to keep
+            #is_cand = (csv_data[:,koi_disposition_idx] .== "CONFIRMED") | (csv_data[:,koi_disposition_idx] .== "CANDIDATE")
+            is_cand = df[:koi_pdisposition] .== "CANDIDATE"
+            has_radius = .!isna.(df[:koi_ror])
+            has_period = .!(isna.(df[:koi_period]) .| isna.(df[:koi_period_err1]) .| isna.(df[:koi_period_err2]))
+
+            is_usable = .&(is_cand, has_radius, has_period)
+            usable = find(is_usable)
+        catch
+            error(string("# Failed to read koi catalog >",koi_catalog_file_in,"< in ascii format."))
+        end
     end
-  else
-    println("No KOI csv file given!")
-    koi_subset = fill(true, length(csv_data[:,kepid_idx]))
-  end
-
-  csv_data = csv_data[koi_subset,:]
- 
-  output = KeplerObsCatalog([])
-
-  tot_plan = count(x->x, koi_subset)
-  for (j,kepid) in enumerate(df_star[:kepid])
-     plids = find(x->x==kepid,csv_data[:,kepid_idx])
-     num_pl = length(plids)
-     tot_plan = tot_plan - num_pl
-     if num_pl ==0 continue end
-     target_obs = KeplerTargetObs(num_pl)
-     target_obs.star = ExoplanetsSysSim.StarObs(df_star[j,:radius],df_star[j,:mass])
-     for (plid,i) in enumerate(plids)
-       target_obs.obs[plid] = ExoplanetsSysSim.TransitPlanetObs(csv_data[i,koi_period_idx],csv_data[i,koi_time0bk_idx],csv_data[i,koi_depth_idx]/1.0e6,csv_data[i,koi_duration_idx])
-       target_obs.sigma[plid] = ExoplanetsSysSim.TransitPlanetObs((abs(csv_data[i,koi_period_err1_idx])+abs(csv_data[i,koi_period_err2_idx]))/2,(abs(csv_data[i,koi_time0bk_err1_idx])+abs(csv_data[i,koi_time0bk_err2_idx]))/2,(abs(csv_data[i,koi_depth_err1_idx]/1.0e6)+abs(csv_data[i,koi_depth_err2_idx]/1.0e6))/2,(abs(csv_data[i,koi_duration_err1_idx])+abs(csv_data[i,koi_duration_err2_idx]))/2)
-       target_obs.prob_detect = ExoplanetsSysSim.SimulatedSystemDetectionProbs{OneObserver}( ones(num_pl), ones(num_pl,num_pl), ones(num_pl), fill(Array{Int64}(0), 1) )
-       #target_obs.prob_detect = ExoplanetsSysSim.OneObserverSystemDetectionProbs(num_pl)
-     end
-     push!(output.target,target_obs)
-  end
-  println("Number of planet candidates with no matching star in table: ", tot_plan)
-  return output
+    return df, usable
 end
 
+# df_star is assumed to have fields kepid, mass and radius for all targets in the survey
+function setup_actual_planet_candidate_catalog(df_star::DataFrame, df_koi::DataFrame, usable_koi::Array{Int64}, sim_param::SimParam)
+    df_koi = df_koi[usable_koi,:]
+    
+    if haskey(sim_param, "koi_subset_csv")
+        koi_subset = fill(false, length(df_koi[:kepid]))
+        
+        subset_df = readtable(convert(String,get(sim_param,"koi_subset_csv", "christiansen_kov.csv")), header=true, separator=' ')
+        
+        for n in 1:length(subset_df[:,1])
+            subset_colnum = 1
+            subset_entry = find(x->x==subset_df[n,1], df_koi[names(subset_df)[1]])
+            # println("Initial cut: ", subset_entry)
+            while (length(subset_entry) > 1) & (subset_colnum < length(names(subset_df)))
+                subset_colnum += 1
+                
+                subsubset = find(x->round(x*10.)==round(subset_df[n,subset_colnum]*10.), df_koi[subset_entry,names(subset_df)[subset_colnum]])
+	        # println("Extra cut: ", subset_df[n,subset_colnum], " / ", df_koi[subset_entry,col_idx], " = ", subsubset)
+	        subset_entry = subset_entry[subsubset]
+            end
+            if length(subset_entry) > 1
+	        cand_sub = find(x->x == "CANDIDATE",df_koi[subset_entry,:koi_pdisposition])
+	        subset_entry = subset_entry[cand_sub]
+	        if length(subset_entry) > 1
+                    println("Multiple planets found in final cut: ", subset_df[n,1])
+                end
+            end
+            if length(subset_entry) < 1
+                println("No planets found in final cut: ", subset_df[n,:])
+            end
+            koi_subset[subset_entry] = true
+        end
+        df_koi = df_koi[find(koi_subset),:]
+        tot_plan = count(x->x, koi_subset)
+    end
+    
+    output = KeplerObsCatalog([])
+    
+    for (j,kepid) in enumerate(df_star[:kepid])
+        plids = find(x->x==kepid,df_koi[:kepid])
+	num_pl = length(plids)
+	if num_pl ==0 continue end
+        if haskey(sim_param, "koi_subset_csv") tot_plan -= num_pl end
+	target_obs = KeplerTargetObs(num_pl)
+	target_obs.star = ExoplanetsSysSim.StarObs(df_star[j,:radius],df_star[j,:mass])
+	for (plid,i) in enumerate(plids)
+	    target_obs.obs[plid] = ExoplanetsSysSim.TransitPlanetObs(df_koi[i,:koi_period],df_koi[i,:koi_time0bk],df_koi[i,:koi_depth]/1.0e6,df_koi[i,:koi_duration])
+            target_obs.sigma[plid] = ExoplanetsSysSim.TransitPlanetObs((abs(df_koi[i,:koi_period_err1])+abs(df_koi[i,:koi_period_err2]))/2,(abs(df_koi[i,:koi_time0bk_err1])+abs(df_koi[i,:koi_time0bk_err2]))/2,(abs(df_koi[i,:koi_depth_err1]/1.0e6)+abs(df_koi[i,:koi_depth_err2]/1.0e6))/2,(abs(df_koi[i,:koi_duration_err1])+abs(df_koi[i,:koi_duration_err2]))/2)
+	    #target_obs.prob_detect = ExoplanetsSysSim.SimulatedSystemDetectionProbs{OneObserver}( ones(num_pl), ones(num_pl,num_pl), ones(num_pl), fill(Array{Int64}(0), 1) )  # Made line below to simplify calling
+            target_obs.prob_detect = ExoplanetsSysSim.OneObserverSystemDetectionProbs(num_pl)
+	end	
+        push!(output.target,target_obs)
+    end
+    if haskey(sim_param, "koi_subset_csv")
+        println("Number of planet candidates in subset file with no matching star in table: ", tot_plan)
+    end
+    return output
+end
 
 # Two functions below were just for debugging purposes
 function calc_snr_list(cat::KeplerPhysicalCatalog, sim_param::SimParam)

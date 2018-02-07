@@ -73,7 +73,9 @@ end
 #takes an array of Sim Params and returns summary statistics for each. It will also take one Sim Param and make summary statistics for the true Kepler Catalog
 function setup_sum_stats(sim_arr::Array{Any,1}, sim_true::ExoplanetsSysSim.SimParam)
   setup_MES()
-  cat_true = setup_actual_planet_candidate_catalog(setup_star_table_christiansen(sim_true), sim_true)
+  df_star = setup_star_table_christiansen(sim_true)
+  df_koi,usable_koi = read_koi_catalog(sim_true)
+  cat_true = setup_actual_planet_candidate_catalog(df_star, df_koi, usable_koi, sim_true)
   ss_true = calc_sum_stats_pr(cat_true, sim_true, true)
   ss_arr = Array{Any}(length(sim_arr))
   for i in 1:length(sim_arr)
