@@ -13,7 +13,7 @@ function setup_sim_param_christiansen(args::Vector{String} = Array{String}(0) ) 
   
   set_inactive(sim_param,["log_eta_pl","power_law_P","power_law_r"])
   add_param_fixed(sim_param,"star_table_setup",setup_star_table_christiansen)
-  add_param_fixed(sim_param,"stellar_catalog","q1_q17_christiansen.jld")
+  add_param_fixed(sim_param,"stellar_catalog","q1_q16_christiansen.jld")
   add_param_fixed(sim_param,"generate_num_planets",generate_num_planets_christiansen)
   add_param_fixed(sim_param,"generate_period_and_sizes", generate_period_and_sizes_christiansen)
   add_param_fixed(sim_param,"num_targets_sim_pass_one",150000)  # For faster simulated catalogs
@@ -84,7 +84,7 @@ function setup_christiansen(sim_param::SimParam; force_reread::Bool = false)
   stellar_catalog_filename = convert(String,joinpath(Pkg.dir("ExoplanetsSysSim"), "data", convert(String,get(sim_param,"stellar_catalog","q1_q17_dr25_stellar.csv")) ) )
   df = setup_christiansen(stellar_catalog_filename)
   add_param_fixed(sim_param,"read_stellar_catalog",true)
-  set_star_table(df)
+  StellarTable.set_star_table(df)
   return df  
 end
 
@@ -97,7 +97,7 @@ function setup_christiansen(filename::String; force_reread::Bool = false)
     data = load(filename)
     df::DataFrame = data["stellar_catalog"]
     usable::Array{Int64,1} = data["stellar_catalog_usable"]
-    set_star_table(df, usable)
+    StellarTable.set_star_table(df, usable)
   catch
     error(string("# Failed to read stellar catalog >",filename,"< in jld format."))
   end
