@@ -112,8 +112,12 @@ function simulated_read_kepler_observations(sim_param::SimParam ) # TODO SCI:  I
 end
 
 function read_koi_catalog(sim_param::SimParam, force_reread::Bool = false)
-    local df, usable
     filename = convert(String,joinpath(Pkg.dir("ExoplanetsSysSim"), "data", convert(String,get(sim_param,"koi_catalog","q1_q17_dr25_koi.csv")) ) )
+    return read_koi_catalog(filename, force_reread)
+end
+
+function read_koi_catalog(filename::String, force_reread::Bool = false)
+    local df, usable
     
     if ismatch(r".jld$",filename) && !force_reread
         try 
