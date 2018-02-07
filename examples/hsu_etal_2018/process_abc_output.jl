@@ -6,7 +6,7 @@
 
 using PyPlot
 using ExoplanetsSysSim
-include(joinpath(Pkg.dir(), "processabcoutput", "src", "constants.jl"))
+include(joinpath(Pkg.dir(), "ExoplanetsSysSim", "src", "constants.jl"))
 
 #sends the output into two plotting functions
 function make_plots(output::ABC.abc_population_type, ss_true::ExoplanetsSysSim.CatalogSummaryStatistics, run::Int64 = 1) #run indicates how many times abc_run_christiansen.jl has generated an output in the event that there are multiple outputs. 

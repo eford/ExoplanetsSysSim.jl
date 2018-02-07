@@ -13,9 +13,9 @@ using ExoplanetsSysSim
 using Combinatorics
 
 include(joinpath(Pkg.dir(),"ExoplanetsSysSim","src","constants.jl"))
-include(joinpath(Pkg.dir(),"ExoplanetsSysSim","examples","hsu_etal_2017", "abc_setup_christiansen.jl"))
-include(joinpath(Pkg.dir(),"ExoplanetsSysSim","examples","hsu_etal_2017", "christiansen_func.jl"))
-include(joinpath(Pkg.dir(),"ExoplanetsSysSim","examples","hsu_etal_2017", "calc_sum_stats_pr.jl"))
+include(joinpath(Pkg.dir(),"ExoplanetsSysSim","examples","hsu_etal_2018", "abc_setup_christiansen.jl"))
+include(joinpath(Pkg.dir(),"ExoplanetsSysSim","examples","hsu_etal_2018", "christiansen_func.jl"))
+include(joinpath(Pkg.dir(),"ExoplanetsSysSim","examples","hsu_etal_2018", "calc_sum_stats_pr.jl"))
 
 #see general file definition at the top for a description of this function's purpose.
 function sim_param_plots(have_sim_params::Bool; sim_arr::Array{Any,1} = [], num_param::Int64 = 0, print_rates=false) 	#if the user already has SimParams to put in, the first input will be true and the second will be an array (even if there's only one) of your SimParams. If you don't already have one, put false as your first input, and how many SimParams you'd like to generate. If you want to see the ratios of observed to kepler planets in all the bins, set print_rates=true) 
