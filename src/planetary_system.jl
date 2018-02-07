@@ -133,7 +133,7 @@ function generate_period_and_sizes_log_normal(s::Star, sim_param::SimParam; num_
 end
 
 function draw_power_law(n::Real, x0::Real, x1::Real, num_pl::Integer)
-     ((x1^(n+1) - x0^(n+1))*rand(num_pl) + x0^(n+1)).^(1/(n+1))
+     ((x1^(n+1) - x0^(n+1)).*rand(num_pl) .+ x0^(n+1)).^(1/(n+1))
 end
 
 function generate_periods_power_law(s::Star, sim_param::SimParam; num_pl::Integer = 1) 

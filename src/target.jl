@@ -84,7 +84,7 @@ end
 
 function test_target(sim_param::SimParam)
   generate_kepler_target_simple(sim_param)
-  setup_star_table(sim_param)
+  StellarTable.setup_star_table(sim_param)
   generate_kepler_target_from_table(sim_param)
 end
 

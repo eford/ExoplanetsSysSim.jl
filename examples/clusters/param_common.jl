@@ -1,8 +1,7 @@
 if !isdefined(:ExoplanetsSysSim) using ExoplanetsSysSim end 
-import Compat: UTF8String, ASCIIString
 
 ## simulation_parameters
-function setup_sim_param_model(args::Vector{ASCIIString} = Array{ASCIIString}(0) )   # allow this to take a list of parameter (e.g., from command line)
+function setup_sim_param_model(args::Vector{String} = Array{String}(0) )   # allow this to take a list of parameter (e.g., from command line)
   sim_param = SimParam()
   # How many tatrges to generate
   #add_param_fixed(sim_param,"num_targets_sim_pass_one",150969)                      # Note this is used for the number of stars in the simulations, not necessarily related to number of Kepler targets

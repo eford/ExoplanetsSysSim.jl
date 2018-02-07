@@ -21,6 +21,7 @@ module EvalModel
 
   function profile_model_eval(n::Integer)
     global sim_param_closure = setup_sim_param_demo()
+    add_param_fixed(sim_param_closure,"eta_pl",0.3)
     global cat_phys_try_closure = generate_kepler_physical_catalog(sim_param_closure)
     global cat_obs_try_closure = observe_kepler_targets_single_obs(cat_phys_try_closure,sim_param_closure)
     global summary_stat_ref_closure = calc_summary_stats_obs_demo(cat_obs_try_closure,sim_param_closure)
@@ -39,6 +40,9 @@ module EvalModel
     eta_max = 2.0*get_real(sim_param_closure,"eta_pl")
     #gc(); if VERSION >= VersionNumber(0,4,0)     gc_enable(false);   else     gc_disable();   end
     tic()
+    println("# eta_min = ", eta_min)
+    println("# eta_max = ", eta_max)
+    println("# enum = ", enumerate(linspace(eta_min,eta_max,n) ))
     for (i,eta) in enumerate(linspace(eta_min,eta_max,n) )
       local dist
       if i==2
