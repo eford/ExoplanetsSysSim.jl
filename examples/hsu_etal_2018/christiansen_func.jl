@@ -108,10 +108,10 @@ function setup_christiansen(filename::String; force_reread::Bool = false)
     error(string("# Failed to read stellar catalog >",filename,"< in ascii format."))
   end
 
-  has_mass = ! (isna.(df[:mass]) | isna.(df[:mass_err1]) | isna.(df[:mass_err2]))
-  has_radius = ! (isna.(df[:radius]) | isna.(df[:radius_err1]) | isna.(df[:radius_err2]))
-  has_dens = ! (isna.(df[:dens]) | isna.(df[:dens_err1]) | isna.(df[:dens_err2]))
-  has_rest = ! (isna.(df[:rrmscdpp04p5]) | isna.(df[:dataspan]) | isna.(df[:dutycycle]))
+  has_mass = .!(isna.(df[:mass]) .| isna.(df[:mass_err1]) .| isna.(df[:mass_err2]))
+  has_radius = .!(isna.(df[:radius]) .| isna.(df[:radius_err1]) .| isna.(df[:radius_err2]))
+  has_dens = .!(isna.(df[:dens]) .| isna.(df[:dens_err1]) .| isna.(df[:dens_err2]))
+  has_rest = .!(isna.(df[:rrmscdpp04p5]) .| isna.(df[:dataspan]) .| isna.(df[:dutycycle]))
   in_Q1Q12 = []
   for x in df[:st_quarters]
     subx = string(x)
@@ -131,9 +131,9 @@ function setup_christiansen(filename::String; force_reread::Bool = false)
       push!(is_FGK, false)
     end
   end
-  is_usable = has_radius & is_FGK & has_mass & has_rest #& in_Q1Q12 # & has_dens
+  is_usable = .&(has_radius, is_FGK, has_mass, has_rest) #& in_Q1Q12 # & has_dens
   if contains(filename,"q1_q16_stellar.csv")
-    is_usable = is_usable & in_Q1Q12
+    is_usable = .&(is_usable, in_Q1Q12)
   end
   # See options at: http://exoplanetarchive.ipac.caltech.edu/docs/API_keplerstellar_columns.html
   # TODO SCI DETAIL or IMPORTANT?: Read in all CDPP's, so can interpolate?
@@ -353,7 +353,9 @@ end
 
 ## inverse_detection
 function inv_det_prob(param::SimParam)
-  cat_obs = setup_actual_planet_candidate_catalog(setup_star_table_christiansen(param), param)
+  df_star = setup_star_table_christiansen(param)
+  df_koi,usable_koi = read_koi_catalog(param)
+  cat_obs = setup_actual_planet_candidate_catalog(df_star, df_koi, usable_koi, param)
   inv_det_prob(cat_obs, param)
 end
 
