@@ -154,4 +154,8 @@ function generate_star_from_table(sim_param::SimParam, id::Integer)
   return SingleStar(r,m,f,0)
 end
 
+function generate_star_from_table(sim_param::SimParam)
+  id = rand(1:StellarTable.num_usable_in_star_table())
+  generate_star_from_table(sim_param, id)
+end
 

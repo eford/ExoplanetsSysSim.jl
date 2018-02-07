@@ -24,8 +24,8 @@ flux(t::KeplerTarget) = sum(flux,t.sys)+t.contam
 
 
 function draw_asymmetric_normal(mu::Real, sig_plus::Real, sig_minus::Real)
-  stdn = rand()
-  mu + ( (stdn>=0.0) ? sig_plus*stdn : sig_minus*stdn )
+  stdn = randn()
+  mu + ( (stdn>=zero(stdn)) ? sig_plus*stdn : sig_minus*stdn )
 end
 
 function generate_kepler_target_from_table(sim_param::SimParam)  
