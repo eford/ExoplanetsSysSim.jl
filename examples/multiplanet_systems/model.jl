@@ -171,7 +171,7 @@ function setup_star_table_christiansen(sim_param::SimParam; force_reread::Bool =
   stellar_catalog_filename = convert(String,joinpath(Pkg.dir("ExoplanetsSysSim"), "data", convert(String,get(sim_param,"stellar_catalog","q1_q17_dr25_stellar.csv")) ) )
   df = setup_star_table_christiansen(stellar_catalog_filename)
   add_param_fixed(sim_param,"read_stellar_catalog",true)
-  set_star_table(df)
+  ExoplanetsSysSim.StellarTable.set_star_table(df)
   return df  
 end
 
@@ -184,7 +184,7 @@ function setup_star_table_christiansen(filename::String; force_reread::Bool = fa
     data = load(filename)
     df::DataFrame = data["stellar_catalog"]
     usable::Array{Int64,1} = data["stellar_catalog_usable"]
-    set_star_table(df, usable)
+    ExoplanetsSysSim.StellarTable.set_star_table(df, usable)
   catch
     error(string("# Failed to read stellar catalog >",filename,"< in jld format."))
   end

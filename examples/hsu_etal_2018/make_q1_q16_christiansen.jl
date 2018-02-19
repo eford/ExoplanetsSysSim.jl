@@ -1,7 +1,7 @@
 using ExoplanetsSysSim
 using HDF5, JLD
 
-include("christiansen_func.jl")
+include(joinpath(Pkg.dir(),"ExoplanetsSysSim","examples","hsu_etal_2018", "christiansen_func.jl"))
 
 stellar_catalog_file_in = joinpath(Pkg.dir("ExoplanetsSysSim"), "data", "q1_q16_stellar.csv")
 stellar_catalog_file_out = joinpath(Pkg.dir("ExoplanetsSysSim"), "data", "q1_q16_christiansen.jld")

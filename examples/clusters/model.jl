@@ -96,10 +96,10 @@ function generate_planet_periods_sizes_masses_in_cluster( star::StarAbstract, si
    const sigma_log_radius_in_cluster = get_real(sim_param,"sigma_log_radius_in_cluster")
    #println("# mean_R = ",mean_R," sigma_log_radius_in_cluster= ",sigma_log_radius_in_cluster)
 
-   R = ExoplanetsSysSim.generate_sizes_power_law(star,sim_param, num_pl=n) # if want non-clustered planet sizes 
-   #const min_radius::Float64 = get_real(sim_param,"min_radius")
-   #const max_radius::Float64 = get_real(sim_param,"max_radius")
-   #Rdist = Truncated(LogNormal(log(mean_R),sigma_log_radius_in_cluster),min_radius,max_radius) # if we want clustered planet sizes
+   #R = ExoplanetsSysSim.generate_sizes_power_law(star,sim_param, num_pl=n) # if want non-clustered planet sizes 
+   const min_radius::Float64 = get_real(sim_param,"min_radius")
+   const max_radius::Float64 = get_real(sim_param,"max_radius")
+   Rdist = Truncated(LogNormal(log(mean_R),sigma_log_radius_in_cluster),min_radius,max_radius) # if we want clustered planet sizes
    R = rand(Rdist,n)
 
    #println("# Rp = ", R)
