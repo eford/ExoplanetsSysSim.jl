@@ -87,6 +87,7 @@ module EvalSysSimModel
     ### Use real planet candidate catalog data
     add_param_fixed(sim_param_closure,"koi_catalog","q1_q16_koi_cand.csv")
     df_star = setup_star_table_christiansen(sim_param_closure)
+    add_param_fixed(sim_param_closure,"num_kepler_targets",ExoplanetsSysSim.StellarTable.num_usable_in_star_table())  
     println("Finished reading in stellar data")
     df_koi,usable_koi = read_koi_catalog(sim_param_closure)
     println("Finished reading in KOI data")  

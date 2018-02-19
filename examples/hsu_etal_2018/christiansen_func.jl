@@ -131,7 +131,7 @@ function setup_christiansen(filename::String; force_reread::Bool = false)
       push!(is_FGK, false)
     end
   end
-  is_usable = has_radius .& is_FGK .& has_mass .& has_rest #& in_Q1Q12 # & has_dens
+  is_usable = has_radius .& is_FGK .& has_mass .& has_rest .& has_dens
   if contains(filename,"q1_q16_stellar.csv")
     is_usable = is_usable .& in_Q1Q12
   end
