@@ -84,6 +84,7 @@ function setup_christiansen(sim_param::SimParam; force_reread::Bool = false)
   stellar_catalog_filename = convert(String,joinpath(Pkg.dir("ExoplanetsSysSim"), "data", convert(String,get(sim_param,"stellar_catalog","q1_q17_dr25_stellar.csv")) ) )
   df = setup_christiansen(stellar_catalog_filename)
   add_param_fixed(sim_param,"read_stellar_catalog",true)
+  add_param_fixed(sim_param,"num_kepler_targets",StellarTable.num_usable_in_star_table())
   StellarTable.set_star_table(df)
   return df  
 end

@@ -1,7 +1,7 @@
 using ExoplanetsSysSim
 
 function set_test_param(sim_param_closure::SimParam)
-    add_param_fixed(sim_param_closure,"num_targets_sim_pass_one",150969)  # For faster simulated catalogs
+    add_param_fixed(sim_param_closure,"num_targets_sim_pass_one",150518)  # For faster simulated catalogs
 
     p_lim_arr_num = [237., 320.]
     r_lim_arr_num = [1.0, 1.5]
