@@ -2,14 +2,15 @@
 The package is still considered experimental, while we work to implement a generic framework.
 
 # How to get started:
-* Create github.com account, and (until it's made public) get permission to access this repository
-* Make sure you have julia and git installed, and an ssh key
-* Person Icon (upper right), Settings, SSH & GPG keys, New SSH Key.  Entry a name in the title box and paste the contents of `cat ~/.ssh/id_rsa.pub` into the "Key" box. Add SSH Key.  
-* Install this repo as a package and it's non-standard dependencies (ABC, CORBITS)
+* Make sure you have julia and git installed.
+* If you want to use ssh keys instead of https authentication, then:
+  * setup a local ssh key
+  * Tell Github about your ssh key:  Person Icon (upper right), Settings, SSH & GPG keys, New SSH Key.  Entry a name in the title box and paste the contents of `cat ~/.ssh/id_rsa.pub` into the "Key" box. Add SSH Key.  
+* Install the ExoplanetsSysSim repo as a Julia package using the following julia command.  The setup script below will attempt to install two related packages (ABC, CORBITS) that are often used in combination with ExoplanetsSysSim.
 ```
 #!julia
 
-   julia
+   #julia
    Pkg.clone("git@github.com:eford/ExoplanetsSysSim.jl.git")
    include(joinpath(Pkg.dir(),"ExoplanetsSysSim/src/setup.jl"))   
 
@@ -21,7 +22,7 @@ The package is still considered experimental, while we work to implement a gener
 #!julia
 
    using ExoplanetsSysSim
-   include(joinpath(Pkg.dir(),"exoplanetssyssim/examples/basic/test.jl"))   
+   include(joinpath(Pkg.dir(),"ExoplanetsSysSim/examples/basic/test.jl"))   
 ```
 * Run some simple "applications" (after exiting out of Julia and going to 
 ~/.julia/v0.6/ExoplanetsSysSim (or the similar appropriate path).
