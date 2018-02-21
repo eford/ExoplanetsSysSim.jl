@@ -158,6 +158,7 @@ end
 
 # df_star is assumed to have fields kepid, mass and radius for all targets in the survey
 function setup_actual_planet_candidate_catalog(df_star::DataFrame, df_koi::DataFrame, usable_koi::Array{Int64}, sim_param::SimParam)
+    local target_obs, num_pl
     df_koi = df_koi[usable_koi,:]
     
     if haskey(sim_param, "koi_subset_csv")
@@ -193,25 +194,35 @@ function setup_actual_planet_candidate_catalog(df_star::DataFrame, df_koi::DataF
     end
     
     output = KeplerObsCatalog([])
-    
-    for (j,kepid) in enumerate(df_star[:kepid])
-        plids = find(x->x==kepid,df_koi[:kepid])
-	num_pl = length(plids)
-	if num_pl ==0 continue end
-        if haskey(sim_param, "koi_subset_csv") tot_plan -= num_pl end
-	target_obs = KeplerTargetObs(num_pl)
-	target_obs.star = ExoplanetsSysSim.StarObs(df_star[j,:radius],df_star[j,:mass])
-	for (plid,i) in enumerate(plids)
-	    target_obs.obs[plid] = ExoplanetsSysSim.TransitPlanetObs(df_koi[i,:koi_period],df_koi[i,:koi_time0bk],df_koi[i,:koi_depth]/1.0e6,df_koi[i,:koi_duration])
-            target_obs.sigma[plid] = ExoplanetsSysSim.TransitPlanetObs((abs(df_koi[i,:koi_period_err1])+abs(df_koi[i,:koi_period_err2]))/2,(abs(df_koi[i,:koi_time0bk_err1])+abs(df_koi[i,:koi_time0bk_err2]))/2,(abs(df_koi[i,:koi_depth_err1]/1.0e6)+abs(df_koi[i,:koi_depth_err2]/1.0e6))/2,(abs(df_koi[i,:koi_duration_err1])+abs(df_koi[i,:koi_duration_err2]))/2)
-	    #target_obs.prob_detect = ExoplanetsSysSim.SimulatedSystemDetectionProbs{OneObserver}( ones(num_pl), ones(num_pl,num_pl), ones(num_pl), fill(Array{Int64}(0), 1) )  # Made line below to simplify calling
-            target_obs.prob_detect = ExoplanetsSysSim.OneObserverSystemDetectionProbs(num_pl)
-	end	
-        push!(output.target,target_obs)
-    end
+    df_obs = join(df_star, df_koi, on = :kepid)
+    df_obs = sort!(df_obs, cols=(:kepid))
+
     if haskey(sim_param, "koi_subset_csv")
+        tot_plan -= length(df_obs[:kepoi_name])
         println("Number of planet candidates in subset file with no matching star in table: ", tot_plan)
     end
+
+    plid = 0
+    for i in 1:length(df_obs[:kepoi_name])
+        if plid == 0
+            plid = 1
+            while i+plid < length(df_obs[:kepoi_name]) && df_obs[i+plid,:kepid] == df_obs[i,:kepid]
+                plid += 1
+            end
+            num_pl = plid
+            target_obs = KeplerTargetObs(num_pl)
+	    target_obs.star = ExoplanetsSysSim.StarObs(df_obs[i,:radius],df_obs[i,:mass])
+        end
+        
+        target_obs.obs[plid] = ExoplanetsSysSim.TransitPlanetObs(df_obs[i,:koi_period],df_obs[i,:koi_time0bk],df_obs[i,:koi_depth]/1.0e6,df_obs[i,:koi_duration])
+        target_obs.sigma[plid] = ExoplanetsSysSim.TransitPlanetObs((abs(df_obs[i,:koi_period_err1])+abs(df_obs[i,:koi_period_err2]))/2,(abs(df_obs[i,:koi_time0bk_err1])+abs(df_obs[i,:koi_time0bk_err2]))/2,(abs(df_obs[i,:koi_depth_err1]/1.0e6)+abs(df_obs[i,:koi_depth_err2]/1.0e6))/2,(abs(df_obs[i,:koi_duration_err1])+abs(df_obs[i,:koi_duration_err2]))/2)
+	#target_obs.prob_detect = ExoplanetsSysSim.SimulatedSystemDetectionProbs{OneObserver}( ones(num_pl), ones(num_pl,num_pl), ones(num_pl), fill(Array{Int64}(0), 1) )  # Made line below to simplify calling
+        target_obs.prob_detect = ExoplanetsSysSim.OneObserverSystemDetectionProbs(num_pl)
+        plid -= 1
+        if plid == 0
+            push!(output.target,target_obs)
+        end
+    end	
     return output
 end
 
