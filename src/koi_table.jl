@@ -4,8 +4,9 @@
 
 module KoiTable
 using ExoplanetsSysSim
-using CSV
+using DataArrays
 using DataFrames
+using CSV
 
 export setup_koi_table, koi_table, num_koi_for_kepid
 
@@ -23,7 +24,7 @@ function setup(sim_param::SimParam; force_reread::Bool = false, symbols_to_keep:
   add_param_fixed(sim_param,"read_koi_catalog",true)
   try 
     #df = readtable(koi_catalog)
-    df = CSV.read(koi_catalog)
+    df = CSV.read(koi_catalog,nullable=true)
   catch
     error(string("# Failed to read koi catalog >",koi_catalog,"<."))
   end

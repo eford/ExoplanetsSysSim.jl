@@ -105,15 +105,15 @@ function setup_christiansen(filename::String; force_reread::Bool = false)
   end
   else
   try 
-    df = CSV.read(filename)
+    df = CSV.read(filename,nullable=true)
   catch
     error(string("# Failed to read stellar catalog >",filename,"< in ascii format."))
   end
 
-  has_mass = .! (isna.(df[:mass]) .| isna.(df[:mass_err1]) .| isna.(df[:mass_err2]))
-  has_radius = .! (isna.(df[:radius]) .| isna.(df[:radius_err1]) .| isna.(df[:radius_err2]))
-  has_dens = .! (isna.(df[:dens]) .| isna.(df[:dens_err1]) .| isna.(df[:dens_err2]))
-  has_rest = .! (isna.(df[:rrmscdpp04p5]) .| isna.(df[:dataspan]) .| isna.(df[:dutycycle]))
+  has_mass = .! (ismissing.(df[:mass]) .| ismissing.(df[:mass_err1]) .| ismissing.(df[:mass_err2]))
+  has_radius = .! (ismissing.(df[:radius]) .| ismissing.(df[:radius_err1]) .| ismissing.(df[:radius_err2]))
+  has_dens = .! (ismissing.(df[:dens]) .| ismissing.(df[:dens_err1]) .| ismissing.(df[:dens_err2]))
+  has_rest = .! (ismissing.(df[:rrmscdpp04p5]) .| ismissing.(df[:dataspan]) .| ismissing.(df[:dutycycle]))
   in_Q1Q12 = []
   for x in df[:st_quarters]
     subx = string(x)

@@ -3,7 +3,8 @@
 
 #using ExoplanetsSysSim
 #using DataFrames
-usin CSV
+using DataArrays
+using CSV
 using JLD
 
 #if VERSION >= v"0.5-"
@@ -128,20 +129,20 @@ function read_koi_catalog(filename::String, force_reread::Bool = false)
             Core.typeassert(df,DataFrame)
             Core.typeassert(usable,Array{Int64,1})
         catch
-            error(string("# Failed to read koi catalog >",koi_catalog_file_in,"< in jld format."))
+            error(string("# Failed to read koi catalog >",filename,"< in jld format."))
         end
     else
         try
             tmp_koi_cat = readlines(filename)
             tmp_ind = 1
-            num_skip = 0
+            num_skip = 1
             while tmp_koi_cat[tmp_ind][1] == '#'
                 num_skip += 1
                 tmp_ind += 1
             end
 
             #df = readtable(filename, skipstart=num_skip)
-            df = CSV.read(filename, datarow=1+num_skip)
+            df = CSV.read(filename,nullable=true, header=num_skip, rows_for_type_detect = size(tmp_koi_cat,1)-num_skip )
 
             # Choose which KOIs to keep
             #is_cand = (csv_data[:,koi_disposition_idx] .== "CONFIRMED") | (csv_data[:,koi_disposition_idx] .== "CANDIDATE")
@@ -152,7 +153,7 @@ function read_koi_catalog(filename::String, force_reread::Bool = false)
             is_usable = .&(is_cand, has_radius, has_period)
             usable = find(is_usable)
         catch
-            error(string("# Failed to read koi catalog >",koi_catalog_file_in,"< in ascii format."))
+            error(string("# Failed to read koi catalog >",filename,"< in ascii format."))
         end
     end
     return df, usable

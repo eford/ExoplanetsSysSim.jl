@@ -3,6 +3,7 @@
 
 module StellarTable
 using ExoplanetsSysSim
+using DataArrays
 using DataFrames
 using CSV
 using JLD
@@ -46,7 +47,7 @@ function setup(filename::String; force_reread::Bool = false)
   else
   try 
     #df = readtable(filename)
-    df = CSV.read(filename)
+    df = CSV.read(filename,nullable=true)
   catch
     error(string("# Failed to read stellar catalog >",filename,"< in ascii format."))
   end
