@@ -2,7 +2,9 @@
 #using StatsFuns
 if !isdefined(:JLD) using JLD end
 if !isdefined(:DataFrames) using DataFrames end
-import DataFrames.DataFrame, DataFrames.isna
+if !isdefined(:CSV) using CSV end
+#import DataFrames.DataFrame, DataFrames.isna
+import DataFrames.DataFrame, DataArrays.isna
 #import ExoplanetsSysSim.StellarTable.df
 #import ExoplanetsSysSim.StellarTable.usable
 
@@ -39,7 +41,7 @@ function setup_star_table_christiansen(filename::String; force_reread::Bool = fa
   println("Test 1?")
   else
   try 
-    df = DataFrames.readtable(filename)
+    df = CSV.read(filename)
   catch
     error(string("# Failed to read stellar catalog >",filename,"< in ascii format."))
   end

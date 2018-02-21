@@ -1,6 +1,7 @@
 using ExoplanetsSysSim
 using StatsFuns
 using JLD
+using CSV
 using DataFrames
 using Distributions
 #import ExoplanetsSysSim.StellarTable.df
@@ -104,7 +105,7 @@ function setup_christiansen(filename::String; force_reread::Bool = false)
   end
   else
   try 
-    df = readtable(filename)
+    df = CSV.read(filename)
   catch
     error(string("# Failed to read stellar catalog >",filename,"< in ascii format."))
   end

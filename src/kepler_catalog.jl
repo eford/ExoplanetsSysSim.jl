@@ -3,6 +3,7 @@
 
 #using ExoplanetsSysSim
 #using DataFrames
+usin CSV
 using JLD
 
 #if VERSION >= v"0.5-"
@@ -139,7 +140,8 @@ function read_koi_catalog(filename::String, force_reread::Bool = false)
                 tmp_ind += 1
             end
 
-            df = readtable(filename, skipstart=num_skip)
+            #df = readtable(filename, skipstart=num_skip)
+            df = CSV.read(filename, datarow=1+num_skip)
 
             # Choose which KOIs to keep
             #is_cand = (csv_data[:,koi_disposition_idx] .== "CONFIRMED") | (csv_data[:,koi_disposition_idx] .== "CANDIDATE")
