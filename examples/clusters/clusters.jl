@@ -1,6 +1,6 @@
 using ExoplanetsSysSim
 
-include("param_custom.jl")
+#include("param_custom.jl")
 include("param_common.jl")
 include("model.jl")
 include("summary_stats.jl")
