@@ -82,6 +82,7 @@ end
 function generate_planet_periods_sizes_masses_in_cluster( star::StarAbstract, sim_param::SimParam; n::Int64 = 1 )  # TODO: IMPORTANT: Make this function work and test before using for science
    @assert n>=1
    const generate_planet_mass_from_radius = get_function(sim_param,"generate_planet_mass_from_radius")
+   const generate_sizes = get_function(sim_param,"generate_sizes")
 
    if n==1
       R = ExoplanetsSysSim.generate_sizes_power_law(star,sim_param)[1]
@@ -95,12 +96,12 @@ function generate_planet_periods_sizes_masses_in_cluster( star::StarAbstract, si
    mean_R = ExoplanetsSysSim.generate_sizes_power_law(star,sim_param)[1]
    const sigma_log_radius_in_cluster = get_real(sim_param,"sigma_log_radius_in_cluster")
    #println("# mean_R = ",mean_R," sigma_log_radius_in_cluster= ",sigma_log_radius_in_cluster)
-
-   #R = ExoplanetsSysSim.generate_sizes_power_law(star,sim_param, num_pl=n) # if want non-clustered planet sizes 
+   
    const min_radius::Float64 = get_real(sim_param,"min_radius")
    const max_radius::Float64 = get_real(sim_param,"max_radius")
    Rdist = Truncated(LogNormal(log(mean_R),sigma_log_radius_in_cluster),min_radius,max_radius) # if we want clustered planet sizes
    R = rand(Rdist,n)
+   #R = ExoplanetsSysSim.generate_sizes_power_law(star,sim_param, num_pl=n) # if want non-clustered planet sizes
 
    #println("# Rp = ", R)
    mass = map(r->generate_planet_mass_from_radius(r,sim_param),R)
@@ -168,6 +169,7 @@ function generate_planetary_system_clustered(star::StarAbstract, sim_param::SimP
      num_clusters = generate_num_clusters(star,sim_param)::Int64
      #num_clusters = 1 # If we want to test singly-clustered model
      num_pl_in_cluster = map(x->generate_num_planets_in_cluster(star, sim_param)::Int64, 1:num_clusters)
+     #num_pl_in_cluster = ones(Int64, num_clusters) ##### If we want a non-clustered model, setting each cluster to have 1 planet is equivalent to having no clusters
      num_pl = sum(num_pl_in_cluster)
 
      if( num_pl==0 )
