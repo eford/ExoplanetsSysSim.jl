@@ -100,6 +100,7 @@ function generate_planet_periods_sizes_masses_in_cluster( star::StarAbstract, si
    const min_radius::Float64 = get_real(sim_param,"min_radius")
    const max_radius::Float64 = get_real(sim_param,"max_radius")
    Rdist = Truncated(LogNormal(log(mean_R),sigma_log_radius_in_cluster),min_radius,max_radius) # if we want clustered planet sizes
+   #Rdist = LogNormal(log(mean_R),sigma_log_radius_in_cluster)
    R = rand(Rdist,n)
    #R = ExoplanetsSysSim.generate_sizes_power_law(star,sim_param, num_pl=n) # if want non-clustered planet sizes
 
@@ -111,9 +112,7 @@ function generate_planet_periods_sizes_masses_in_cluster( star::StarAbstract, si
    log_mean_P = 0.0 # log(generate_periods_power_law(star,sim_param))
    # Note: Currently, drawing all periods within a cluster at once and either keeping or rejecting the whole cluster
    #       Should we instead draw periods one at a time?
-   const min_period::Float64 = get_real(sim_param,"min_period")
-   const max_period::Float64 = get_real(sim_param,"max_period")
-   Pdist = Truncated(LogNormal(log_mean_P,sigma_logperiod_per_pl_in_cluster*n),min_period,max_period)
+   Pdist = LogNormal(log_mean_P,sigma_logperiod_per_pl_in_cluster*n)
    local P
    found_good_periods = false
    attempts = 0
