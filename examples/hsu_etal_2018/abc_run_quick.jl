@@ -3,17 +3,17 @@
 
 include(joinpath(pwd(), "abc_setup.jl"))
 
-using SysSimABC
+import EvalSysSimModel
 using JLD
 using StatsBase
 
-limitP = [237., 320.]
-limitR = [1.0, 1.5]
-dens_denom = 1.0/(log2(limitP[2])-log2(limitP[1]))/(log2(limitR[2])-log2(limitR[1]))
-
 abc_plan = setup_abc(1)
 EvalSysSimModel.add_param_fixed(EvalSysSimModel.sim_param_closure,"num_targets_sim_pass_one",1000)  # Set universal simulated catalog size
-@time output = SysSimABC.run_abc(abc_plan)
+@time output = run_abc(abc_plan)
+
+limitP::Array{Float64,1} = get_any(EvalSysSimModel.sim_param_closure, "p_lim_arr", Array{Float64,1})
+limitR::Array{Float64,1} = get_any(EvalSysSimModel.sim_param_closure, "r_lim_arr", Array{Float64,1})
+dens_denom = 1.0/(log2(limitP[2])-log2(limitP[1]))/(log2(limitR[2])-log2(limitR[1]))
 
 weight_vec = pweights(output.weights)
 quant_arr = quantile(output.theta[1,:], weight_vec, [0.1587, 0.5, 0.8413])

@@ -4,33 +4,75 @@ using JLD
 using CSV
 using DataFrames
 using Distributions
-#import ExoplanetsSysSim.StellarTable.df
-#import ExoplanetsSysSim.StellarTable.usable
-#import Compat: UTF8String, ASCIIString
 
 ## simulation_parameters
 function setup_sim_param_christiansen(args::Vector{String} = Array{String}(0) )   # allow this to take a list of parameter (e.g., from command line)
-  sim_param = setup_sim_param_demo()
-  
-  set_inactive(sim_param,["log_eta_pl","power_law_P","power_law_r"])
-  add_param_fixed(sim_param,"star_table_setup",setup_star_table_christiansen)
-  add_param_fixed(sim_param,"stellar_catalog","q1_q16_christiansen.jld")
-  add_param_fixed(sim_param,"generate_num_planets",generate_num_planets_christiansen)
-  add_param_fixed(sim_param,"generate_period_and_sizes", generate_period_and_sizes_christiansen)
-  add_param_fixed(sim_param,"num_targets_sim_pass_one",150000)  # For faster simulated catalogs
+    sim_param = ExoplanetsSysSim.SimParam()
 
-  p_lim_arr_num = [0.5, 1.25, 2.5, 5., 10., 20., 40., 80., 160., 320.]
-  r_lim_arr_num = [1., 1.25, 1.5, 1.75, 2.]
-  rate_tab_init = [0.027 0.149 0.354 1.37 2.56 1.96 2.85 4.77 0.0001 ;
-                   0.02 0.063 0.432 0.9 1.72 1.46 2.4 5.42 3.63 ;
-                   0.0074 0.032 0.389 0.545 1.32 1.65 1.96 1.69 1.17 ;
-                   0.0001 0.017 0.156 0.542 0.777 1.35 0.965 1.22 2.49]*0.01
+    add_param_fixed(sim_param,"max_tranets_in_sys",7)
+    add_param_fixed(sim_param,"num_kepler_targets",150000)                           # Note this is used for the number of Kepler targets for the observational catalog
+    add_param_fixed(sim_param,"num_targets_sim_pass_one",150000)  # For simulated catalogs
+    add_param_fixed(sim_param,"generate_star",ExoplanetsSysSim.generate_star_dumb)
+    add_param_fixed(sim_param,"generate_planetary_system", ExoplanetsSysSim.generate_planetary_system_uncorrelated_incl)
+    add_param_fixed(sim_param,"generate_kepler_target",ExoplanetsSysSim.generate_kepler_target_from_table)
+    add_param_fixed(sim_param,"star_table_setup",setup_star_table_christiansen)
+    add_param_fixed(sim_param,"stellar_catalog","q1_q16_christiansen.jld")
+    add_param_fixed(sim_param,"generate_num_planets",generate_num_planets_christiansen)
+    add_param_fixed(sim_param,"generate_planet_mass_from_radius",ExoplanetsSysSim.generate_planet_mass_from_radius_powerlaw)
+    add_param_fixed(sim_param,"mr_power_index",2.0)
+    add_param_fixed(sim_param,"mr_const",1.0)
+    add_param_fixed(sim_param,"generate_period_and_sizes", generate_period_and_sizes_christiansen)
+    add_param_fixed(sim_param,"calc_target_obs_single_obs",ExoplanetsSysSim.calc_target_obs_single_obs)
+    add_param_fixed(sim_param_closure,"transit_noise_model",ExoplanetsSysSim.transit_noise_model_diagonal)
 
-  add_param_fixed(sim_param, "p_lim_arr", p_lim_arr_num)
-  add_param_fixed(sim_param, "r_lim_arr", r_lim_arr_num*ExoplanetsSysSim.earth_radius)
-  add_param_active(sim_param,"obs_par", rate_tab_init)
+    p_lim_arr_num = [0.5, 1.25, 2.5, 5., 10., 20., 40., 80., 160., 320.]
+    r_lim_arr_num = [0.5, 0.75, 1., 1.25, 1.5, 1.75, 2., 2.5, 3., 4., 6., 8., 12., 16.]
+    p_dim = length(p_lim_arr_num)-1
+    r_dim = length(r_lim_arr_num)-1
+    rate_tab_init = reshape(fill(1.0, p_dim*r_dim)*0.01,(r_dim,p_dim))
 
-  return sim_param
+    add_param_fixed(sim_param, "p_lim_arr", p_lim_arr_num)
+    add_param_fixed(sim_param, "r_lim_arr", r_lim_arr_num*ExoplanetsSysSim.earth_radius)
+    add_param_active(sim_param,"obs_par", rate_tab_init)
+
+    return sim_param
+end
+
+function set_test_param(sim_param_closure::SimParam)
+    #local num_targets_sim, p_bin_lim, r_bin_lim, rate_init
+    #parameter_filename = convert(String,get(sim_param_closure,"parameter_file","param.in"))
+    #include(parameter_filename)
+    if isdefined(:num_targets_sim)
+        add_param_fixed(sim_param_closure,"num_targets_sim_pass_one",num_targets_sim)  # For faster simulated catalogs
+    end
+    
+    if isdefined(:p_bin_lim)
+        add_param_fixed(sim_param_closure, "p_lim_arr", p_bin_lim)
+    end
+    if isdefined(:r_bin_lim)
+        add_param_fixed(sim_param_closure, "r_lim_arr", r_bin_lim*ExoplanetsSysSim.earth_radius)
+    end
+
+    if isdefined(:rate_init)
+        p_dim = length(get_any(sim_param_closure, "p_lim_arr", Array{Float64,1}))-1
+        r_dim = length(get_any(sim_param_closure, "r_lim_arr", Array{Float64,1}))-1
+        n_bin = p_dim*r_dim
+        if typeof(rate_init) == Float || typeof(rate_init) == Int
+            rate_init = fill(rate_init*0.01, n_bin)
+        end
+        @assert (length(rate_init) == n_bin)
+        rate_tab_init = reshape(rate_init, (r_dim, p_dim))
+        add_param_active(sim_param_closure, "obs_par", rate_tab_init)
+    elseif !isdefined(:rate_init) && (isdefined(:p_bin_lim) || isdefined(:r_bin_lim))
+        p_dim = length(get_any(sim_param_closure, "p_lim_arr", Array{Float64,1}))-1
+        r_dim = length(get_any(sim_param_closure, "r_lim_arr", Array{Float64,1}))-1
+        n_bin = p_dim*r_dim
+        rate_init = fill(1.0*0.01, n_bin)
+        rate_tab_init = reshape(rate_init, (r_dim, p_dim))
+        add_param_active(sim_param_closure, "obs_par", rate_tab_init)
+    end
+    
+    return sim_param_closure
 end
 
 

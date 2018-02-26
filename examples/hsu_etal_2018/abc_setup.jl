@@ -6,7 +6,9 @@ module EvalSysSimModel
   export gen_data, calc_summary_stats, calc_distance, is_valid
   using ExoplanetsSysSim
   include(joinpath(Pkg.dir(),"ExoplanetsSysSim","examples","hsu_etal_2018", "christiansen_func.jl"))
-  include(joinpath(pwd(), "param_file.jl"))
+  include(joinpath(pwd(), "param.in"))
+  #include(joinpath(pwd(), "param_file.jl"))
+
 
   sim_param_closure = SimParam()
   summary_stat_ref_closure =  CatalogSummaryStatistics()
@@ -19,28 +21,13 @@ module EvalSysSimModel
     function is_valid(param_vector::Vector{Float64})
       global sim_param_closure
       update_sim_param_from_vector!(param_vector,sim_param_closure)
-     # const eta_pl = get_real(sim_param_closure,"eta_pl")
-      const sigma_log_r = get_real(sim_param_closure,"sigma_log_planet_radius")
-      const sigma_log_P = get_real(sim_param_closure,"sigma_log_planet_period")
       const rate_tab::Array{Float64,2} = get_any(sim_param_closure, "obs_par", Array{Float64,2})
       const lambda = sum_kbn(rate_tab)
-    # println("Lambda = ", lambda)
-      if sigma_log_r <= 0. || sigma_log_P<=0. || lambda > 10. || any(x -> x < 0., rate_tab)
+      if lambda > 10. || any(x -> x < 0., rate_tab)
          return false
       end
       return true
     end
-
-#=
-    function norm_christiansen(param_vector::Vector{Float64})
-      # z_sum = sum(exp(param_vector[2:length(param_vector)]))
-      # for i = 2:length(param_vector)
-      #   param_vector[i] = exp(param_vector)/z_sum
-      # end
-      log_z_sum = logsumexp(param_vector)
-      param_vector = exp(param_vector-z_sum)
-    end
-=#
 
     function gen_data(param_vector::Vector{Float64})
       global sim_param_closure
@@ -73,9 +60,9 @@ module EvalSysSimModel
   function setup()
     global sim_param_closure = setup_sim_param_christiansen()
 
+    add_param_fixed(sim_param_closure, "parameter_file", "param.in")
     sim_param_closure = set_test_param(sim_param_closure)
 
-    add_param_fixed(sim_param_closure,"transit_noise_model",ExoplanetsSysSim.transit_noise_model_diagonal)
     add_param_fixed(sim_param_closure,"stellar_catalog","q1_q16_christiansen.jld")
     
     ### Use simulated planet candidate catalog data
@@ -120,7 +107,7 @@ module SysSimABC
   import ExoplanetsSysSim
   import EvalSysSimModel
   include(joinpath(Pkg.dir(),"ExoplanetsSysSim","examples","hsu_etal_2018", "christiansen_func.jl"))
-  include(joinpath(pwd(), "param_file.jl"))
+  #include(joinpath(pwd(), "param_file.jl"))
 
   function setup_abc(num_dist::Integer = 0)
     #global sim_param_closure

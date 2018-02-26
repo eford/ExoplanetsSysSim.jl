@@ -1,5 +1,5 @@
 using ExoplanetsSysSim
-using HDF5, JLD
+using JLD
 
 include(joinpath(Pkg.dir(),"ExoplanetsSysSim","examples","hsu_etal_2018", "christiansen_func.jl"))
 
