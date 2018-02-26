@@ -136,6 +136,52 @@ function draw_power_law(n::Real, x0::Real, x1::Real, num_pl::Integer)
      ((x1^(n+1) - x0^(n+1)).*rand(num_pl) .+ x0^(n+1)).^(1/(n+1))
 end
 
+function draw_broken_power_law(n1::Real, n2::Real, x0::Real, x1::Real, xb::Real, num_pl::Integer)
+    #x0 and x1 are the lower and upper truncation limits, and xb is the break point, i.e. x0 <= xb <= x1 (all must be positive)
+    #n1 and n2 are the power law indices between x0 and xb, and xb and x1, respectively (can be positive or negative)
+
+    u_draws = rand(num_pl) #'num_pl' draws from the uniform distribution between 0 and 1
+    x_draws = zeros(num_pl)
+
+    if (n1 != -1) & (n2 != -1)
+        C1 = 1./(((xb^(n1+1) - x0^(n1+1))/(n1+1)) + ((xb^(n1-n2)*(x1^(n2+1) - xb^(n2+1)))/(n2+1))) #normalization constant
+        ub = (C1*(xb^(n1+1) - x0^(n1+1)))/(n1+1) #break point in u, between 0 and 1
+        for (i,u) in enumerate(u_draws)
+            if u <= ub
+                x_draws[i] = (((n1+1)*u)/C1 + x0^(n1+1))^(1/(n1+1))
+            else #if u > ub
+                x_draws[i] = (((n2+1)/(C1*xb^(n1-n2)))*(u - (C1*(xb^(n1+1) - x0^(n1+1)))/(n1+1)) + xb^(n2+1))^(1/(n2+1))
+            end
+        end
+    elseif (n1 == -1) & (n2 != -1)
+        C1 = 1./(log(xb/x0) + ((xb^(-1-n2))*(x1^(n2+1)) - 1)/(n2+1)) #normalization constant
+        ub = C1*log(xb/x0) #break point in u, between 0 and 1
+        for (i,u) in enumerate(u_draws)
+            if u <= ub
+                x_draws[i] = x0*exp(u/C1)
+            else #if u > ub
+                x_draws[i] = (((n2+1)/(C1*xb^(-1-n2)))*(u - C1*log(xb/x0)) + xb^(n2+1))^(1/(n2+1))
+            end
+        end
+    elseif (n1 != -1) & (n2 == -1)
+        C1 = 1./(((xb^(n1+1) - x0^(n1+1))/(n1+1)) + (xb^(n1+1))*log(x1/xb)) #normalization constant
+        ub = (C1*(xb^(n1+1) - x0^(n1+1)))/(n1+1) #break point in u, between 0 and 1
+        for (i,u) in enumerate(u_draws)
+            if u <= ub
+                x_draws[i] = (((n1+1)*u)/C1 + x0^(n1+1))^(1/(n1+1))
+            else #if u > ub
+                x_draws[i] = xb*exp((1/(C1*xb^(n1+1)))*(u - (C1*(xb^(n1+1) - x0^(n1+1)))/(n1+1)))
+            end
+        end
+    else #if n1 == -1 and n2 == -1 (i.e. it is a single power-law with index of -1)
+        for (i,u) in enumerate(u_draws)
+            x_draws[i] = x0*exp(u*log(x1/x0))
+        end
+    end
+
+    return x_draws
+end
+
 function generate_periods_power_law(s::Star, sim_param::SimParam; num_pl::Integer = 1) 
     const power_law_P::Float64 = get_real(sim_param,"power_law_P")
     const min_period::Float64 = get_real(sim_param,"min_period")
@@ -149,6 +195,16 @@ function generate_sizes_power_law(s::Star, sim_param::SimParam; num_pl::Integer 
     const min_radius::Float64 = get_real(sim_param,"min_radius")
     const max_radius::Float64 = get_real(sim_param,"max_radius")
     Rlist = power_law_r!=-1.0 ? draw_power_law(power_law_r,min_radius,max_radius, num_pl) : exp(log(min_radius).+rand()*log(max_radius/min_radius))
+    return Rlist
+end
+
+function generate_sizes_broken_power_law(s::Star, sim_param::SimParam; num_pl::Integer = 1)
+    const power_law_r1::Float64 = get_real(sim_param,"power_law_r1")
+    const power_law_r2::Float64 = get_real(sim_param,"power_law_r2")
+    const min_radius::Float64 = get_real(sim_param,"min_radius")
+    const max_radius::Float64 = get_real(sim_param,"max_radius")
+    const break_radius::Float64 = get_real(sim_param,"break_radius")
+    Rlist = draw_broken_power_law(power_law_r1,power_law_r2,min_radius,max_radius,break_radius, num_pl)
     return Rlist
 end
 

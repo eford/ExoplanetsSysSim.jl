@@ -86,6 +86,21 @@ function ksstats{T<:Real, S<:Real}(x::AbstractVector{T}, y::AbstractVector{S})
     (n_x, n_y, deltap, deltan, delta)
 end
 
+##### Function I added to compute the KS distance for discrete arrays, i.e. of the planet multiplicities in the systems
+function ksstats_ints{T<:Int, S<:Int}(x::AbstractVector{T}, y::AbstractVector{S})
+    n_x, n_y = length(x), length(y)
+    xy_max = max(maximum(x), maximum(y)) #maximum of both x and y
+    x_counts = [sum(x .== n) for n in 1:xy_max]
+    y_counts = [sum(y .== n) for n in 1:xy_max]
+    pdf_diffs = x_counts./n_x .- y_counts./n_y
+    cdf_diffs = cumsum(pdf_diffs)
+    deltap = maximum(cdf_diffs)
+    deltan = -minimum(cdf_diffs)
+    delta = max(deltap,deltan)
+    (n_x, n_y, deltap, deltan, delta)
+end
+
+
 function calc_distance_ks_period(summary1::CatalogSummaryStatistics, summary2::CatalogSummaryStatistics, sim_param::SimParam ; verbose::Bool = false)
   samp1 = summary1.stat["P list"] 
   samp2 = summary2.stat["P list"] 

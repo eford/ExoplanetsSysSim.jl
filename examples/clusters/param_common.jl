@@ -4,9 +4,9 @@ if !isdefined(:ExoplanetsSysSim) using ExoplanetsSysSim end
 function setup_sim_param_model(args::Vector{String} = Array{String}(0) )   # allow this to take a list of parameter (e.g., from command line)
   sim_param = SimParam()
   # How many tatrges to generate
-  #add_param_fixed(sim_param,"num_targets_sim_pass_one",150969)                      # Note this is used for the number of stars in the simulations, not necessarily related to number of Kepler targets
-  add_param_fixed(sim_param,"num_targets_sim_pass_one",150960)                      # Note this is used for the number of stars in the simulations, not necessarily related to number of Kepler targets
-  add_param_fixed(sim_param,"num_kepler_targets",150969)                            # Note this is used for the number of Kepler targets for the observational catalog
+  #add_param_fixed(sim_param,"num_targets_sim_pass_one",150061)                      # Note this is used for the number of stars in the simulations, not necessarily related to number of Kepler targets
+  add_param_fixed(sim_param,"num_targets_sim_pass_one",2*150061)                      # Note this is used for the number of stars in the simulations, not necessarily related to number of Kepler targets
+  add_param_fixed(sim_param,"num_kepler_targets",150061)                            # Note this is used for the number of Kepler targets for the observational catalog
 
   # For generating target star properties
   add_param_fixed(sim_param,"generate_kepler_target",generate_kepler_target_from_table)
@@ -20,37 +20,41 @@ function setup_sim_param_model(args::Vector{String} = Array{String}(0) )   # all
 
   add_param_fixed(sim_param,"generate_num_clusters",generate_num_clusters_poisson) 
   add_param_fixed(sim_param,"generate_num_planets_in_cluster",generate_num_planets_in_cluster_poisson)
-  add_param_active(sim_param,"log_rate_clusters",log(0.45))
-  add_param_fixed(sim_param,"max_clusters_in_sys",5)
-  add_param_active(sim_param,"log_rate_planets_per_cluster",log(1.8))
+  add_param_active(sim_param,"log_rate_clusters",log(2.49))
+  add_param_fixed(sim_param,"max_clusters_in_sys",10)
+  add_param_active(sim_param,"log_rate_planets_per_cluster",log(2.92))
   add_param_fixed(sim_param,"max_planets_in_cluster",10)
 
-  # generate_num_planets_in_cluster currently calls: generate_periods_power_law & generate_sizes_power_law
-  add_param_fixed(sim_param,"power_law_P",0.07)
-  add_param_fixed(sim_param,"power_law_r",-1.54)
+  # generate_num_planets_in_cluster currently calls: generate_periods_power_law
+  add_param_fixed(sim_param,"generate_sizes",ExoplanetsSysSim.generate_sizes_broken_power_law) # To choose the way we draw planetary radii; if "generate_sizes_power_law", then takes "power_law_r"; if "generate_sizes_broken_power_law", then takes "power_law_r1", "power_law_r2", and "break_radius"
+  add_param_active(sim_param,"power_law_P",-0.06)
+  #add_param_active(sim_param,"power_law_r",-2.56)
+  add_param_active(sim_param,"power_law_r1",-1.83)
+  add_param_active(sim_param,"power_law_r2",-4.07)
   add_param_fixed(sim_param,"min_period",5.0)
   add_param_fixed(sim_param,"max_period",300.0)
   add_param_fixed(sim_param,"min_radius",0.5*ExoplanetsSysSim.earth_radius)
   add_param_fixed(sim_param,"max_radius",10.*ExoplanetsSysSim.earth_radius)
+  add_param_active(sim_param,"break_radius",4.23*ExoplanetsSysSim.earth_radius)
 
   # generate_num_planets_in_cluster currently use these for the Inclination distribution
-  add_param_fixed(sim_param,"sigma_incl",1.52) # degrees; 0 = coplanar w/ generate_kepler_target_simple; ignored by generate_planetary_system_uncorrelated_incl
-  add_param_fixed(sim_param,"sigma_incl_near_mmr",0.0)
+  add_param_active(sim_param,"sigma_incl",1.57) # degrees; 0 = coplanar w/ generate_kepler_target_simple; ignored by generate_planetary_system_uncorrelated_incl
+  add_param_active(sim_param,"sigma_incl_near_mmr",0.99)
 
   # generate_num_planets_in_cluster currently use these for the Eccentricity distribution
   add_param_fixed(sim_param,"generate_e_omega",ExoplanetsSysSim.generate_e_omega_rayleigh)
-  add_param_fixed(sim_param,"sigma_hk",0.05)
+  add_param_active(sim_param,"sigma_hk",0.048)
   #add_param_fixed(sim_param,"sigma_hk_one",0.1)
   #add_param_fixed(sim_param,"sigma_hk_multi",0.03)
 
   # generate_num_planets_in_cluster currently use these for the Stability tests
-  add_param_fixed(sim_param,"num_mutual_hill_radii",15.0)
+  add_param_active(sim_param,"num_mutual_hill_radii",13.12)
   add_param_fixed(sim_param,"generate_planet_mass_from_radius",ExoplanetsSysSim.generate_planet_mass_from_radius_powerlaw)
-  add_param_fixed(sim_param,"mr_power_index",2.0)
+  add_param_active(sim_param,"mr_power_index",2.42)
   add_param_fixed(sim_param,"mr_const",1.0)
   add_param_fixed(sim_param,"mr_max_mass",1e3*ExoplanetsSysSim.earth_mass)
-  add_param_fixed(sim_param,"sigma_log_radius_in_cluster",1.0)
-  add_param_fixed(sim_param,"sigma_logperiod_per_pl_in_cluster",0.21)
+  add_param_active(sim_param,"sigma_log_radius_in_cluster",0.25)
+  add_param_active(sim_param,"sigma_logperiod_per_pl_in_cluster",0.12)
 
   # Functions to calculate observables from physical system properties
   add_param_fixed(sim_param,"calc_target_obs_single_obs",ExoplanetsSysSim.calc_target_obs_single_obs)   
@@ -74,5 +78,4 @@ end
 function test_setup_sim_param()
   setup_sim_param_model()
 end
-
 
