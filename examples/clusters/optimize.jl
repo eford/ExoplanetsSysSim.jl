@@ -15,9 +15,9 @@ summary_stat_ref = calc_summary_stats_model(cat_obs,sim_param)
 
 ##### To load the DR25 catalog and compute arrays of multiplicities, periods, period ratios, transit durations, transit depths, period-normalized transit duration ratios (xi), and transit depth ratios:
 
-Q1Q17_DR25 = DataFrames.readtable("q1_q17_dr25_koi.tab_selectcols_new.csv", allowcomments=true)
-Q1Q17_DR25_stellar = DataFrames.readtable("q1_q17_dr25_stellar_koi.tab_selectcols.csv", allowcomments=true)
-Q1Q17_DR25_stellar_all = DataFrames.readtable("q1_q17_dr25_stellar_koi.tab_all.csv", allowcomments=true)
+Q1Q17_DR25 = CSV.read("q1_q17_dr25_koi.tab_selectcols_new.csv", header=19, nullable=true)
+Q1Q17_DR25_stellar = CSV.read("q1_q17_dr25_stellar_koi.tab_selectcols.csv", header=30, nullable=true)
+Q1Q17_DR25_stellar_all = CSV.read("q1_q17_dr25_stellar_koi.tab_all.csv", header=1, nullable=true)
 
 N_Kepler_targets = sum((Q1Q17_DR25_stellar_all[:teff] .> 4000.) .& (Q1Q17_DR25_stellar_all[:teff] .< 7000.) .& (Q1Q17_DR25_stellar_all[:logg] .> 4.))
 println("Total number of Kepler targets satisfying our cuts: ", N_Kepler_targets)
@@ -54,9 +54,9 @@ R_confirmed = Float64[] #list to be filled with period ratios of adjacent planet
 xi_confirmed = Float64[] #list to be filled with the period-normalized transit duration ratios of adjacent planet pairs
 D_ratio_confirmed = Float64[] #list to be filled with the transit depth ratios of adjacent planet pairs
 P_confirmed = table_confirmed[:koi_period] #array of the periods (days)
-P_confirmed = collect(skipmissing(P_confirmed)
+P_confirmed = collect(skipmissing(P_confirmed))
 t_D_confirmed = table_confirmed[:koi_duration] #array of the transit durations (hrs)
-t_D_confirmed = collect(skipmissing(t_D_confirmed)
+t_D_confirmed = collect(skipmissing(t_D_confirmed))
 D_confirmed = table_confirmed[:koi_depth]/(1e6) #array of the transit depths (fraction)
 D_confirmed = D_confirmed[isna.(D_confirmed) .== false] #to get rid of NA values
 
