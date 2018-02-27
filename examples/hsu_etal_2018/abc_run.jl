@@ -7,7 +7,7 @@ using SysSimABC
 using JLD
 using StatsBase
 
-abc_plan = setup_abc(1)
+abc_plan = setup_abc()
 @time output = run_abc(abc_plan)
 
 limitP::Array{Float64,1} = get_any(EvalSysSimModel.sim_param_closure, "p_lim_arr", Array{Float64,1})

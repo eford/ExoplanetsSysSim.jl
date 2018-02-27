@@ -6,17 +6,10 @@ module EvalSysSimModel
   export gen_data, calc_summary_stats, calc_distance, is_valid
   using ExoplanetsSysSim
   include(joinpath(Pkg.dir(),"ExoplanetsSysSim","examples","hsu_etal_2018", "christiansen_func.jl"))
-  include(joinpath(pwd(), "param.in"))
   #include(joinpath(pwd(), "param_file.jl"))
-
 
   sim_param_closure = SimParam()
   summary_stat_ref_closure =  CatalogSummaryStatistics()
-
-  # If we just wanted one call to evaluate_model, we could just use the macro
-  #include("eval_model_macro.jl")
-  #@make_evaluate_model(sim_param_closure,cat_phys_try_closure,cat_obs_try_closure,summary_stat_try_closure,summary_stat_ref_closure)
-  # But we want a little finer control, so we'll do it manually....
 
     function is_valid(param_vector::Vector{Float64})
       global sim_param_closure
@@ -53,18 +46,10 @@ module EvalSysSimModel
       return calc_scalar_distance(dist1[1:num_to_use])
     end
 
-    # calc_distance_1(sum_stat_obs::CatalogSummaryStatistics,sum_stat_sim::CatalogSummaryStatistics) = calc_distance(sum_stat_obs,sum_stat_sim,2)
-    # calc_distance_2(sum_stat_obs::CatalogSummaryStatistics,sum_stat_sim::CatalogSummaryStatistics) = calc_distance(sum_stat_obs,sum_stat_sim,2)
-
-
   function setup()
     global sim_param_closure = setup_sim_param_christiansen()
-
-    add_param_fixed(sim_param_closure, "parameter_file", "param.in")
     sim_param_closure = set_test_param(sim_param_closure)
 
-    add_param_fixed(sim_param_closure,"stellar_catalog","q1_q16_christiansen.jld")
-    
     ### Use simulated planet candidate catalog data
     #add_param_fixed(sim_param_closure,"num_kepler_targets",150000)  # For "observed" catalog
     #cat_obs = simulated_read_kepler_observations(sim_param_closure)
@@ -83,7 +68,6 @@ module EvalSysSimModel
 
     num_targ = get_int(sim_param_closure,"num_kepler_targets")
     add_param_fixed(sim_param_closure,"num_targets_sim_pass_one",num_targ)  # Set universal simulated catalog size
-
   end
 
   get_param_vector() = make_vector_of_sim_param(sim_param_closure)
@@ -103,19 +87,14 @@ module SysSimABC
   import ABC
   import Distributions
   using CompositeDistributions
-  #import CompositeDistributions.CompositeDist
   import ExoplanetsSysSim
   import EvalSysSimModel
   include(joinpath(Pkg.dir(),"ExoplanetsSysSim","examples","hsu_etal_2018", "christiansen_func.jl"))
   #include(joinpath(pwd(), "param_file.jl"))
 
   function setup_abc(num_dist::Integer = 0)
-    #global sim_param_closure
     EvalSysSimModel.setup()
-    #println("# setup_abc: ",EvalSysSimModel.sim_param_closure)
     theta_true = EvalSysSimModel.get_param_vector()
-    #param_prior = Distributions.MvNormal(theta_true, 2.0*ones(length(theta_true)))
-    #param_prior = Distributions.Uniform(0., 1.)
     param_prior = CompositeDist( Distributions.ContinuousDistribution[Distributions.Uniform(0., 5.) for x in 1:length(theta_true)] )
     in_parallel = nworkers() > 1 ? true : false
 
@@ -128,7 +107,7 @@ module SysSimABC
   function run_abc_largegen(pop::ABC.abc_population_type, ss_true::ExoplanetsSysSim.CatalogSummaryStatistics, epshist_targ::Float64, npart::Integer = 1000, num_dist::Integer = 0)
     sim_param_closure = setup_sim_param_christiansen()
     sim_param_closure = set_test_param(sim_param_closure)
-    #add_param_fixed(sim_param_closure,"num_kepler_targets",150000)  # For "observed" catalog
+    setup_star_table_christiansen(sim_param_closure)
     EvalSysSimModel.set_simparam_ss(sim_param_closure, ss_true)	
 
     theta_true = EvalSysSimModel.get_param_vector()

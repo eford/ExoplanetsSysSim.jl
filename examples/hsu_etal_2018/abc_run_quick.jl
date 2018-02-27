@@ -3,11 +3,11 @@
 
 include(joinpath(pwd(), "abc_setup.jl"))
 
-import EvalSysSimModel
+using SysSimABC
 using JLD
 using StatsBase
 
-abc_plan = setup_abc(1)
+abc_plan = setup_abc()
 EvalSysSimModel.add_param_fixed(EvalSysSimModel.sim_param_closure,"num_targets_sim_pass_one",1000)  # Set universal simulated catalog size
 @time output = run_abc(abc_plan)
 

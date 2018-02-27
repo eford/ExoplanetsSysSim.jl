@@ -6,6 +6,17 @@ using DataFrames
 using Distributions
 
 ## simulation_parameters
+macro isdefinedlocal(var) 
+    quote 
+        try 
+            $(esc(var)) 
+            true 
+        catch err 
+            isa(err, UndefVarError) ? false : rethrow(err) 
+        end 
+    end
+end
+
 function setup_sim_param_christiansen(args::Vector{String} = Array{String}(0) )   # allow this to take a list of parameter (e.g., from command line)
     sim_param = ExoplanetsSysSim.SimParam()
 
@@ -40,30 +51,33 @@ end
 
 function set_test_param(sim_param_closure::SimParam)
     #local num_targets_sim, p_bin_lim, r_bin_lim, rate_init
-    #parameter_filename = convert(String,get(sim_param_closure,"parameter_file","param.in"))
-    #include(parameter_filename)
-    if isdefined(:num_targets_sim)
+    @eval(include(joinpath(pwd(),"param.in")))
+    
+    if @isdefinedlocal(num_targets_sim)
+        @assert (typeof(num_targets_sim) == Int)
         add_param_fixed(sim_param_closure,"num_targets_sim_pass_one",num_targets_sim)  # For faster simulated catalogs
     end
     
-    if isdefined(:p_bin_lim)
+    if @isdefinedlocal(p_bin_lim)
+        @assert (typeof(p_bin_lim) == Array{Float64,1})
         add_param_fixed(sim_param_closure, "p_lim_arr", p_bin_lim)
     end
-    if isdefined(:r_bin_lim)
+    if @isdefinedlocal(r_bin_lim)
+        @assert (typeof(r_bin_lim) == Array{Float64,1})
         add_param_fixed(sim_param_closure, "r_lim_arr", r_bin_lim*ExoplanetsSysSim.earth_radius)
     end
-
-    if isdefined(:rate_init)
+    
+    if @isdefinedlocal(rate_init)
         p_dim = length(get_any(sim_param_closure, "p_lim_arr", Array{Float64,1}))-1
         r_dim = length(get_any(sim_param_closure, "r_lim_arr", Array{Float64,1}))-1
         n_bin = p_dim*r_dim
-        if typeof(rate_init) == Float || typeof(rate_init) == Int
+        if typeof(rate_init) == Float64
             rate_init = fill(rate_init*0.01, n_bin)
         end
         @assert (length(rate_init) == n_bin)
         rate_tab_init = reshape(rate_init, (r_dim, p_dim))
         add_param_active(sim_param_closure, "obs_par", rate_tab_init)
-    elseif !isdefined(:rate_init) && (isdefined(:p_bin_lim) || isdefined(:r_bin_lim))
+    elseif !(@isdefinedlocal(rate_init)) && (@isdefinedlocal(p_bin_lim) || @isdefinedlocal(r_bin_lim))
         p_dim = length(get_any(sim_param_closure, "p_lim_arr", Array{Float64,1}))-1
         r_dim = length(get_any(sim_param_closure, "r_lim_arr", Array{Float64,1}))-1
         n_bin = p_dim*r_dim
@@ -185,6 +199,11 @@ function setup_christiansen(filename::String; force_reread::Bool = false)
   delete!(df, [~(x in symbols_to_keep) for x in names(df)])    # delete columns that we won't be using anyway
   usable = find(is_usable)
   df = df[usable, symbols_to_keep]
+  tmp_df = DataFrame()    
+  for col in names(df)
+      tmp_df[col] = collect(skipmissing(df[col]))
+  end
+  df = tmp_df
   StellarTable.set_star_table(df, usable)
   end
   return df
