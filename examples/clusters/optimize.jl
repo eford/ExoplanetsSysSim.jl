@@ -3,7 +3,7 @@ import DataArrays.skipmissing
 include("clusters.jl")
 
 sim_param = setup_sim_param_model()
-add_param_fixed(sim_param,"num_targets_sim_pass_one",150060) #9)   # For "observed" data, use a realistic number of targets (after any cuts you want to perform)
+add_param_fixed(sim_param,"num_targets_sim_pass_one",15006) #9)   # For "observed" data, use a realistic number of targets (after any cuts you want to perform)
 
 ##### To generate a simulated catalog to fit to:
 
@@ -26,7 +26,7 @@ table_confirmed = Q1Q17_DR25[(Q1Q17_DR25[:koi_disposition] .== "CONFIRMED") .| (
 table_stellar = Q1Q17_DR25_stellar
 
 table_confirmed = table_confirmed[(table_confirmed[:koi_period] .> 5.) .& (table_confirmed[:koi_period] .< 300.), :] #to make additional cuts in period P to be comparable to our simulated sample
-table_confirmed = table_confirmed[(table_confirmed[:koi_prad] .> 0.5) .& (table_confirmed[:koi_prad] .< 10.) .& (.~isna.(table_confirmed[:koi_prad])), :] #to make additional cuts in planetary radii to be comparable to our simulated sample
+table_confirmed = table_confirmed[(table_confirmed[:koi_prad] .> 0.5) .& (table_confirmed[:koi_prad] .< 10.) .& (.~ismissing.(table_confirmed[:koi_prad])), :] #to make additional cuts in planetary radii to be comparable to our simulated sample
 
 #To make cuts based on stellar properties of T_eff and logg:
 teff_confirmed = zeros(Int64, size(table_confirmed,1)) #list to be filled with the T_eff (K) for the objects
@@ -58,7 +58,7 @@ P_confirmed = collect(skipmissing(P_confirmed))
 t_D_confirmed = table_confirmed[:koi_duration] #array of the transit durations (hrs)
 t_D_confirmed = collect(skipmissing(t_D_confirmed))
 D_confirmed = table_confirmed[:koi_depth]/(1e6) #array of the transit depths (fraction)
-D_confirmed = D_confirmed[isna.(D_confirmed) .== false] #to get rid of NA values
+D_confirmed = D_confirmed[ismissing.(D_confirmed) .== false] #to get rid of NA values
 
 for i in 1:length(KOI_systems)
     if checked_bools[i] == 0 #if the KOI has not been checked (included while looking at another planet in the same system)
@@ -178,24 +178,31 @@ end
 
 
 
+##### To draw the initial values of the active parameters randomly within a search range:
+
+active_param_keys = ["break_radius", "log_rate_clusters", "log_rate_planets_per_cluster", "mr_power_index", "num_mutual_hill_radii", "power_law_P", "power_law_r1", "power_law_r2", "sigma_hk", "sigma_incl", "sigma_incl_near_mmr", "sigma_log_radius_in_cluster", "sigma_logperiod_per_pl_in_cluster"]
+active_params_box = [(0.5*ExoplanetsSysSim.earth_radius, 10.*ExoplanetsSysSim.earth_radius), (log(1.), log(3.)), (log(1.), log(3.)), (1., 4.), (5., 20.), (-1., 1.), (-5., 3.), (-5., 3.), (0., 0.2), (0., 5.), (0., 5.), (0., 0.5), (0., 0.5)] #search ranges for all of the active parameters
+
+#To randomly draw (uniformly) a value for each active model parameter within its search range:
+for (i,param_key) in enumerate(active_param_keys)
+    active_param_draw = active_params_box[i][1] + (active_params_box[i][2] - active_params_box[i][1])*rand(1)
+    add_param_active(sim_param,param_key,active_param_draw[1])
+end
+
+
+
+
+
 ##### To start saving the model iterations in the optimization into a file:
 
 model_name = "Clustered_P_R_broken_R_optimization"
-optimization_number = "2"
-max_evals = 200
+optimization_number = "" #if want to run on the cluster with random initial active parameters: "_random"*ARGS[1]
+max_evals = 5
 file_name = model_name*optimization_number*"_targs"*string(get_int(sim_param,"num_targets_sim_pass_one"))*"_evals"*string(max_evals)*".txt"
 
 f = open(file_name, "w")
-println(f, "# Fixed parameters:")
-println(f, "# num_targets_sim_pass_one: ", get_int(sim_param,"num_targets_sim_pass_one"))
-println(f, "# max_clusters_in_sys: ", get_int(sim_param,"max_clusters_in_sys"))
-println(f, "# max_planets_in_clusters: ", get_int(sim_param,"max_planets_in_cluster"))
-println(f, "# min_period (days): ", get_real(sim_param,"min_period"))
-println(f, "# max_period (days): ", get_real(sim_param,"max_period"))
-println(f, "# min_radius (R_earth): ", get_real(sim_param,"min_radius")/ExoplanetsSysSim.earth_radius)
-println(f, "# max_radius (R_earth): ", get_real(sim_param,"max_radius")/ExoplanetsSysSim.earth_radius)
-println(f, "# mr_max_mass (M_earth): ", get_real(sim_param,"mr_max_mass")/ExoplanetsSysSim.earth_mass)
-println(f, "#")
+println(f, "# All initial parameters:")
+write_model_params(f, sim_param)
 
 
 
@@ -210,7 +217,7 @@ active_param_true = make_vector_of_sim_param(sim_param)
 println("# True values: ", active_param_true)
 println(f, "# Starting active parameter values: ", active_param_true)
 println(f, "# Format: Dist: [distances][total distance]")
-num_eval = 20 #20
+num_eval = 5 #20
 results = map(x->target_function(active_param_true), 1:num_eval)
 mean_dist = mean(results)
 rms_dist = std(results)
@@ -256,20 +263,22 @@ opt_result = optimize(target_function, active_param, method=BFGS(), f_tol=rms_di
 using BlackBoxOptim              # see https://github.com/robertfeldt/BlackBoxOptim.jl for documentation
 
 # Eventually, we should make these physically motivated limits when we don't know the true values
-sr = [(active_param_true[i] > 0)? (active_param_true[i]/2,active_param_true[i]*2): (active_param_true[i]*2,active_param_true[i]/2) for i in 1:length(active_param)]
+#sr = [(active_param_true[i] > 0)? (active_param_true[i]/2,active_param_true[i]*2): (active_param_true[i]*2,active_param_true[i]/2) for i in 1:length(active_param)]
 
-println(f, "# Optimization active parameters search bounds: ", sr)
+println(f, "# Optimization active parameters search bounds: ", active_params_box)
 println(f, "# Format: Active_params: [active parameter values]")
 println(f, "# Format: Dist: [distances][total distance]")
 
 # May want to experiment with different algorithms, number of evaluations, population size, etc.
 tic()
-#opt_result = bboptimize(target_function_Kepler; SearchRange = sr, NumDimensions = length(active_param), Method = :adaptive_de_rand_1_bin_radiuslimited, PopulationSize = length(active_param)*4, MaxFuncEvals = 20, TraceMode = :verbose)
+#opt_result = bboptimize(target_function_Kepler; SearchRange = active_params_box, NumDimensions = length(active_param), Method = :adaptive_de_rand_1_bin_radiuslimited, PopulationSize = length(active_param)*4, MaxFuncEvals = 20, TraceMode = :verbose)
 
-opt_result = bboptimize(target_function_Kepler; SearchRange = sr, NumDimensions = length(active_param), Method = :adaptive_de_rand_1_bin_radiuslimited, PopulationSize = length(active_param)*4, MaxFuncEvals = max_evals, TargetFitness = mean_dist, FitnessTolerance = rms_dist, TraceMode = :verbose)
+opt_result = bboptimize(target_function_Kepler; SearchRange = active_params_box, NumDimensions = length(active_param), Method = :adaptive_de_rand_1_bin_radiuslimited, PopulationSize = length(active_param)*4, MaxFuncEvals = max_evals, TargetFitness = mean_dist, FitnessTolerance = rms_dist, TraceMode = :verbose)
 t_elapsed = toc()
 
 println(f, "# best_candidate: ", best_candidate(opt_result))
 println(f, "# best_fitness: ", best_fitness(opt_result))
 println(f, "# elapsed time: ", t_elapsed, " seconds")
 close(f)
+
+

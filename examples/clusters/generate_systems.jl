@@ -3,35 +3,6 @@ sim_param = setup_sim_param_model()
 
 
 
-function write_model_params(f, sim_param::SimParam)
-    #This function writes all the model parameters to a file f
-    println(f,"# num_targets_sim_pass_one: ", get_int(sim_param,"num_targets_sim_pass_one"))
-    println(f,"# log_rate_clusters: ", get_real(sim_param,"log_rate_clusters"))
-    println(f,"# max_clusters_in_sys: ", get_int(sim_param,"max_clusters_in_sys"))
-    println(f,"# log_rate_planets_per_cluster: ", get_real(sim_param,"log_rate_planets_per_cluster"))
-    println(f,"# max_planets_in_clusters: ", get_int(sim_param,"max_planets_in_cluster"))
-    println(f,"# power_law_P: ", get_real(sim_param,"power_law_P"))
-#println(f,"# power_law_r: ", get_real(sim_param,"power_law_r"))
-    println(f,"# power_law_r1: ", get_real(sim_param,"power_law_r1"))
-    println(f,"# power_law_r2: ", get_real(sim_param,"power_law_r2"))
-    println(f,"# min_radius (R_earth): ", get_real(sim_param,"min_radius")/ExoplanetsSysSim.earth_radius)
-    println(f,"# max_radius (R_earth): ", get_real(sim_param,"max_radius")/ExoplanetsSysSim.earth_radius)
-    println(f,"# break_radius (R_earth): ", get_real(sim_param,"break_radius")/ExoplanetsSysSim.earth_radius)
-    println(f,"# sigma_incl: ", get_real(sim_param,"sigma_incl"))
-    println(f,"# sigma_incl_near_mmr: ", get_real(sim_param,"sigma_incl_near_mmr"))
-    println(f,"# sigma_hk: ", get_real(sim_param,"sigma_hk"))
-    println(f,"# num_mutual_hill_radii: ", get_real(sim_param,"num_mutual_hill_radii"))
-    println(f,"# mr_power_index: ", get_real(sim_param,"mr_power_index"))
-    println(f,"# mr_max_mass (M_earth): ", get_real(sim_param,"mr_max_mass")/ExoplanetsSysSim.earth_mass)
-    println(f,"# sigma_log_radius_in_cluster: ", get_real(sim_param,"sigma_log_radius_in_cluster"))
-    println(f,"# sigma_logperiod_per_pl_in_cluster: ", get_real(sim_param,"sigma_logperiod_per_pl_in_cluster"))
-    println(f,"#")
-end
-
-
-
-
-
 tic()
 
 ##### To generate the underlying systems:
@@ -165,3 +136,4 @@ for num_pl_in_sys in 1:length(summary_stat.cache["idx_n_tranets"])
 end
 close(f)
 =#
+
