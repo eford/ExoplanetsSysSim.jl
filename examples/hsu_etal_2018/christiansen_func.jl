@@ -72,18 +72,27 @@ function set_test_param(sim_param_closure::SimParam)
         p_dim = length(get_any(sim_param_closure, "p_lim_arr", Array{Float64,1}))-1
         r_dim = length(get_any(sim_param_closure, "r_lim_arr", Array{Float64,1}))-1
         n_bin = p_dim*r_dim
-        if typeof(rate_init) == Float64
-            rate_init = fill(rate_init*0.01, n_bin)
+
+        if typeof(rate_init) <: Real
+            @assert (rate_init >= 0.0)
+            rate_init = fill(rate_init, n_bin)
         end
-        @assert (length(rate_init) == n_bin)
-        rate_tab_init = reshape(rate_init, (r_dim, p_dim))
+        
+        @assert (ndims(rate_init) <= 2)
+        if ndims(rate_init) == 1
+            @assert (length(rate_init) == n_bin)
+            rate_tab_init = reshape(rate_init*0.01, (r_dim, p_dim))
+        else
+            @assert (size(rate_init) == (r_dim, p_dim))
+            rate_tab_init = rate_init*0.01
+        end
         add_param_active(sim_param_closure, "obs_par", rate_tab_init)
     elseif !(@isdefinedlocal(rate_init)) && (@isdefinedlocal(p_bin_lim) || @isdefinedlocal(r_bin_lim))
         p_dim = length(get_any(sim_param_closure, "p_lim_arr", Array{Float64,1}))-1
         r_dim = length(get_any(sim_param_closure, "r_lim_arr", Array{Float64,1}))-1
         n_bin = p_dim*r_dim
-        rate_init = fill(1.0*0.01, n_bin)
-        rate_tab_init = reshape(rate_init, (r_dim, p_dim))
+        rate_init = fill(1.0, n_bin)
+        rate_tab_init = reshape(rate_init*0.01, (r_dim, p_dim))
         add_param_active(sim_param_closure, "obs_par", rate_tab_init)
     end
     
