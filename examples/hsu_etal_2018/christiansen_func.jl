@@ -33,19 +33,20 @@ function setup_sim_param_christiansen(args::Vector{String} = Array{String}(0) ) 
     add_param_fixed(sim_param,"mr_power_index",2.0)
     add_param_fixed(sim_param,"mr_const",1.0)
     add_param_fixed(sim_param,"generate_period_and_sizes", generate_period_and_sizes_christiansen)
-    add_param_fixed(sim_param,"calc_target_obs_single_obs",ExoplanetsSysSim.calc_target_obs_single_obs)
-    add_param_fixed(sim_param_closure,"transit_noise_model",ExoplanetsSysSim.transit_noise_model_diagonal)
-
     p_lim_arr_num = [0.5, 1.25, 2.5, 5., 10., 20., 40., 80., 160., 320.]
     r_lim_arr_num = [0.5, 0.75, 1., 1.25, 1.5, 1.75, 2., 2.5, 3., 4., 6., 8., 12., 16.]
     p_dim = length(p_lim_arr_num)-1
     r_dim = length(r_lim_arr_num)-1
     rate_tab_init = reshape(fill(1.0, p_dim*r_dim)*0.01,(r_dim,p_dim))
-
     add_param_fixed(sim_param, "p_lim_arr", p_lim_arr_num)
     add_param_fixed(sim_param, "r_lim_arr", r_lim_arr_num*ExoplanetsSysSim.earth_radius)
     add_param_active(sim_param,"obs_par", rate_tab_init)
-
+    add_param_fixed(sim_param,"generate_e_omega",ExoplanetsSysSim.generate_e_omega_rayleigh)
+    add_param_fixed(sim_param,"sigma_hk",0.03)
+    add_param_fixed(sim_param,"sigma_incl",2.0)   # degrees 
+    add_param_fixed(sim_param,"calc_target_obs_sky_ave",ExoplanetsSysSim.calc_target_obs_sky_ave)
+    add_param_fixed(sim_param,"calc_target_obs_single_obs",ExoplanetsSysSim.calc_target_obs_single_obs)
+    add_param_fixed(sim_param_closure,"transit_noise_model",ExoplanetsSysSim.transit_noise_model_diagonal)
     return sim_param
 end
 
