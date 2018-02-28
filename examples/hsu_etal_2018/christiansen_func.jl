@@ -46,7 +46,7 @@ function setup_sim_param_christiansen(args::Vector{String} = Array{String}(0) ) 
     add_param_fixed(sim_param,"sigma_incl",2.0)   # degrees 
     add_param_fixed(sim_param,"calc_target_obs_sky_ave",ExoplanetsSysSim.calc_target_obs_sky_ave)
     add_param_fixed(sim_param,"calc_target_obs_single_obs",ExoplanetsSysSim.calc_target_obs_single_obs)
-    add_param_fixed(sim_param_closure,"transit_noise_model",ExoplanetsSysSim.transit_noise_model_diagonal)
+    add_param_fixed(sim_param,"transit_noise_model",ExoplanetsSysSim.transit_noise_model_diagonal)
     return sim_param
 end
 
