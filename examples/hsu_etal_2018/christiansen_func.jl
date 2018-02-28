@@ -1,3 +1,6 @@
+## ExoplanetsSysSim/examples/hsu_etal_2018/christiansen_func.jl
+## (c) 2018 Danley C. Hsu & Eric B. Ford
+
 using ExoplanetsSysSim
 using StatsFuns
 using JLD
@@ -427,7 +430,9 @@ end
 ## inverse_detection
 function inv_det_prob(param::SimParam)
   df_star = setup_star_table_christiansen(param)
+  println("# Finished reading in stellar data")
   df_koi,usable_koi = read_koi_catalog(param)
+  println("# Finished reading in KOI data") 
   cat_obs = setup_actual_planet_candidate_catalog(df_star, df_koi, usable_koi, param)
   inv_det_prob(cat_obs, param)
 end

@@ -1,12 +1,11 @@
-## ExoplanetsSysSim/examples/abc_setup.jl
-## (c) 2016 Eric B. Ford & Danley C. Hsu
+## ExoplanetsSysSim/examples/hsu_etal_2018/abc_setup.jl
+## (c) 2018 Eric B. Ford & Danley C. Hsu
 
 module EvalSysSimModel
   export setup, get_param_vector, get_ss_obs #, evaluate_model
   export gen_data, calc_summary_stats, calc_distance, is_valid
   using ExoplanetsSysSim
   include(joinpath(Pkg.dir(),"ExoplanetsSysSim","examples","hsu_etal_2018", "christiansen_func.jl"))
-  #include(joinpath(pwd(), "param_file.jl"))
 
   sim_param_closure = SimParam()
   summary_stat_ref_closure =  CatalogSummaryStatistics()
@@ -90,7 +89,6 @@ module SysSimABC
   import ExoplanetsSysSim
   import EvalSysSimModel
   include(joinpath(Pkg.dir(),"ExoplanetsSysSim","examples","hsu_etal_2018", "christiansen_func.jl"))
-  #include(joinpath(pwd(), "param_file.jl"))
 
   function setup_abc(num_dist::Integer = 0)
     EvalSysSimModel.setup()

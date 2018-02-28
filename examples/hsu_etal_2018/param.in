@@ -6,3 +6,4 @@ r_bin_lim = [1.0, 1.5]    # bin boundaries for radius (R_earth)
 rate_init = 1.0           # initial guess for occurrence rates (percent)
                           # can be single rate or array of rates 
                           # (axis 1 = radius; axis 2 = period)
+                          # (1D array reshaped along increasing radius first, then period)

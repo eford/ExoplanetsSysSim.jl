@@ -1,12 +1,10 @@
+## ExoplanetsSysSim/examples/hsu_etal_2018/invdet_calc.jl
+## (c) 2018 Danley C. Hsu
+
 using ExoplanetsSysSim
-include("christiansen_func.jl")
+include(joinpath(Pkg.dir(),"ExoplanetsSysSim","examples","hsu_etal_2018", "christiansen_func.jl"))
 
 global sim_param_closure = setup_sim_param_christiansen()
-
-p_lim_arr_num = [237, 320.]
-r_lim_arr_num = [1., 1.5]
-
-add_param_fixed(sim_param_closure, "p_lim_arr", p_lim_arr_num)
-add_param_fixed(sim_param_closure, "r_lim_arr", r_lim_arr_num*ExoplanetsSysSim.earth_radius)
+sim_param_closure = set_test_param(sim_param_closure)
 
 @time inv_det_prob(sim_param_closure)
