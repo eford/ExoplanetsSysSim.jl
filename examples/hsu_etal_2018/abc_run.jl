@@ -4,14 +4,15 @@
 include(joinpath(pwd(), "abc_setup.jl"))
 
 using SysSimABC
+using ExoplanetsSysSim
 using JLD
 using StatsBase
 
 abc_plan = setup_abc()
 @time output = run_abc(abc_plan)
 
-limitP::Array{Float64,1} = get_any(EvalSysSimModel.sim_param_closure, "p_lim_arr", Array{Float64,1})
-limitR::Array{Float64,1} = get_any(EvalSysSimModel.sim_param_closure, "r_lim_arr", Array{Float64,1})
+limitP = get_any(EvalSysSimModel.sim_param_closure, "p_lim_arr", Array{Float64,1})
+limitR = get_any(EvalSysSimModel.sim_param_closure, "r_lim_arr", Array{Float64,1})
 dens_denom = 1.0/(log2(limitP[2])-log2(limitP[1]))/(log2(limitR[2])-log2(limitR[1]))
 
 weight_vec = pweights(output.weights)
