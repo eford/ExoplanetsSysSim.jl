@@ -5,12 +5,8 @@ include("clusters.jl")
 sim_param = setup_sim_param_model()
 add_param_fixed(sim_param,"num_targets_sim_pass_one",15006) #9)   # For "observed" data, use a realistic number of targets (after any cuts you want to perform)
 
-##### To generate a simulated catalog to fit to:
 
-cat_phys = generate_kepler_physical_catalog(sim_param)
-cat_phys_cut = ExoplanetsSysSim.generate_obs_targets(cat_phys,sim_param)
-cat_obs = observe_kepler_targets_single_obs(cat_phys_cut,sim_param)
-summary_stat_ref = calc_summary_stats_model(cat_obs,sim_param)
+
 
 
 ##### To load the DR25 catalog and compute arrays of multiplicities, periods, period ratios, transit durations, transit depths, period-normalized transit duration ratios (xi), and transit depth ratios:
@@ -208,7 +204,13 @@ write_model_params(f, sim_param)
 
 
 
-##### To run the same model multiple times to see how it compares to the simulated catalog:
+##### To run the same model multiple times to see how it compares to a simulated catalog with the same parameters:
+
+#To generate a simulated catalog to fit to:
+cat_phys = generate_kepler_physical_catalog(sim_param)
+cat_phys_cut = ExoplanetsSysSim.generate_obs_targets(cat_phys,sim_param)
+cat_obs = observe_kepler_targets_single_obs(cat_phys_cut,sim_param)
+summary_stat_ref = calc_summary_stats_model(cat_obs,sim_param)
 
 tic()
 println("# Active parameters: ", make_vector_of_active_param_keys(sim_param))
@@ -271,9 +273,9 @@ println(f, "# Format: Dist: [distances][total distance]")
 
 # May want to experiment with different algorithms, number of evaluations, population size, etc.
 tic()
-#opt_result = bboptimize(target_function_Kepler; SearchRange = active_params_box, NumDimensions = length(active_param), Method = :adaptive_de_rand_1_bin_radiuslimited, PopulationSize = length(active_param)*4, MaxFuncEvals = 20, TraceMode = :verbose)
+#opt_result = bboptimize(target_function_Kepler; SearchRange = active_params_box, NumDimensions = length(active_param_true), Method = :adaptive_de_rand_1_bin_radiuslimited, PopulationSize = length(active_param_true)*4, MaxFuncEvals = 20, TraceMode = :verbose)
 
-opt_result = bboptimize(target_function_Kepler; SearchRange = active_params_box, NumDimensions = length(active_param), Method = :adaptive_de_rand_1_bin_radiuslimited, PopulationSize = length(active_param)*4, MaxFuncEvals = max_evals, TargetFitness = mean_dist, FitnessTolerance = rms_dist, TraceMode = :verbose)
+opt_result = bboptimize(target_function_Kepler; SearchRange = active_params_box, NumDimensions = length(active_param_true), Method = :adaptive_de_rand_1_bin_radiuslimited, PopulationSize = length(active_param_true)*4, MaxFuncEvals = max_evals, TargetFitness = mean_dist, FitnessTolerance = rms_dist, TraceMode = :verbose)
 t_elapsed = toc()
 
 println(f, "# best_candidate: ", best_candidate(opt_result))
