@@ -437,13 +437,14 @@ end
 
 ## inverse_detection & simple bayesian
 function inv_det(cat_obs::KeplerObsCatalog, param::SimParam)
-    num_targ = num_usable_in_star_table()
+    num_targ = ExoplanetsSysSim.StellarTable.num_usable_in_star_table()
 
     limitP::Array{Float64,1} = get_any(param, "p_lim_arr", Array{Float64,1})
     limitRp::Array{Float64,1} = get_any(param, "r_lim_arr", Array{Float64,1})
 
+    println("------------------------------")
     cnt_bin, np_bin = cnt_np_bin(cat_obs, param)
-    println()
+    println("------------------------------")
 
     println("Inverse Detection Rates:")
     for i in 1:(length(limitP)-1)
@@ -458,18 +459,20 @@ function inv_det(cat_obs::KeplerObsCatalog, param::SimParam)
             end
         end
     end
+    println()
 end
 
 function simp_bayes(cat_obs::KeplerObsCatalog, param::SimParam)
-    num_targ = num_usable_in_star_table()
+    num_targ = ExoplanetsSysSim.StellarTable.num_usable_in_star_table()
 
     limitP::Array{Float64,1} = get_any(param, "p_lim_arr", Array{Float64,1})
     limitRp::Array{Float64,1} = get_any(param, "r_lim_arr", Array{Float64,1})
 
+    println("------------------------------")
     cnt_bin, np_bin = cnt_np_bin(cat_obs, param)
-    println()
+    println("------------------------------")
     ess_bin = stellar_ess(param)
-    println()
+    println("------------------------------")
 
     println("Simple Bayesian Rates:")
     for i in 1:(length(limitP)-1)
@@ -482,18 +485,20 @@ function simp_bayes(cat_obs::KeplerObsCatalog, param::SimParam)
                     " - ", rate_f - low_quant, " %")
         end
     end
+    println()
 end
 
 function inv_det_simp_bayes(cat_obs::KeplerObsCatalog, param::SimParam)
-    num_targ = num_usable_in_star_table()
+    num_targ = ExoplanetsSysSim.StellarTable.num_usable_in_star_table()
 
     limitP::Array{Float64,1} = get_any(param, "p_lim_arr", Array{Float64,1})
     limitRp::Array{Float64,1} = get_any(param, "r_lim_arr", Array{Float64,1})
 
+    println("------------------------------")
     cnt_bin, np_bin = cnt_np_bin(cat_obs, param)
-    println()
+    println("------------------------------")
     ess_bin = stellar_ess(param)
-    println()
+    println("------------------------------")
 
     println("Inverse Detection Rates:")
     for i in 1:(length(limitP)-1)
@@ -521,11 +526,12 @@ function inv_det_simp_bayes(cat_obs::KeplerObsCatalog, param::SimParam)
                     " - ", rate_f - low_quant, " %")
         end
     end
+    println()
 end
 
 ## cnt_bin & np_bin (inverse detection & simple bayesian)
-function cnt_np_bin(cat_obs::KeplerObsCatalog, param::SimParam)
-    num_targ = num_usable_in_star_table()
+function cnt_np_bin(cat_obs::KeplerObsCatalog, param::SimParam, verbose::Bool = true)
+    num_targ = ExoplanetsSysSim.StellarTable.num_usable_in_star_table()
     idx_tranets = find(x::KeplerTargetObs-> length(x.obs) > 0, cat_obs.target)::Array{Int64,1} 
 
     limitP::Array{Float64,1} = get_any(param, "p_lim_arr", Array{Float64,1})
@@ -535,6 +541,7 @@ function cnt_np_bin(cat_obs::KeplerObsCatalog, param::SimParam)
     cnt_bin = zeros((length(limitP)-1) * (length(limitRp)-1))
     pl_idx = 1
 
+    println("Calculating completeness for each planet...")
     for i in idx_tranets
         for j in 1:num_planets(cat_obs.target[i])
             pper = cat_obs.target[i].obs[j].period
@@ -547,11 +554,11 @@ function cnt_np_bin(cat_obs::KeplerObsCatalog, param::SimParam)
                 pgeo = ExoplanetsSysSim.calc_transit_prob_single_planet_approx(pper, cat_obs.target[i].star.radius, cat_obs.target[i].star.mass)
 	        pdet = 0.0
 	        for star_id in 1:num_targ
-	            star = SingleStar(star_table(star_id,:radius),star_table(star_id,:mass),1.0, star_id)
-	            cdpp = 1.0e-6 * star_table(star_id, :rrmscdpp04p5) * sqrt(4.5/24.0 / ExoplanetsSysSim.LC_duration )
+	            star = SingleStar(ExoplanetsSysSim.StellarTable.star_table(star_id,:radius),ExoplanetsSysSim.StellarTable.star_table(star_id,:mass),1.0, star_id)
+	            cdpp = 1.0e-6 * ExoplanetsSysSim.StellarTable.star_table(star_id, :rrmscdpp04p5) * sqrt(4.5/24.0 / ExoplanetsSysSim.LC_duration )
 	            contam = 0.0
-	            data_span = star_table(star_id, :dataspan)
-	            duty_cycle = star_table(star_id, :dutycycle)
+	            data_span = ExoplanetsSysSim.StellarTable.star_table(star_id, :dataspan)
+	            duty_cycle = ExoplanetsSysSim.StellarTable.star_table(star_id, :dutycycle)
 	            pl_arr = Array{Planet}( 1)
 	            orbit_arr = Array{Orbit}( 1)
                     incl = acos(rand()*star.radius*ExoplanetsSysSim.rsol_in_au/ExoplanetsSysSim.semimajor_axis(pper, star.mass))
@@ -569,8 +576,9 @@ function cnt_np_bin(cat_obs::KeplerObsCatalog, param::SimParam)
 	            pdet += ExoplanetsSysSim.calc_prob_detect_if_transit(kep_targ, snr_central, param, num_transit=ntr)
 	        end
                 np_bin[(pbin-1)*(length(limitRp)-1) + rbin] += 1.0/pgeo/(pdet/num_targ)
-                
-	        println("Planet ",pl_idx," => Bin ", (pbin-1)*(length(limitRp)-1) + rbin, ", C = ", 1.0/pgeo/(pdet/num_targ))
+                if verbose
+	            println("Planet ",pl_idx," => Bin ", (pbin-1)*(length(limitRp)-1) + rbin, ", C = ", 1.0/pgeo/(pdet/num_targ))
+                end
 	        pl_idx += 1
             end
         end
@@ -579,21 +587,22 @@ function cnt_np_bin(cat_obs::KeplerObsCatalog, param::SimParam)
 end
 
 ## stellar catalog ess (simple bayesian)
-function stellar_ess(param::SimParam)
+function stellar_ess(param::SimParam, verbose::Bool = true)
   num_realiz = 100
-  num_targ = num_usable_in_star_table()
+  num_targ = ExoplanetsSysSim.StellarTable.num_usable_in_star_table()
 
   limitP::Array{Float64,1} = get_any(param, "p_lim_arr", Array{Float64,1})
   limitRp::Array{Float64,1} = get_any(param, "r_lim_arr", Array{Float64,1})
 
   ess_bin = zeros((length(limitP)-1) * (length(limitRp)-1))
 
+  println(string("Stellar ESS calculation beginning..."))
   for star_id in 1:num_targ
-    star = SingleStar(star_table(star_id,:radius),star_table(star_id,:mass),1.0, star_id)
-    cdpp = 1.0e-6 * star_table(star_id, :rrmscdpp04p5) * sqrt(4.5/24.0 / ExoplanetsSysSim.LC_duration )
+    star = SingleStar(ExoplanetsSysSim.StellarTable.star_table(star_id,:radius),ExoplanetsSysSim.StellarTable.star_table(star_id,:mass),1.0, star_id)
+    cdpp = 1.0e-6 * ExoplanetsSysSim.StellarTable.star_table(star_id, :rrmscdpp04p5) * sqrt(4.5/24.0 / ExoplanetsSysSim.LC_duration )
     contam = 0.0
-    data_span = star_table(star_id, :dataspan)
-    duty_cycle = star_table(star_id, :dutycycle)
+    data_span = ExoplanetsSysSim.StellarTable.star_table(star_id, :dataspan)
+    duty_cycle = ExoplanetsSysSim.StellarTable.star_table(star_id, :dutycycle)
   
     for i_idx in 1:(length(limitP)-1)
       for j_idx in 1:(length(limitRp)-1)
@@ -626,15 +635,18 @@ function stellar_ess(param::SimParam)
         ess_bin[(i_idx-1)*(length(limitRp)-1) + j_idx] += temp_bin/num_realiz
       end
     end
-    if (rem(star_id, 1000) == 0.)
+    if verbose && rem(star_id, 10000) == 0.
       println(string("Star #", star_id, " finished"))
     end
   end
-  
-  for i in 1:(length(limitP)-1)
-    for j in 1:(length(limitRp)-1)
-      println("Period limits: ", limitP[i:i+1], " / Radius limits: ", limitRp[j:j+1]/ExoplanetsSysSim.earth_radius, " / Stellar ESS = ", ess_bin[(i-1)*(length(limitRp)-1) + j])
-    end
+
+  if verbose
+      println("")
+      for i in 1:(length(limitP)-1)
+          for j in 1:(length(limitRp)-1)
+              println("Period limits: ", limitP[i:i+1], " / Radius limits: ", limitRp[j:j+1]/ExoplanetsSysSim.earth_radius, " / Stellar ESS = ", ess_bin[(i-1)*(length(limitRp)-1) + j])
+          end
+      end
   end
   return ess_bin
 end
