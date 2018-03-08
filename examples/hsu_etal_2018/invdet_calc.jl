@@ -6,5 +6,12 @@ include(joinpath(Pkg.dir(),"ExoplanetsSysSim","examples","hsu_etal_2018", "chris
 
 global sim_param_closure = setup_sim_param_christiansen()
 sim_param_closure = set_test_param(sim_param_closure)
+add_param_fixed(sim_param_closure,"koi_catalog","q1_q16_koi_cand.csv")
 
-@time inv_det_prob(sim_param_closure)
+df_star = setup_star_table_christiansen(sim_param_closure)
+println("# Finished reading in stellar data")
+df_koi,usable_koi = read_koi_catalog(sim_param_closure)
+println("# Finished reading in KOI data") 
+cat_obs = setup_actual_planet_candidate_catalog(df_star, df_koi, usable_koi, sim_param_closure)
+
+@time inv_det_simp_bayes(cat_obs, sim_param_closure)

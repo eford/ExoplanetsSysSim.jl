@@ -54,8 +54,16 @@ function setup_sim_param_christiansen(args::Vector{String} = Array{String}(0) ) 
 end
 
 function set_test_param(sim_param_closure::SimParam)
-    #local num_targets_sim, p_bin_lim, r_bin_lim, rate_init
     @eval(include(joinpath(pwd(),"param.in")))
+
+    if @isdefinedlocal(stellar_catalog)
+        @assert (typeof(stellar_catalog) == String)
+        add_param_fixed(sim_param_closure,"stellar_catalog",stellar_catalog)
+    end
+    if @isdefinedlocal(koi_catalog)
+        @assert (typeof(koi_catalog) == String)
+        add_param_fixed(sim_param_closure,"koi_catalog",koi_catalog)
+    end
     
     if @isdefinedlocal(num_targets_sim)
         @assert (typeof(num_targets_sim) == Int)
@@ -427,115 +435,158 @@ function test_christiansen()
 end
 
 
-## inverse_detection
-function inv_det_prob(param::SimParam)
-  df_star = setup_star_table_christiansen(param)
-  println("# Finished reading in stellar data")
-  df_koi,usable_koi = read_koi_catalog(param)
-  println("# Finished reading in KOI data") 
-  cat_obs = setup_actual_planet_candidate_catalog(df_star, df_koi, usable_koi, param)
-  inv_det_prob(cat_obs, param)
+## inverse_detection & simple bayesian
+function inv_det(cat_obs::KeplerObsCatalog, param::SimParam)
+    num_targ = num_usable_in_star_table()
+
+    limitP::Array{Float64,1} = get_any(param, "p_lim_arr", Array{Float64,1})
+    limitRp::Array{Float64,1} = get_any(param, "r_lim_arr", Array{Float64,1})
+
+    cnt_bin, np_bin = cnt_np_bin(cat_obs, param)
+    println()
+
+    println("Inverse Detection Rates:")
+    for i in 1:(length(limitP)-1)
+        for j in 1:(length(limitRp)-1)
+            rate_f = np_bin[(i-1)*(length(limitRp)-1) + j]/num_targ*100.
+            if cnt_bin[(i-1)*(length(limitRp)-1) + j] > 0.
+                println(rate_f, 
+                        " +/- ", rate_f/sqrt(cnt_bin[(i-1)*(length(limitRp)-1) + j]), " %")
+            else
+                println(rate_f, 
+                        " +/- N/A %")
+            end
+        end
+    end
 end
 
-function inv_det_prob(cat_obs::KeplerObsCatalog, param::SimParam)
-  num_targ = num_usable_in_star_table()
-  idx_tranets = find(x::KeplerTargetObs-> length(x.obs) > 0, cat_obs.target)::Array{Int64,1} 
+function simp_bayes(cat_obs::KeplerObsCatalog, param::SimParam)
+    num_targ = num_usable_in_star_table()
 
-  limitP::Array{Float64,1} = get_any(param, "p_lim_arr", Array{Float64,1})
-  limitRp::Array{Float64,1} = get_any(param, "r_lim_arr", Array{Float64,1})
+    limitP::Array{Float64,1} = get_any(param, "p_lim_arr", Array{Float64,1})
+    limitRp::Array{Float64,1} = get_any(param, "r_lim_arr", Array{Float64,1})
 
-  np_bin = zeros((length(limitP)-1) * (length(limitRp)-1))
-  w2_bin = zeros((length(limitP)-1) * (length(limitRp)-1))
-  cnt_bin = zeros((length(limitP)-1) * (length(limitRp)-1))
-  pl_idx = 1
+    cnt_bin, np_bin = cnt_np_bin(cat_obs, param)
+    println()
+    ess_bin = stellar_ess(param)
+    println()
 
-  for i in idx_tranets
-    for j in 1:num_planets(cat_obs.target[i])
-      pper = cat_obs.target[i].obs[j].period
-      prad = sqrt(cat_obs.target[i].obs[j].depth)*cat_obs.target[i].star.radius
-
-      pbin = findfirst(x -> ((pper > limitP[x]) && (pper < limitP[x+1])), collect(1:(length(limitP)-1)))
-      rbin = findfirst(x -> ((prad > limitRp[x]) && (prad < limitRp[x+1])), collect(1:(length(limitRp)-1)))
-      if (pbin > 0 && rbin > 0)
-        cnt_bin[(pbin-1)*(length(limitRp)-1) + rbin] += 1
-        pgeo = ExoplanetsSysSim.calc_transit_prob_single_planet_approx(pper, cat_obs.target[i].star.radius, cat_obs.target[i].star.mass)
-	pdet = 0.0
-	for star_id in 1:num_targ
-	  star = SingleStar(star_table(star_id,:radius),star_table(star_id,:mass),1.0, star_id)
-	  cdpp = 1.0e-6 * star_table(star_id, :rrmscdpp04p5) * sqrt(4.5/24.0 / ExoplanetsSysSim.LC_duration )
-	  contam = 0.0
-	  data_span = star_table(star_id, :dataspan)
-	  duty_cycle = star_table(star_id, :dutycycle)
-	  pl_arr = Array{Planet}( 1)
-	  orbit_arr = Array{Orbit}( 1)
-          incl = acos(rand()*star.radius*ExoplanetsSysSim.rsol_in_au/ExoplanetsSysSim.semimajor_axis(pper, star.mass))
-	  orbit_arr[1] = Orbit(pper, 0., incl, 0., 0., rand()*2.*pi)
-	  pl_arr[1] = Planet(prad, 1.0e-6)
-	  kep_targ = KeplerTarget([PlanetarySystem(star, pl_arr, orbit_arr)], fill(cdpp,ExoplanetsSysSim.num_cdpp_timescales,ExoplanetsSysSim.num_quarters),contam,data_span,duty_cycle)
-
-	  duration_central = ExoplanetsSysSim.calc_transit_duration(kep_targ,1,1) 
-	  if duration_central <= 0.
-	    continue
-	  end
-	  ntr = ExoplanetsSysSim.calc_expected_num_transits(kep_targ, 1, 1, param)
-	  depth = ExoplanetsSysSim.calc_transit_depth(kep_targ,1,1)
-          snr_central = ExoplanetsSysSim.calc_snr_if_transit(kep_targ, depth, duration_central, param, num_transit=ntr)
-	  pdet += ExoplanetsSysSim.calc_prob_detect_if_transit(kep_targ, snr_central, param, num_transit=ntr)
-	end
-        np_bin[(pbin-1)*(length(limitRp)-1) + rbin] += 1.0/pgeo/(pdet/num_targ)
-	w2_bin[(pbin-1)*(length(limitRp)-1) + rbin] += (1.0/pgeo/(pdet/num_targ))^2
-	println("Planet ",pl_idx," => Bin ", (pbin-1)*(length(limitRp)-1) + rbin, ", C = ", 1.0/pgeo/(pdet/num_targ))
-	pl_idx += 1
-      end
+    println("Simple Bayesian Rates:")
+    for i in 1:(length(limitP)-1)
+        for j in 1:(length(limitRp)-1)
+            rate_f = (1.0+cnt_bin[(i-1)*(length(limitRp)-1) + j])/(1.0+ess_bin[(i-1)*(length(limitRp)-1) + j])*100.
+            up_quant = quantile(Gamma(1.0+cnt_bin[(i-1)*(length(limitRp)-1) + j], 1.0/(1.0+ess_bin[(i-1)*(length(limitRp)-1) + j])), 0.8413)*100.
+            low_quant = quantile(Gamma(1.0+cnt_bin[(i-1)*(length(limitRp)-1) + j], 1.0/(1.0+ess_bin[(i-1)*(length(limitRp)-1) + j])), 0.1587)*100.
+            println(rate_f, 
+                    " + ", up_quant - rate_f,
+                    " - ", rate_f - low_quant, " %")
+        end
     end
-  end
-
-  println()
-  ess_bin = stellar_ess(param)
-  println()
-
-  println("Christiansen Rates:")
-  for i in 1:(length(limitP)-1)
-    for j in 1:(length(limitRp)-1)
-      rate_f = np_bin[(i-1)*(length(limitRp)-1) + j]/num_targ*100.
-      if cnt_bin[(i-1)*(length(limitRp)-1) + j] > 0.
-        println(rate_f, 
-                " +/- ", rate_f/sqrt(cnt_bin[(i-1)*(length(limitRp)-1) + j]), " %")
-      else
-        println(rate_f, 
-                " +/- N/A %")
-      end
-    end
-  end
-
-  println()
-  println("New Rates:")
-  for i in 1:(length(limitP)-1)
-    for j in 1:(length(limitRp)-1)
-      rate_f = (1.0+cnt_bin[(i-1)*(length(limitRp)-1) + j])/(1.0+ess_bin[(i-1)*(length(limitRp)-1) + j])*100.
-      up_quant = quantile(Gamma(1.0+cnt_bin[(i-1)*(length(limitRp)-1) + j], 1.0/(1.0+ess_bin[(i-1)*(length(limitRp)-1) + j])), 0.8413)*100.
-      low_quant = quantile(Gamma(1.0+cnt_bin[(i-1)*(length(limitRp)-1) + j], 1.0/(1.0+ess_bin[(i-1)*(length(limitRp)-1) + j])), 0.1587)*100.
-#      println(rate_f, 
-#                " +/- ", rate_f/sqrt(1.+cnt_bin[(i-1)*(length(limitRp)-1) + j]), " %")
-       println(rate_f, 
-               " + ", up_quant - rate_f,
-               " - ", rate_f - low_quant, " %")
-    end
-  end
-
 end
 
-## stellar catalog ess
+function inv_det_simp_bayes(cat_obs::KeplerObsCatalog, param::SimParam)
+    num_targ = num_usable_in_star_table()
+
+    limitP::Array{Float64,1} = get_any(param, "p_lim_arr", Array{Float64,1})
+    limitRp::Array{Float64,1} = get_any(param, "r_lim_arr", Array{Float64,1})
+
+    cnt_bin, np_bin = cnt_np_bin(cat_obs, param)
+    println()
+    ess_bin = stellar_ess(param)
+    println()
+
+    println("Inverse Detection Rates:")
+    for i in 1:(length(limitP)-1)
+        for j in 1:(length(limitRp)-1)
+            rate_f = np_bin[(i-1)*(length(limitRp)-1) + j]/num_targ*100.
+            if cnt_bin[(i-1)*(length(limitRp)-1) + j] > 0.
+                println(rate_f, 
+                        " +/- ", rate_f/sqrt(cnt_bin[(i-1)*(length(limitRp)-1) + j]), " %")
+            else
+                println(rate_f, 
+                        " +/- N/A %")
+            end
+        end
+    end
+
+    println()
+    println("Simple Bayesian Rates:")
+    for i in 1:(length(limitP)-1)
+        for j in 1:(length(limitRp)-1)
+            rate_f = (1.0+cnt_bin[(i-1)*(length(limitRp)-1) + j])/(1.0+ess_bin[(i-1)*(length(limitRp)-1) + j])*100.
+            up_quant = quantile(Gamma(1.0+cnt_bin[(i-1)*(length(limitRp)-1) + j], 1.0/(1.0+ess_bin[(i-1)*(length(limitRp)-1) + j])), 0.8413)*100.
+            low_quant = quantile(Gamma(1.0+cnt_bin[(i-1)*(length(limitRp)-1) + j], 1.0/(1.0+ess_bin[(i-1)*(length(limitRp)-1) + j])), 0.1587)*100.
+            println(rate_f, 
+                    " + ", up_quant - rate_f,
+                    " - ", rate_f - low_quant, " %")
+        end
+    end
+end
+
+## cnt_bin & np_bin (inverse detection & simple bayesian)
+function cnt_np_bin(cat_obs::KeplerObsCatalog, param::SimParam)
+    num_targ = num_usable_in_star_table()
+    idx_tranets = find(x::KeplerTargetObs-> length(x.obs) > 0, cat_obs.target)::Array{Int64,1} 
+
+    limitP::Array{Float64,1} = get_any(param, "p_lim_arr", Array{Float64,1})
+    limitRp::Array{Float64,1} = get_any(param, "r_lim_arr", Array{Float64,1})
+
+    np_bin = zeros((length(limitP)-1) * (length(limitRp)-1))
+    cnt_bin = zeros((length(limitP)-1) * (length(limitRp)-1))
+    pl_idx = 1
+
+    for i in idx_tranets
+        for j in 1:num_planets(cat_obs.target[i])
+            pper = cat_obs.target[i].obs[j].period
+            prad = sqrt(cat_obs.target[i].obs[j].depth)*cat_obs.target[i].star.radius
+            
+            pbin = findfirst(x -> ((pper > limitP[x]) && (pper < limitP[x+1])), collect(1:(length(limitP)-1)))
+            rbin = findfirst(x -> ((prad > limitRp[x]) && (prad < limitRp[x+1])), collect(1:(length(limitRp)-1)))
+            if (pbin > 0 && rbin > 0)
+                cnt_bin[(pbin-1)*(length(limitRp)-1) + rbin] += 1
+                pgeo = ExoplanetsSysSim.calc_transit_prob_single_planet_approx(pper, cat_obs.target[i].star.radius, cat_obs.target[i].star.mass)
+	        pdet = 0.0
+	        for star_id in 1:num_targ
+	            star = SingleStar(star_table(star_id,:radius),star_table(star_id,:mass),1.0, star_id)
+	            cdpp = 1.0e-6 * star_table(star_id, :rrmscdpp04p5) * sqrt(4.5/24.0 / ExoplanetsSysSim.LC_duration )
+	            contam = 0.0
+	            data_span = star_table(star_id, :dataspan)
+	            duty_cycle = star_table(star_id, :dutycycle)
+	            pl_arr = Array{Planet}( 1)
+	            orbit_arr = Array{Orbit}( 1)
+                    incl = acos(rand()*star.radius*ExoplanetsSysSim.rsol_in_au/ExoplanetsSysSim.semimajor_axis(pper, star.mass))
+	            orbit_arr[1] = Orbit(pper, 0., incl, 0., 0., rand()*2.*pi)
+	            pl_arr[1] = Planet(prad, 1.0e-6)
+	            kep_targ = KeplerTarget([PlanetarySystem(star, pl_arr, orbit_arr)], fill(cdpp,ExoplanetsSysSim.num_cdpp_timescales,ExoplanetsSysSim.num_quarters),contam,data_span,duty_cycle)
+                    
+	            duration_central = ExoplanetsSysSim.calc_transit_duration(kep_targ,1,1) 
+	            if duration_central <= 0.
+	                continue
+	            end
+	            ntr = ExoplanetsSysSim.calc_expected_num_transits(kep_targ, 1, 1, param)
+	            depth = ExoplanetsSysSim.calc_transit_depth(kep_targ,1,1)
+                    snr_central = ExoplanetsSysSim.calc_snr_if_transit(kep_targ, depth, duration_central, param, num_transit=ntr)
+	            pdet += ExoplanetsSysSim.calc_prob_detect_if_transit(kep_targ, snr_central, param, num_transit=ntr)
+	        end
+                np_bin[(pbin-1)*(length(limitRp)-1) + rbin] += 1.0/pgeo/(pdet/num_targ)
+                
+	        println("Planet ",pl_idx," => Bin ", (pbin-1)*(length(limitRp)-1) + rbin, ", C = ", 1.0/pgeo/(pdet/num_targ))
+	        pl_idx += 1
+            end
+        end
+    end
+    return cnt_bin, np_bin
+end
+
+## stellar catalog ess (simple bayesian)
 function stellar_ess(param::SimParam)
   num_realiz = 100
-  setup_star_table_christiansen(param)
   num_targ = num_usable_in_star_table()
 
   limitP::Array{Float64,1} = get_any(param, "p_lim_arr", Array{Float64,1})
   limitRp::Array{Float64,1} = get_any(param, "r_lim_arr", Array{Float64,1})
 
-  np_bin = zeros((length(limitP)-1) * (length(limitRp)-1))
-  w2_bin = zeros((length(limitP)-1) * (length(limitRp)-1))
+  ess_bin = zeros((length(limitP)-1) * (length(limitRp)-1))
 
   for star_id in 1:num_targ
     star = SingleStar(star_table(star_id,:radius),star_table(star_id,:mass),1.0, star_id)
@@ -568,15 +619,11 @@ function stellar_ess(param::SimParam)
 	  ntr = ExoplanetsSysSim.calc_expected_num_transits(kep_targ, 1, 1, param)
 	  depth = ExoplanetsSysSim.calc_transit_depth(kep_targ,1,1)
           snr_central = ExoplanetsSysSim.calc_snr_if_transit(kep_targ, depth, duration_central, param, num_transit=ntr)
-	  #println(semimajor_axis(kep_targ.sys[1], 1))
-	  #println(pper, " ", duration, " ", depth, " ", snr, " ", ntr)
 	  pdet = ExoplanetsSysSim.calc_prob_detect_if_transit(kep_targ, snr_central, param, num_transit=ntr)
 	
-	  temp_bin += (pgeo*pdet)
-          #np_bin[(i_idx-1)*(length(limitRp)-1) + j_idx] += (pgeo*pdet)
-	  #w2_bin[(i_idx-1)*(length(limitRp)-1) + j_idx] += (pgeo*pdet)^2
+	  temp_bin += (pgeo*pdet)          
         end
-        np_bin[(i_idx-1)*(length(limitRp)-1) + j_idx] += temp_bin/num_realiz
+        ess_bin[(i_idx-1)*(length(limitRp)-1) + j_idx] += temp_bin/num_realiz
       end
     end
     if (rem(star_id, 1000) == 0.)
@@ -584,13 +631,10 @@ function stellar_ess(param::SimParam)
     end
   end
   
-  #ess_bin = zeros((length(limitP)-1) * (length(limitRp)-1))
-
   for i in 1:(length(limitP)-1)
     for j in 1:(length(limitRp)-1)
-  #    ess_bin[(i-1)*(length(limitRp)-1) + j] = (np_bin[(i-1)*(length(limitRp)-1) + j]^2)/w2_bin[(i-1)*(length(limitRp)-1) + j]
-      println("Period limits: ", limitP[i:i+1], " / Radius limits: ", limitRp[j:j+1]/ExoplanetsSysSim.earth_radius, " / ESS = ", np_bin[(i-1)*(length(limitRp)-1) + j])
+      println("Period limits: ", limitP[i:i+1], " / Radius limits: ", limitRp[j:j+1]/ExoplanetsSysSim.earth_radius, " / Stellar ESS = ", ess_bin[(i-1)*(length(limitRp)-1) + j])
     end
   end
-  return np_bin
+  return ess_bin
 end
