@@ -1,4 +1,4 @@
-## ExoplanetsSysSim/examples/hsu_et_al/sim_param_plots.jl
+## ExoplanetsSysSim/examples/hsu_etal_2018/misc_utils/period-radius_plots.jl
 ## (c) 2017 Keir A. Ashby
 # Takes any number of SimParams and, calculates observed and physical catalogs with summary statistics and returns:
 #   1.A period-radius distribution of the observed, physical, and true catalogs for each sim_param individually 
@@ -13,9 +13,9 @@ using ExoplanetsSysSim
 using Combinatorics
 
 include(joinpath(Pkg.dir(),"ExoplanetsSysSim","src","constants.jl"))
-include(joinpath(Pkg.dir(),"ExoplanetsSysSim","examples","hsu_etal_2018", "abc_setup_christiansen.jl"))
-include(joinpath(Pkg.dir(),"ExoplanetsSysSim","examples","hsu_etal_2018", "christiansen_func.jl"))
-include(joinpath(Pkg.dir(),"ExoplanetsSysSim","examples","hsu_etal_2018", "calc_sum_stats_pr.jl"))
+include(joinpath(Pkg.dir(),"ExoplanetsSysSim","examples","hsu_etal_2018","abc_setup.jl"))
+include(joinpath(Pkg.dir(),"ExoplanetsSysSim","examples","hsu_etal_2018","christiansen_func.jl"))
+include(joinpath(Pkg.dir(),"ExoplanetsSysSim","examples","hsu_etal_2018","misc_utils","calc_sum_stats_pr.jl"))
 
 #see general file definition at the top for a description of this function's purpose.
 function sim_param_plots(have_sim_params::Bool; sim_arr::Array{Any,1} = [], num_param::Int64 = 0, print_rates=false) 	#if the user already has SimParams to put in, the first input will be true and the second will be an array (even if there's only one) of your SimParams. If you don't already have one, put false as your first input, and how many SimParams you'd like to generate. If you want to see the ratios of observed to kepler planets in all the bins, set print_rates=true) 
@@ -45,19 +45,19 @@ function setup_sim_arr(num_param::Int64 = 1) 				#takes an integer and returns a
   sim_arr = Any[]
   for i in 1:num_param
     sim_param = setup_sim_param_christiansen() 				#sim-param used in christiansen_func.jl
-    hsu_final_rates = [0.039  0.4    2.6   5.1   5.4  3.9  1.6  56  87 
-		       0.1    0.3    1     3.2   3.6  7.9  1.7  5.5 21
-		       0.088  0.18   0.52  1.5   2.8  3.1  4.1  3.2 8.5
-		       0.053  0.13   0.63  1.6   2.4  2.4  2.3  4.4 7.6
-		       0.047  0.13   0.74  1.1   1.9  1.9  2.3  2.7 2.2
-		       0.036  0.057  0.38  0.8   1.6  1.2  2    2.4 3.5
-		       0.0096 0.059  0.29  1.1   2.5  3.7  3.5  3.6 6.4
-   		       0.007  0.042  0.22  0.93  2.3  2.8  3.5  3.1 3.2
-		       0.0044 0.029  0.14  0.6   1.4  1.9  2.3  3.4 5
-		       0.0086 0.012  0.13  0.23  0.48 0.82 0.91 1.5 1.8
-		       0.0033 0.0068 0.057 0.1   0.19 0.23 0.76 0.7 1.9
-       		       0.0045 0.012  0.082 0.16  0.23 0.41 0.32 1.2 2.4
-		       0.0045 0.031  0.12  0.075 0.16 0.18 0.33 0.5 0.59]*0.01	#occurence rates over all bins drawn from results in Hsu et al 2017
+    hsu_final_rates = [0.073  0.62   4.9   9.2   11.9 10.  20.  75. 74. 
+		       0.118  0.376  1.42  5.35  6.3  16.  4.4  8.5 27.
+		       0.089  0.236  0.76  2.41  5.04 5.3  7.5  9.4 25.
+		       0.052  0.123  0.772 1.84  3.63 3.9  5.3  8.  18.
+		       0.053  0.129  0.61  1.24  2.16 3.0  3.8  6.  6.7
+		       0.039  0.053  0.402 0.87  1.93 1.6  3.1  3.6 6.
+		       0.0105 0.047  0.336 1.16  2.59 4.3  4.8  6.2 13.
+   		       0.0058 0.048  0.21  0.96  2.31 2.9  4.1  4.2 5.1
+		       0.0036 0.0183 0.133 0.584 1.42 2.1  2.6  4.3 7.4
+		       0.0021 0.0167 0.136 0.267 0.48 0.91 1.02 1.5 1.9
+		       0.0022 0.0056 0.056 0.101 0.19 0.22 0.74 0.9 2.8
+       		       0.0039 0.012  0.086 0.152 0.23 0.36 0.42 1.5 1.7
+		       0.0041 0.037  0.119 0.074 0.16 0.19 0.20 0.2 0.69]*0.01	#occurence rates over all bins drawn from results in Hsu et al 2017
     hsu_radii = [0.5, 0.75, 1, 1.25, 1.5, 1.75, 2, 2.5, 3, 4, 6, 8, 12, 16]	#limits for the radius bins
     hsu_periods = [0.5, 1.25, 2.5, 5, 10, 20, 40, 80, 160, 320]			#limits for the period bins
     update_param(sim_param, "obs_par", hsu_final_rates)
@@ -89,7 +89,7 @@ end
 
 function make_pr_lists(num_cats, ss_arr::Array{Any,1}, ss_true::ExoplanetsSysSim.CatalogSummaryStatistics)	#Makes lists of all the periods and radii for each catalog
   p_lim_arr = [0.5, 1.25, 2.5, 5, 10, 20, 40, 80, 160, 320]				#bin boundaries for periods
-  r_lim_arr = [0.5, 0.75, 1, 1.25, 1.5, 1.75, 2, 2.5, 3, 4, 6, 8, 12, 16, 20]		#bin boundaries for radii
+  r_lim_arr = [0.5, 0.75, 1, 1.25, 1.5, 1.75, 2, 2.5, 3, 4, 6, 8, 12, 16]		#bin boundaries for radii
   pr_lists = Dict("p_lim_arr"=> p_lim_arr, "r_lim_arr"=> r_lim_arr)
   for i in 1:num_cats
     pr_lists["periods_obs_$i"] = ss_arr[i].stat["period_obs_list"] 			#all the periods in this observable catalog

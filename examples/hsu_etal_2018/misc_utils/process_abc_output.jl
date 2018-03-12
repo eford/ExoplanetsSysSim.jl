@@ -1,4 +1,4 @@
-##ExoplanetsSysSim/examples/hsu_et_al/process_abc_output.jl
+##ExoplanetsSysSim/examples/hsu_etal_2018/misc_utils/process_abc_output.jl
 ##(c) 2017 Keir A. Ashby
 # takes the output from abc_run_christiansen.jl and makes relevant plots 
 # 1. make_plots sends the output into whatever plotting functions we choose to call

@@ -1,4 +1,4 @@
-## ExoplanetsSysSim/examples/hsu_et_al/calc_sum_stats_pr.jl
+## ExoplanetsSysSim/examples/hsu_etal_2018/calc_sum_stats_pr.jl
 ## 2017 Keir A. Ashby
 #  Calculates summary statistics that can be used to generate period-radius distribution plots
 #  Based primarily off of calc_summary_stats_obs_binned_rates from christiansen_func.jl

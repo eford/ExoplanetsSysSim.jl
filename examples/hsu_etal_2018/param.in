@@ -1,12 +1,13 @@
-# To disable parameters, add a '#' character at the beginning of the line
+# All accepted parameters are listed
+# To use default parameters, add a '#' character at the beginning of the line
 
 #stellar_catalog = "q1_q16_christiansen.jld" # data file for stellar catalog
 #koi_catalog = "q1_q16_koi_cand.csv"         # data file for KOI catalog
 
 #num_targ_sim = 150518                       # number of planetary systems in simulated catalogs
 
-p_bin_lim = [237., 320.]                     # bin boundaries for period (days)
-r_bin_lim = [1.0, 1.5]                       # bin boundaries for radius (R_earth)
+p_bin_lim = [237., 320.]                     # bin boundaries for period (days) [NO DEFAULT VALUE]
+r_bin_lim = [1.0, 1.5]                       # bin boundaries for radius (R_earth) [NO DEFAULT VALUE]
 
 rate_init = 1.0                              # initial guess for occurrence rates (percent)
                                              # can be single rate or array of rates 
