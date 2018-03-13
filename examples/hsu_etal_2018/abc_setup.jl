@@ -1,5 +1,6 @@
 ## ExoplanetsSysSim/examples/hsu_etal_2018/abc_setup.jl
 ## (c) 2018 Eric B. Ford & Danley C. Hsu
+# Collection of functions which specific ABC simulation parameters
 
 module EvalSysSimModel
   export setup, get_param_vector, get_ss_obs #, evaluate_model

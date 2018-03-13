@@ -1,5 +1,7 @@
 ## ExoplanetsSysSim/examples/hsu_etal_2018/christiansen_func.jl
 ## (c) 2018 Danley C. Hsu & Eric B. Ford
+# Collection of functions specific to estimating Q1-Q16 FGK
+#   planet candidate occurrence rates over a 2D period-radius grid
 
 using ExoplanetsSysSim
 using StatsFuns

@@ -1,5 +1,8 @@
 ## ExoplanetsSysSim/examples/hsu_etal_2018/invdet_calc.jl
 ## (c) 2018 Danley C. Hsu
+# Script for producing Q1-Q16 FGK planet candidate occurrence rate estimates
+#    using both the inverse detection efficiency and the simple
+#    Bayesian methods
 
 using ExoplanetsSysSim
 include(joinpath(Pkg.dir(),"ExoplanetsSysSim","examples","hsu_etal_2018", "christiansen_func.jl"))

@@ -1,5 +1,7 @@
 ## ExoplanetsSysSim/examples/hsu_etal_2018/abc_run_quick.jl
 ## (c) 2018 Danley C. Hsu & Eric B. Ford
+# Script for producing Q1-Q16 FGK planet candidate occurrence rate estimates
+#    using smaller simulated catalogs
 
 include(joinpath(pwd(), "abc_setup.jl"))
 
