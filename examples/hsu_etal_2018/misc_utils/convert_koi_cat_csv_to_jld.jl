@@ -1,5 +1,5 @@
 ## ExoplanetsSysSim/examples/hsu_etal_2018/misc_utils/convert_koi_cat_csv_to_jld.jl
-## (c) 2017 Danley C. Hsu
+## (c) 2018 Danley C. Hsu
 # Converts KOI catalog data file from csv to jld format
 
 using ExoplanetsSysSim
