@@ -23,7 +23,7 @@ A: The JLD files are repackaged stellar catalog data from the different csv vers
    Some JLD files have been filtered and labeled with the appropriate suffix:  
 * christiansen = Filtered on the FGK selection in the Christiansen et al. (2015) study [Teff = 4000-7000K; log g > 4; observed at least once in Q1-Q12 (only applies to Q1-Q16 file)]
 * cks = Incorporates improved stellar parameters from the California Kepler Survey
-* stellar_type = Filtered on stellar type as defined by the SAG13 working group [K: 3900K <= Teff < 5300K; G: 5300K <= Teff < 6000K; F: 6000 <= Teff < 7300K]
+* stellar_type = Filtered on stellar type as defined by the SAG13 working group [K: 3900K <= Teff < 5300K; G: 5300K <= Teff < 6000K; F: 6000K <= Teff < 7300K]
 
 Q: What is the difference between q1_q16_koi_cand.csv and q1_q16_koi.csv?  
 A: Danley Hsu generated q1_q16_koi_cand.csv based on q1_q16_koi.csv as well as previous KOI catalogs.  The primary difference is that he has used disposition information from previous KOI catalogs that was not reflected in the raw Q16 KOI catalog to select all KOIs with the "candidate" disposition.
