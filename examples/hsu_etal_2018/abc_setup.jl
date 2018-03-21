@@ -65,10 +65,6 @@ module EvalSysSimModel
     ###
 
     global summary_stat_ref_closure = calc_summary_stats_obs_binned_rates(cat_obs,sim_param_closure, trueobs_cat = true)
-
-    # Set simulated catalog size equal to true catalog size
-    num_targ = get_int(sim_param_closure,"num_kepler_targets")
-    add_param_fixed(sim_param_closure,"num_targets_sim_pass_one",num_targ)
   end
 
   get_param_vector() = make_vector_of_sim_param(sim_param_closure)

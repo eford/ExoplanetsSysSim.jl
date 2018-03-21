@@ -26,8 +26,6 @@ function setup_sim_param_christiansen(args::Vector{String} = Array{String}(0) ) 
     sim_param = ExoplanetsSysSim.SimParam()
 
     add_param_fixed(sim_param,"max_tranets_in_sys",7)
-    add_param_fixed(sim_param,"num_kepler_targets",150000)                           # Note this is used for the number of Kepler targets for the observational catalog
-    add_param_fixed(sim_param,"num_targets_sim_pass_one",150000)  # For simulated catalogs
     add_param_fixed(sim_param,"generate_star",ExoplanetsSysSim.generate_star_dumb)
     add_param_fixed(sim_param,"generate_planetary_system", ExoplanetsSysSim.generate_planetary_system_uncorrelated_incl)
     add_param_fixed(sim_param,"generate_kepler_target",ExoplanetsSysSim.generate_kepler_target_from_table)
@@ -165,6 +163,9 @@ function setup_christiansen(sim_param::SimParam; force_reread::Bool = false)
   df = setup_christiansen(stellar_catalog_filename)
   add_param_fixed(sim_param,"read_stellar_catalog",true)
   add_param_fixed(sim_param,"num_kepler_targets",StellarTable.num_usable_in_star_table())
+  if !haskey(sim_param.param,"num_targets_sim_pass_one")
+      add_param_fixed(sim_param_closure,"num_targets_sim_pass_one", StellarTable.num_usable_in_star_table())
+  end
   StellarTable.set_star_table(df)
   return df  
 end
