@@ -165,7 +165,6 @@ function setup_christiansen(sim_param::SimParam; force_reread::Bool = false)
   df = setup_christiansen(stellar_catalog_filename)
   add_param_fixed(sim_param,"read_stellar_catalog",true)
   add_param_fixed(sim_param,"num_kepler_targets",StellarTable.num_usable_in_star_table())
-  add_param_fixed(sim_param,"num_targets_sim_pass_one",StellarTable.num_usable_in_star_table())  # Default simulated catalog size is same as true catalog.
   StellarTable.set_star_table(df)
   return df  
 end
