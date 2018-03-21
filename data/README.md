@@ -20,7 +20,22 @@ http://exoplanetarchive.ipac.caltech.edu/docs/PurposeOfKOITable.html
 
 Q: What are the contents of the JLD files?  
 A: The JLD files are repackaged stellar catalog data from the different csv versions available on the Exoplanet Archive.  
-   Some JLD files have been filtered and labeled with the appropriate suffix:  
+   These files only keep the following columns and only include targets which have valid values in all of these columns:  
+* kepid
+* mass
+* mass_err1
+* mass_err2
+* radius
+* radius_err1
+* radius_err2
+* dens
+* dens_err1
+* dens_err2
+* rrmscdpp04p5
+* dataspan
+* dutycycle
+
+   Some JLD files have had additional filters and are labeled with the appropriate suffix:  
 * christiansen = Filtered on the FGK selection in the Christiansen et al. (2015) study [Teff = 4000-7000K; log g > 4; observed at least once in Q1-Q12 (only applies to Q1-Q16 file)]
 * cks = Incorporates improved stellar parameters from the California Kepler Survey
 * stellar_type = Filtered on stellar type as defined by the SAG13 working group [K: 3900K <= Teff < 5300K; G: 5300K <= Teff < 6000K; F: 6000K <= Teff < 7300K]
