@@ -26,4 +26,4 @@ A: The JLD files are repackaged stellar catalog data from the different csv vers
 * stellar_type = Filtered on stellar type as defined by the SAG13 working group [K: 3900K <= Teff < 5300K; G: 5300K <= Teff < 6000K; F: 6000 <= Teff < 7300K]
 
 Q: What is the difference between q1_q16_koi_cand.csv and q1_q16_koi.csv?  
-A: Danley Hsu generated q1_q16_koi_cand.csv based on q1_q16_koi.csv as well as previous KOI catalogs.  The primary difference is that he has incorporated disposition information from previous KOI catalogs that was not reflected in the raw Q16 KOI catalog.
+A: Danley Hsu generated q1_q16_koi_cand.csv based on q1_q16_koi.csv as well as previous KOI catalogs.  The primary difference is that he has used disposition information from previous KOI catalogs that was not reflected in the raw Q16 KOI catalog to select all KOIs with the "candidate" disposition.
