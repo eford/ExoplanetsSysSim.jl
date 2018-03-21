@@ -70,20 +70,17 @@ function set_test_param(sim_param_closure::SimParam)
         add_param_fixed(sim_param_closure,"num_targets_sim_pass_one",num_targ_sim)
     end
     
-    if @isdefinedlocal(p_bin_lim)
-        @assert (typeof(p_bin_lim) == Array{Float64,1})
-        add_param_fixed(sim_param_closure, "p_lim_arr", p_bin_lim)
-    end
-    if @isdefinedlocal(r_bin_lim)
-        @assert (typeof(r_bin_lim) == Array{Float64,1})
-        add_param_fixed(sim_param_closure, "r_lim_arr", r_bin_lim*ExoplanetsSysSim.earth_radius)
-    end
+    @assert (typeof(p_bin_lim) == Array{Float64,1})
+    add_param_fixed(sim_param_closure, "p_lim_arr", p_bin_lim)
+
+    @assert (typeof(r_bin_lim) == Array{Float64,1})
+    add_param_fixed(sim_param_closure, "r_lim_arr", r_bin_lim*ExoplanetsSysSim.earth_radius)
+
+    p_dim = length(get_any(sim_param_closure, "p_lim_arr", Array{Float64,1}))-1
+    r_dim = length(get_any(sim_param_closure, "r_lim_arr", Array{Float64,1}))-1
+    n_bin = p_dim*r_dim
     
     if @isdefinedlocal(rate_init)
-        p_dim = length(get_any(sim_param_closure, "p_lim_arr", Array{Float64,1}))-1
-        r_dim = length(get_any(sim_param_closure, "r_lim_arr", Array{Float64,1}))-1
-        n_bin = p_dim*r_dim
-
         if typeof(rate_init) <: Real
             @assert (rate_init >= 0.0)
             rate_init = fill(rate_init, n_bin)
@@ -98,10 +95,7 @@ function set_test_param(sim_param_closure::SimParam)
             rate_tab_init = rate_init*0.01
         end
         add_param_active(sim_param_closure, "obs_par", rate_tab_init)
-    elseif !(@isdefinedlocal(rate_init)) && (@isdefinedlocal(p_bin_lim) || @isdefinedlocal(r_bin_lim))
-        p_dim = length(get_any(sim_param_closure, "p_lim_arr", Array{Float64,1}))-1
-        r_dim = length(get_any(sim_param_closure, "r_lim_arr", Array{Float64,1}))-1
-        n_bin = p_dim*r_dim
+    else
         rate_init = fill(1.0, n_bin)
         rate_tab_init = reshape(rate_init*0.01, (r_dim, p_dim))
         add_param_active(sim_param_closure, "obs_par", rate_tab_init)
