@@ -3,7 +3,7 @@ This folder contains example applications of ExoplanetsSysSim - some are fully f
 Working:
 abc                 = Run a full ABC simulation with basic ExoplanetsSysSim providing the model.
 basic               = Run multiple test scripts to test functionality of ExoplanetsSysSim and ABC.
-hsu_etal_2017       = Run full ABC simulations to produce the results of Hsu et al. (2018).
+hsu_etal_2018       = Run full ABC simulations to produce the results of Hsu et al. (2018).
 
 In-Progress:
 clusters            = Developing model using clusters for period ratio studies
