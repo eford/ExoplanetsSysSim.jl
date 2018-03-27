@@ -3,7 +3,7 @@ import DataArrays.skipmissing
 include("clusters.jl")
 
 sim_param = setup_sim_param_model()
-add_param_fixed(sim_param,"num_targets_sim_pass_one",150060) #9)   # For "observed" data, use a realistic number of targets (after any cuts you want to perform)
+add_param_fixed(sim_param,"num_targets_sim_pass_one",15006) #9)   # For "observed" data, use a realistic number of targets (after any cuts you want to perform)
 add_param_fixed(sim_param,"max_incl_sys",80.0) #degrees; 0 (deg) for isotropic system inclinations; set closer to 90 (deg) for more transiting systems
 
 const max_incl_sys = get_real(sim_param,"max_incl_sys")
@@ -204,6 +204,31 @@ function target_function_Kepler(active_param::Vector, all_dist::Bool=false, save
     return dist
 end
 
+function target_function_weighted(active_param::Vector, all_dist::Bool=false, save_dist::Bool=true)
+    #This function takes in the values of the active model parameters, generates a simulated observed catalog, and computes the weighted distance function (assuming an array of weights 'weights' is a global variable) compared to a reference simulated catalog.
+    #If 'all_dist=true', the function outputs the individual distances (weighted) in the distance function.
+    #If 'save_dist=true', the function also saves the distances (unweighted and weighted, individual and total) to a file (assuming file 'f' is open for writing).
+
+    global weights
+
+    dist = target_function(active_param, true, save_dist)
+    weighted_dist = dist./weights
+    #used_dist = weighted_dist[1:6] #choose a subset of the distances to pass into the optimizer
+
+    println("Weighted distances: ", weighted_dist, [sum(weighted_dist)])
+    if save_dist
+        println(f, "Dist_weighted: ", weighted_dist, [sum(weighted_dist)])
+        #println(f, "Dist_used: ", used_dist, [sum(used_dist)])
+    end
+
+    if all_dist
+        return weighted_dist
+    else
+        return sum(weighted_dist)
+        #return sum(used_dist)
+    end
+end
+
 function target_function_Kepler_weighted(active_param::Vector, all_dist::Bool=false, save_dist::Bool=true)
     #This function takes in the values of the active model parameters, generates a simulated observed catalog, and computes the weighted distance function (assuming an array of weights 'weights' is a global variable) compared to the actual Kepler population.
     #If 'all_dist=true', the function outputs the individual distances (weighted) in the distance function.
@@ -213,16 +238,19 @@ function target_function_Kepler_weighted(active_param::Vector, all_dist::Bool=fa
 
     dist = target_function_Kepler(active_param, true, save_dist)
     weighted_dist = dist./weights
+    #used_dist = weighted_dist[1:6] #choose a subset of the distances to pass into the optimizer
 
     println("Weighted distances: ", weighted_dist, [sum(weighted_dist)])
     if save_dist
         println(f, "Dist_weighted: ", weighted_dist, [sum(weighted_dist)])
+        #println(f, "Dist_used: ", used_dist, [sum(used_dist)])
     end
 
     if all_dist
         return weighted_dist
     else
         return sum(weighted_dist)
+        #return sum(used_dist)
     end
 end
 
@@ -317,7 +345,7 @@ toc()
 ##### To draw the initial values of the active parameters randomly within a search range:
 
 active_param_keys = ["break_radius", "log_rate_clusters", "log_rate_planets_per_cluster", "mr_power_index", "num_mutual_hill_radii", "power_law_P", "power_law_r1", "power_law_r2", "sigma_hk", "sigma_incl", "sigma_incl_near_mmr", "sigma_log_radius_in_cluster", "sigma_logperiod_per_pl_in_cluster"]
-active_params_box = [(0.5*ExoplanetsSysSim.earth_radius, 10.*ExoplanetsSysSim.earth_radius), (log(1.), log(5.)), (log(1.), log(5.)), (1., 4.), (5., 20.), (-1., 1.), (-5., 3.), (-5., 3.), (0., 0.2), (0., 5.), (0., 5.), (0., 0.5), (0., 0.5)] #search ranges for all of the active parameters
+active_params_box = [(0.5*ExoplanetsSysSim.earth_radius, 10.*ExoplanetsSysSim.earth_radius), (log(1.), log(5.)), (log(1.), log(5.)), (1., 4.), (3., 20.), (-0.5, 1.5), (-5., 0.), (-6., 3.), (0., 0.1), (0., 5.), (0., 5.), (0.1, 1.0), (0., 0.3)] #search ranges for all of the active parameters
 
 #To randomly draw (uniformly) a value for each active model parameter within its search range:
 for (i,param_key) in enumerate(active_param_keys)
@@ -333,6 +361,7 @@ println(f, "# Optimization active parameters search bounds: ", active_params_box
 println(f, "# Format: Active_params: [active parameter values]")
 println(f, "# Format: Dist: [distances][total distance]")
 println(f, "# Format: Dist_weighted: [weighted distances][total weighted distance]")
+println(f, "# Format: Dist_used: [used weighted distances][total used weighted distance]")
 
 target_function_Kepler_weighted(active_param_start) #to simulate the model once with the drawn parameters and compare to the Kepler population before starting the optimization
 
