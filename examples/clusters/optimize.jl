@@ -108,6 +108,22 @@ function calc_distance(ss1::ExoplanetsSysSim.CatalogSummaryStatistics, ss2::Exop
         append!(M_cat_obs2, k*ones(Int64, ss2.stat["num n-tranet systems"][k]))
     end
 
+    if length(M_cat_obs1)==0 | length(M_cat_obs2)==0
+        println("One of the simulated catalogs has no observed planets.")
+        d = ones(Int64,8)*1e6
+
+        println("Distances: ", d, [sum(d)])
+        if save_dist
+            println(f, "Dist: ", d, [sum(d)])
+        end
+
+        if all_dist
+            return d
+        else
+            return sum(d)
+        end
+    end
+
     d = Array{Float64}(8)
     d[1] = abs(ss1.stat["num_tranets"]/(ss1.stat["num targets"]/cos_factor) - ss2.stat["num_tranets"]/(ss2.stat["num targets"]/cos_factor))
     d[2] = ksstats_ints(M_cat_obs1, M_cat_obs2)[5]
@@ -140,6 +156,22 @@ function calc_distance_Kepler(ss1::ExoplanetsSysSim.CatalogSummaryStatistics, al
     M_cat_obs = ones(Int64,0) #array to be filled with the number of transiting planets in each simulated system
     for k in 1:get_int(sim_param,"max_tranets_in_sys")
         append!(M_cat_obs, k*ones(Int64, ss1.stat["num n-tranet systems"][k]))
+    end
+
+    if length(M_cat_obs)==0
+        println("Simulated catalog has no observed planets.")
+        d = ones(Int64,8)*1e6
+
+        println("Distances: ", d, [sum(d)])
+        if save_dist
+            println(f, "Dist: ", d, [sum(d)])
+        end
+
+        if all_dist
+            return d
+        else
+            return sum(d)
+        end
     end
 
     d = Array{Float64}(8)
@@ -361,7 +393,7 @@ println(f, "# Optimization active parameters search bounds: ", active_params_box
 println(f, "# Format: Active_params: [active parameter values]")
 println(f, "# Format: Dist: [distances][total distance]")
 println(f, "# Format: Dist_weighted: [weighted distances][total weighted distance]")
-println(f, "# Format: Dist_used: [used weighted distances][total used weighted distance]")
+#println(f, "# Format: Dist_used: [used weighted distances][total used weighted distance]")
 
 target_function_Kepler_weighted(active_param_start) #to simulate the model once with the drawn parameters and compare to the Kepler population before starting the optimization
 

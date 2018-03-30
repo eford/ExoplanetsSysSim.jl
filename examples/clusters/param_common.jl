@@ -12,8 +12,8 @@ function setup_sim_param_model(args::Vector{String} = Array{String}(0) )   # all
   # For generating target star properties
   add_param_fixed(sim_param,"generate_kepler_target",generate_kepler_target_from_table)
   add_param_fixed(sim_param,"star_table_setup",setup_star_table_christiansen)
-  #add_param_fixed(sim_param,"stellar_catalog","q1_q17_dr24_stellar.jld")
-  add_param_fixed(sim_param,"stellar_catalog","q1_q17_dr24_stellar.csv")
+  #add_param_fixed(sim_param,"stellar_catalog","q1_q17_dr25_stellar.jld") #currently the JLD files do not have all the necessary fields
+  add_param_fixed(sim_param,"stellar_catalog","q1_q17_dr25_stellar.csv")
   #add_param_fixed(sim_param,"generate_kepler_target",ExoplanetsSysSim.generate_kepler_target_simple)  # An alternative that alternative can be used for testing if above breaks
 
   # For generating planetary system properties
