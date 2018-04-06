@@ -92,7 +92,7 @@ end
 
 
 
-##### To define functions for calculating the KS distances:
+##### To define functions for calculating the distances:
 
 function calc_distance(ss1::ExoplanetsSysSim.CatalogSummaryStatistics, ss2::ExoplanetsSysSim.CatalogSummaryStatistics, all_dist::Bool=false, save_dist::Bool=true)
     #This function calculates the total KS distance between two summary statistics (simulated observed catalogs).
@@ -108,13 +108,15 @@ function calc_distance(ss1::ExoplanetsSysSim.CatalogSummaryStatistics, ss2::Exop
         append!(M_cat_obs2, k*ones(Int64, ss2.stat["num n-tranet systems"][k]))
     end
 
+    #To handle empty arrays:
     if length(M_cat_obs1)==0 | length(M_cat_obs2)==0
         println("One of the simulated catalogs has no observed planets.")
         d = ones(Int64,8)*1e6
 
         println("Distances: ", d, [sum(d)])
         if save_dist
-            println(f, "Dist: ", d, [sum(d)])
+            println(f, "Dist_KS: ", d, [sum(d)])
+            println(f, "Dist_AD: ", d, [sum(d)])
         end
 
         if all_dist
@@ -124,25 +126,43 @@ function calc_distance(ss1::ExoplanetsSysSim.CatalogSummaryStatistics, ss2::Exop
         end
     end
 
-    d = Array{Float64}(8)
-    d[1] = abs(ss1.stat["num_tranets"]/(ss1.stat["num targets"]/cos_factor) - ss2.stat["num_tranets"]/(ss2.stat["num targets"]/cos_factor))
-    d[2] = ksstats_ints(M_cat_obs1, M_cat_obs2)[5]
-    d[3] = ksstats(ss1.stat["P list"], ss2.stat["P list"])[5]
-    d[4] = ksstats(ss1.stat["period_ratio_list"], ss2.stat["period_ratio_list"])[5]
-    d[5] = ksstats(ss1.stat["duration list"], ss2.stat["duration list"])[5]
-    d[6] = ksstats(ss1.stat["duration_ratio_list"], ss2.stat["duration_ratio_list"])[5]
-    d[7] = ksstats(ss1.stat["depth list"], ss2.stat["depth list"])[5]
-    d[8] = ksstats(ss1.stat["radius_ratio_list"], ss2.stat["radius_ratio_list"])[5]
+    #To compute the KS distances:
+    d_KS = Array{Float64}(8)
+    d_KS[1] = abs(ss1.stat["num_tranets"]/(ss1.stat["num targets"]/cos_factor) - ss2.stat["num_tranets"]/(ss2.stat["num targets"]/cos_factor))
+    d_KS[2] = ksstats_ints(M_cat_obs1, M_cat_obs2)[5]
+    d_KS[3] = ksstats(ss1.stat["P list"], ss2.stat["P list"])[5]
+    d_KS[4] = ksstats(ss1.stat["period_ratio_list"], ss2.stat["period_ratio_list"])[5]
+    d_KS[5] = ksstats(ss1.stat["duration list"], ss2.stat["duration list"])[5]
+    d_KS[6] = ksstats(ss1.stat["duration_ratio_list"], ss2.stat["duration_ratio_list"])[5]
+    d_KS[7] = ksstats(ss1.stat["depth list"], ss2.stat["depth list"])[5]
+    d_KS[8] = ksstats(ss1.stat["radius_ratio_list"], ss2.stat["radius_ratio_list"])[5]
 
-    println("Distances: ", d, [sum(d)])
+    #To compute the AD distances:
+    d_AD = Array{Float64}(8)
+    d_AD[1] = abs(ss1.stat["num_tranets"]/(ss1.stat["num targets"]/cos_factor) - ss2.stat["num_tranets"]/(ss2.stat["num targets"]/cos_factor))
+    d_AD[2] = ksstats_ints(M_cat_obs1, M_cat_obs2)[5]
+    d_AD[3] = ADstats(ss1.stat["P list"], ss2.stat["P list"])
+    d_AD[4] = ADstats(ss1.stat["period_ratio_list"], ss2.stat["period_ratio_list"])
+    d_AD[5] = ADstats(ss1.stat["duration list"], ss2.stat["duration list"])
+    d_AD[6] = ADstats(ss1.stat["duration_ratio_list"], ss2.stat["duration_ratio_list"])
+    d_AD[7] = ADstats(ss1.stat["depth list"], ss2.stat["depth list"])
+    d_AD[8] = ADstats(ss1.stat["radius_ratio_list"], ss2.stat["radius_ratio_list"])
+
+    #To print and/or write the distances to file:
+    println("KS Distances: ", d_KS, [sum(d_KS)])
+    println("AD Distances: ", d_AD, [sum(d_AD)])
     if save_dist
-        println(f, "Dist: ", d, [sum(d)]) #to write the distances to file
+        println(f, "Dist_KS: ", d_KS, [sum(d_KS)])
+        println(f, "Dist_AD: ", d_AD, [sum(d_AD)])
     end
 
+    #To return the distances or total distance:
     if all_dist
-        return d
+        #return d_KS
+        return d_AD
     else
-        return sum(d)
+        #return sum(d_KS)
+        return sum(d_AD)
     end
 end
 
@@ -164,7 +184,8 @@ function calc_distance_Kepler(ss1::ExoplanetsSysSim.CatalogSummaryStatistics, al
 
         println("Distances: ", d, [sum(d)])
         if save_dist
-            println(f, "Dist: ", d, [sum(d)])
+            println(f, "Dist_KS: ", d, [sum(d)])
+            println(f, "Dist_AD: ", d, [sum(d)])
         end
 
         if all_dist
@@ -174,25 +195,43 @@ function calc_distance_Kepler(ss1::ExoplanetsSysSim.CatalogSummaryStatistics, al
         end
     end
 
-    d = Array{Float64}(8)
-    d[1] = abs(ss1.stat["num_tranets"]/(ss1.stat["num targets"]/cos_factor) - length(P_confirmed)/N_Kepler_targets)
-    d[2] = ksstats_ints(M_cat_obs, M_confirmed)[5]
-    d[3] = ksstats(ss1.stat["P list"], P_confirmed)[5]
-    d[4] = ksstats(ss1.stat["period_ratio_list"], R_confirmed)[5]
-    d[5] = ksstats(ss1.stat["duration list"].*24, t_D_confirmed)[5] #transit durations in simulations are in days, while in the Kepler catalog are in hours
-    d[6] = ksstats(ss1.stat["duration_ratio_list"], xi_confirmed)[5]
-    d[7] = ksstats(ss1.stat["depth list"], D_confirmed)[5]
-    d[8] = ksstats(ss1.stat["radius_ratio_list"].^2, D_ratio_confirmed)[5] #simulations save radius ratios while we computed transit duration ratios from the Kepler catalog
+    #To compute the KS distances:
+    d_KS = Array{Float64}(8)
+    d_KS[1] = abs(ss1.stat["num_tranets"]/(ss1.stat["num targets"]/cos_factor) - length(P_confirmed)/N_Kepler_targets)
+    d_KS[2] = ksstats_ints(M_cat_obs, M_confirmed)[5]
+    d_KS[3] = ksstats(ss1.stat["P list"], P_confirmed)[5]
+    d_KS[4] = ksstats(ss1.stat["period_ratio_list"], R_confirmed)[5]
+    d_KS[5] = ksstats(ss1.stat["duration list"].*24, t_D_confirmed)[5] #transit durations in simulations are in days, while in the Kepler catalog are in hours
+    d_KS[6] = ksstats(ss1.stat["duration_ratio_list"], xi_confirmed)[5]
+    d_KS[7] = ksstats(ss1.stat["depth list"], D_confirmed)[5]
+    d_KS[8] = ksstats(ss1.stat["radius_ratio_list"].^2, D_ratio_confirmed)[5] #simulations save radius ratios while we computed transit duration ratios from the Kepler catalog
 
-    println("Distances: ", d, [sum(d)])
+    #To compute the AD distances:
+    d_AD = Array{Float64}(8)
+    d_AD[1] = abs(ss1.stat["num_tranets"]/(ss1.stat["num targets"]/cos_factor) - length(P_confirmed)/N_Kepler_targets)
+    d_AD[2] = ksstats_ints(M_cat_obs, M_confirmed)[5]
+    d_AD[3] = ADstats(ss1.stat["P list"], P_confirmed)
+    d_AD[4] = ADstats(ss1.stat["period_ratio_list"], R_confirmed)
+    d_AD[5] = ADstats(ss1.stat["duration list"].*24, t_D_confirmed) #transit durations in simulations are in days, while in the Kepler catalog are in hours
+    d_AD[6] = ADstats(ss1.stat["duration_ratio_list"], xi_confirmed)
+    d_AD[7] = ADstats(ss1.stat["depth list"], D_confirmed)
+    d_AD[8] = ADstats(ss1.stat["radius_ratio_list"].^2, D_ratio_confirmed) #simulations save radius ratios while we computed transit duration ratios from the Kepler catalog
+
+    #To print and/or write the distances to file:
+    println("KS Distances: ", d_KS, [sum(d_KS)])
+    println("AD Distances: ", d_AD, [sum(d_AD)])
     if save_dist
-        println(f, "Dist: ", d, [sum(d)]) #to write the distances to file
+        println(f, "Dist_KS: ", d_KS, [sum(d_KS)])
+        println(f, "Dist_AD: ", d_AD, [sum(d_AD)])
     end
 
+    #To return the distances or total distance:
     if all_dist
-        return d
+        #return d_KS
+        return d_AD
     else
-        return sum(d)
+        #return sum(d_KS)
+        return sum(d_AD)
     end
 end
 
@@ -201,6 +240,9 @@ function target_function(active_param::Vector, all_dist::Bool=false, save_dist::
     #This function takes in the values of the active model parameters, generates a simulated observed catalog, and computes the distance function compared to a reference simulated catalog.
     #If 'all_dist=true', the function outputs the individual distances in the distance function.
     #If 'save_dist=true', the function also saves the distances (individual and total) to a file (assuming file 'f' is open for writing).
+
+    #println("Active parameter values:", active_param)
+    #println(f, "Active_params: ", active_param) #if we also want to write the params to file
 
     global sim_param, summary_stat_ref
     sim_param_here = deepcopy(sim_param)
@@ -219,12 +261,12 @@ function target_function_Kepler(active_param::Vector, all_dist::Bool=false, save
     #If 'all_dist=true', the function outputs the individual distances in the distance function.
     #If 'save_dist=true', the function also saves the distances (individual and total) to a file (assuming file 'f' is open for writing).
 
-    global sim_param
     println("Active parameter values: ", active_param)
     if save_dist
         println(f, "Active_params: ", active_param) #to write the params to file
     end
 
+    global sim_param
     sim_param_here = deepcopy(sim_param)
     ExoplanetsSysSim.update_sim_param_from_vector!(active_param,sim_param_here)
     cat_phys = generate_kepler_physical_catalog(sim_param_here)
@@ -250,7 +292,6 @@ function target_function_weighted(active_param::Vector, all_dist::Bool=false, sa
     println("Weighted distances: ", weighted_dist, [sum(weighted_dist)])
     if save_dist
         println(f, "Dist_weighted: ", weighted_dist, [sum(weighted_dist)])
-        #println(f, "Dist_used: ", used_dist, [sum(used_dist)])
     end
 
     if all_dist
@@ -275,7 +316,6 @@ function target_function_Kepler_weighted(active_param::Vector, all_dist::Bool=fa
     println("Weighted distances: ", weighted_dist, [sum(weighted_dist)])
     if save_dist
         println(f, "Dist_weighted: ", weighted_dist, [sum(weighted_dist)])
-        #println(f, "Dist_used: ", used_dist, [sum(used_dist)])
     end
 
     if all_dist
@@ -393,7 +433,7 @@ println(f, "# Optimization active parameters search bounds: ", active_params_box
 println(f, "# Format: Active_params: [active parameter values]")
 println(f, "# Format: Dist: [distances][total distance]")
 println(f, "# Format: Dist_weighted: [weighted distances][total weighted distance]")
-#println(f, "# Format: Dist_used: [used weighted distances][total used weighted distance]")
+println(f, "# Distances used: Dist_AD (all, weighted)") #Edit this line to specify which distances were actually used in the optimizer!
 
 target_function_Kepler_weighted(active_param_start) #to simulate the model once with the drawn parameters and compare to the Kepler population before starting the optimization
 
