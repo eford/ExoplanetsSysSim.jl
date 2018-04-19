@@ -293,18 +293,18 @@ function transit_noise_model_diagonal(t::KeplerTarget, s::Integer, p::Integer, d
 	# Price & Rogers Eqn A8 & Table 1 # WARNING: Someone should check Eqns
 	tau3 = tau^3
 	I3 = I^3
-	#a1 = (10*tau3+2*I^3-5*tau*I^2)/tau3
+	a1 = (10*tau3+2*I^3-5*tau*I^2)/tau3
 	a2 = (5*tau3+I3-5*tau*tau*I)/tau3
 	a3 = (9*I^5*Ttot-40*tau3+I*I*Ttot+120*tau^4*I*(3*Ttot-2*tau))/tau^6
 	a4 = (a3*tau^5+I^4*(54*tau-35*Ttot)-12*tau*I3*(4*tau+Ttot)+360*tau^4*(tau-Ttot))/tau^5
 	a5 = a2*(24T*T*(I-3*tau)-24*T*Ttot*(I-3*tau)+tau3*a4)/tau3
-	#a6 = (3*tau*tau+T*(I-3*tau))/(tau*tau)
-	#a7 = (-60*tau^4+12*a2*tau3*T-9*I^4+8*tau*I3+40*tau3*I)/(tau^4)
-	#a8 = (2T-Ttot)/tau
-	#a9 = (-3*tau*tau*I*(-10*T*T+10*T*Ttot+I*(2*I+5*Ttot))-I^4*Ttot+8*tau*I3*Ttot)/(tau^5)
-	#a10 = ((a9+60)*tau*tau+10*(-9*T*T+9*T*Tot+I*(3*I+Tot))-75*tau*Ttot)/(tau*tau)
+	a6 = (3*tau*tau+T*(I-3*tau))/(tau*tau)
+	a7 = (-60*tau^4+12*a2*tau3*T-9*I^4+8*tau*I3+40*tau3*I)/(tau^4)
+	a8 = (2T-Ttot)/tau
+	a9 = (-3*tau*tau*I*(-10*T*T+10*T*Ttot+I*(2*I+5*Ttot))-I^4*Ttot+8*tau*I3*Ttot)/(tau^5)
+	a10 = ((a9+60)*tau*tau+10*(-9*T*T+9*T*Ttot+I*(3*I+Ttot))-75*tau*Ttot)/(tau*tau)
 	a11 = (I*Ttot-3tau*(Ttot-2*tau))/(tau*tau)
-	#a12 = (-360*tau^5-24*a2*tau3*T*(I-3tau)+9*I^5-35tau*I^4-12tau*tau*I3-40tau^3*I*I+360*tau^4*I)/(tau^5)
+	a12 = (-360*tau^5-24*a2*tau3*T*(I-3tau)+9*I^5-35tau*I^4-12tau*tau*I3-40tau^3*I*I+360*tau^4*I)/(tau^5)
 	a13 = (-3*I3*(8*T*T-8*T*Ttot+3*I*Ttot)+120*tau*tau*T*I*(T-Ttot)+8tau*I3*Ttot)/tau^5
 	a14 = (a13*tau*tau+40*(-3*T*T+3*T*Ttot+I*Ttot)-60*tau*Ttot)/tau^5
 	a15 = (2I-6tau)/tau
@@ -317,11 +317,11 @@ function transit_noise_model_diagonal(t::KeplerTarget, s::Integer, p::Integer, d
 	b7 = (b6*I^5+4*tau*tau*I*I*(12I-11Ttot)+tau3*I*(11Ttot-6I)-tau^4*Ttot)/I^5
 	b8 = (3T*T-3*T*Ttot+I*Ttot)/(I*I)
 	b9 = (8*b8*I^4+20*tau*I*I*Ttot-8*tau*tau*I*Ttot+tau3*Ttot)/I^4
-	#b10 =  (-tau^4+24*T*I*I*(tau-3I)+60*I^4+52*tau*I3-44*tau*tau*I*I+11*tau3*I)/I^4
-	#b11 =  (-15b4*i3+10b8*tau*I*I+15*tau*tau*(2I-Ttot))/I3
-	#b12 =  (b11*I^5+2tau3*I*(4Ttot-3I)-tau^4*Ttot)/I^5
-	#b13 =  (Ttot-2T)/I
-	#b14 =  (6I-2tau)/I
+	b10 =  (-tau^4+24*T*I*I*(tau-3I)+60*I^4+52*tau*I3-44*tau*tau*I*I+11*tau3*I)/I^4
+	b11 =  (-15b4*I3+10b8*tau*I*I+15*tau*tau*(2I-Ttot))/I3
+	b12 =  (b11*I^5+2tau3*I*(4Ttot-3I)-tau^4*Ttot)/I^5
+	b13 =  (Ttot-2T)/I
+	b14 =  (6I-2tau)/I
 	
         Q = snr/sqrt(num_tr)
         sigma_t0 = tau>=I ?  sqrt(0.5*tau*T/(1-I/(3tau)))/Q : sqrt(0.5*I  *T/(1-tau/(3I)))/Q
@@ -361,7 +361,7 @@ function transit_noise_model_diagonal(t::KeplerTarget, s::Integer, p::Integer, d
 	cov[3,4] = cov[4,3] = 24*b2/(I*b7)
 	cov[4,4] = b10/(I*b7)
 	end
-	cov .*= sigma*sigma/Lambda_eff
+	cov .*= (t.cdpp[1,1]*t.cdpp[1,1])/Lambda_eff
 	obs_dist = MvNormal(zeros(4),cov)	     
 
 	local obs_duration, obs_depth, sigma_duration, sigma_depth
