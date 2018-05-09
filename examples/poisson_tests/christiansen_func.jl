@@ -350,12 +350,24 @@ function calc_summary_stats_obs_binned_rates(cat_obs::KeplerObsCatalog, param::S
   radius_list = zeros(num_tranets)
 
   n = 1    # tranet id
-  for i in idx_tranets
-    for j in 1:num_planets(cat_obs.target[i])
-      period_list[n] = cat_obs.target[i].obs[j].period
-      weight_list[n] = 1.0
-      radius_list[n] = sqrt(cat_obs.target[i].obs[j].depth)*cat_obs.target[i].star.radius
-      n = n+1
+
+  if !trueobs_cat
+    for i in idx_tranets
+      for j in 1:num_planets(cat_obs.target[i])
+        period_list[n] = cat_obs.target[i].obs[j].period
+        weight_list[n] = ExoplanetsSysSim.prob_detect(cat_obs.target[i].prob_detect,j)
+        radius_list[n] = sqrt(cat_obs.target[i].obs[j].depth)*cat_obs.target[i].star.radius
+        n = n+1
+      end
+    end
+  else
+    for i in idx_tranets
+      for j in 1:num_planets(cat_obs.target[i])
+        period_list[n] = cat_obs.target[i].obs[j].period
+        weight_list[n] = 1.0
+        radius_list[n] = sqrt(cat_obs.target[i].obs[j].depth)*cat_obs.target[i].star.radius
+        n = n+1
+      end
     end
   end
 
@@ -405,8 +417,9 @@ function calc_distance_vector_binned(summary1::CatalogSummaryStatistics, summary
     np_bin = zeros(length(np1))
     for n in 1:length(np1)
         #np_bin[n] = dist_L1_abs(np1[n]/summary1.stat["num targets"], np2[n]/summary2.stat["num targets"])
-        np_bin[n] = dist_L2_abs(np1[n]/summary1.stat["num targets"], np2[n]/summary2.stat["num targets"])
-       
+        #np_bin[n] = dist_L2_abs(np1[n]/summary1.stat["num targets"], np2[n]/summary2.stat["num targets"])
+        np_bin[n] = distance_poisson_draw(np2[n]/summary2.stat["num targets"]*summary1.stat["num targets"], convert(Int64, np1[n]))
+        
       #println("True # [Bin ", n,"] = ",np1[n],", Expected # [Bin ", n,"] = ",np2[n])
     end
       #d[1] = maximum(np_bin)

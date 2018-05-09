@@ -26,8 +26,9 @@ module EvalSysSimModel
       global sim_param_closure
       update_sim_param_from_vector!(param_vector,sim_param_closure)
       cat_phys = generate_kepler_physical_catalog(sim_param_closure)
-      cat_phys_cut = ExoplanetsSysSim.generate_obs_targets(cat_phys, sim_param_closure)
-      cat_obs = ExoplanetsSysSim.observe_kepler_targets_single_obs(cat_phys_cut, sim_param_closure)
+      #cat_phys_cut = ExoplanetsSysSim.generate_obs_targets(cat_phys, sim_param_closure)
+      #cat_obs = ExoplanetsSysSim.observe_kepler_targets_single_obs(cat_phys_cut, sim_param_closure)
+      cat_obs = ExoplanetsSysSim.observe_kepler_targets_sky_avg(cat_phys, sim_param_closure)
       return cat_obs
     end
 
