@@ -329,11 +329,11 @@ function transit_noise_model_diagonal(t::KeplerTarget, s::Integer, p::Integer, d
         sigma_duration = tau>=I ? sigma*sqrt(abs(6*tau*a14/(delta*delta*a5)) /Lambda_eff )  : sigma*sqrt(abs(6*I*b9/(delta*delta*b7)) / Lambda_eff)
         sigma_depth = tau>=I ? sigma*sqrt(abs(-24*a11*a2/(tau*a5)) / Lambda_eff)  : sigma*sqrt(abs(24*b1/(I*b7)) / Lambda_eff)
 
-  	sigma = TransitPlanetObs( sigma_period, sigma_t0, sigma_depth, sigma_duration )
+  	sigma_obs = TransitPlanetObs( sigma_period, sigma_t0, sigma_depth, sigma_duration )
 
         local obs
         if true     # Assume uncertainties uncorrelated (Diagonal)
-  	    obs = TransitPlanetObs( period*(1.0+sigma.period*randtn()), t0*(1.0+sigma.period*randtn()), depth*(1.0+sigma.depth*randtn()),duration*(1.0+sigma.duration*randtn()))
+  	    obs = TransitPlanetObs( period*(1.0+sigma_obs.period*randtn()), t0*(1.0+sigma_obs.period*randtn()), depth*(1.0+sigma_obs.depth*randtn()),duration*(1.0+sigma_obs.duration*randtn()))
         else        # TODO SCI DETAIL:  Account for correlated uncertaintties in transit parameters
             cov = zeros(4,4)
         if tau>=I 
@@ -361,7 +361,7 @@ function transit_noise_model_diagonal(t::KeplerTarget, s::Integer, p::Integer, d
 	cov[3,4] = cov[4,3] = 24*b2/(I*b7)
 	cov[4,4] = b10/(I*b7)
 	end
-	cov .*= (t.cdpp[1,1]*t.cdpp[1,1])/Lambda_eff
+	cov .*= sigma*sigma/Lambda_eff
 	obs_dist = MvNormal(zeros(4),cov)	     
 
 	local obs_duration, obs_depth, sigma_duration, sigma_depth
@@ -374,7 +374,7 @@ function transit_noise_model_diagonal(t::KeplerTarget, s::Integer, p::Integer, d
              isvalid = true
 	  end
 	end
-     	    obs = TransitPlanetObs( period*(1.0+sigma.period*randtn()), t0*(1.0+sigma.period*randtn()), obs_depth,obs_duration)
+     	    obs = TransitPlanetObs( period*(1.0+sigma_obs.period*randtn()), t0*(1.0+sigma_obs.period*randtn()), obs_depth,obs_duration)
         end
-  	return obs, sigma
+  	return obs, sigma_obs
 end
