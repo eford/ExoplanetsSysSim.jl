@@ -63,8 +63,8 @@ function setup_sim_arr(num_param::Int64 = 1) 				#takes an integer and returns a
     update_param(sim_param, "obs_par", hsu_final_rates)
     update_param(sim_param, "r_lim_arr", hsu_radii*ExoplanetsSysSim.earth_radius)
     update_param(sim_param, "p_lim_arr", hsu_periods)
-    update_param(sim_param, "num_targets_sim_pass_one", 150000)
-    update_param(sim_param, "num_kepler_targets", 150000)
+    update_param(sim_param, "num_targets_sim_pass_one", 150518)
+    update_param(sim_param, "num_kepler_targets", 150518)
     push!(sim_arr,sim_param)
   end
   return(sim_arr)

@@ -36,6 +36,8 @@ julia syssim_dist.jl demo_param.in demo_ss.out
 * Create your own feature branch and start adding features to make SysSim even more realistic and powerful
 * Write papers and cite relevant publications (e.g., Hsu et al. 2018)
 
+NOTE: To run simulations which use the same forward model discussed in Hsu et al. (2018), please go to the "examples/hsu_etal_2018/" sub-directory.
+
 # Team:
 ## Developers:
   * Eric Ford
@@ -57,7 +59,7 @@ julia syssim_dist.jl demo_param.in demo_ss.out
   * Kepler Multi-body & Transit Timing Variations Working Groups
   * Origins of Solar Systems program, award NNX14AI76G
   * Exoplanets Research Program, award NNX15AE21G
-* The Pennsylvanis State University
+* The Pennsylvania State University
   * Dept. of Astronomy & Astrophysics
   * Center for Exoplanets & Habitable Worlds
   * Eberly College of Science
