@@ -49,6 +49,45 @@ end
 dist_KS{T<:Real, S<:Real}(x::AbstractVector{T}, y::AbstractVector{S}) = ksstats(x,y)[5]
 dist_KS{T<:Real, S<:Real}(x::AbstractVector{T}, y::AbstractVector{S}, wx::AbstractVector{T}, wy::AbstractVector{T}) = ksstats(x,y,wx,wy)[5]
 
+# lambda:  rate for Poisson process, i.e., expected value for number of events
+# k:  number of events observed
+
+function calc_num_events_to_maximize_poisson_pdf(lambda::Real)
+  kstar = floor(Int64,lambda)
+  if lambda > kstar+1
+     kstar +=1
+  end
+  return kstar
+end
+
+function log_prob_poisson_num_events_given_rate(lambda::Real,k::Real)
+   k*log(lambda)-lambda-lgamma(k+1)
+end
+
+function delta_log_prob_poisson_num_events_given_rate(lambda::Real, k::Integer, kstar::Integer = calc_num_events_to_maximize_poisson_pdf(lambda) )
+  delta = (k-kstar)*log(lambda)
+  if kstar>=k+1
+	delta += sum(log.((k+1):kstar))
+  elseif k>=kstar+1
+     delta -= sum(log.((kstar+1):k))
+  end
+  return delta
+end
+
+function distance_poisson_likelihood(lambda::Real, k::Integer)
+  kstar = calc_num_events_to_maximize_poisson_pdf(lambda)
+  khi = round(Int64,lambda+sqrt(lambda))
+  delta_logprob_one_sigma_hi = delta_log_prob_poisson_num_events_given_rate(lambda,khi,kstar)
+  delta_logp_k = delta_log_prob_poisson_num_events_given_rate(lambda,k,kstar)
+  delta_logp_k/delta_logprob_one_sigma_hi
+end
+
+function distance_poisson_draw(lambda::Real, k::Integer)
+  d =  Distributions.Poisson(lambda)
+  simulated_number_of_detections = rand(d)  
+  abs( simulated_number_of_detections -k)
+end
+
 # TODO SCI: IMPORTANT:  Replace this distance function with something well thought out
 function calc_distance_vector_demo(summary1::CatalogSummaryStatistics, summary2::CatalogSummaryStatistics, pass::Int64, sim_param::SimParam ; verbose::Bool = false)
   d = Array{Float64}(0)
