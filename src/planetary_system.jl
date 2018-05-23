@@ -139,6 +139,8 @@ end
 function draw_broken_power_law(n1::Real, n2::Real, x0::Real, x1::Real, xb::Real, num_pl::Integer)
     #x0 and x1 are the lower and upper truncation limits, and xb is the break point, i.e. x0 <= xb <= x1 (all must be positive)
     #n1 and n2 are the power law indices between x0 and xb, and xb and x1, respectively (can be positive or negative)
+    @assert(x0 <= xb <= x1)
+    @assert(num_pl >= 1)
 
     u_draws = rand(num_pl) #'num_pl' draws from the uniform distribution between 0 and 1
     x_draws = zeros(num_pl)

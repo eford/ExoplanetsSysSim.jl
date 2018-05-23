@@ -86,7 +86,7 @@ function ksstats{T<:Real, S<:Real}(x::AbstractVector{T}, y::AbstractVector{S})
     (n_x, n_y, deltap, deltan, delta)
 end
 
-##### Function I added to compute the KS distance for discrete arrays, i.e. of the planet multiplicities in the systems
+##### Function to compute the KS distance for discrete arrays (i.e. of the planet multiplicities in the systems):
 function ksstats_ints{T<:Int, S<:Int}(x::AbstractVector{T}, y::AbstractVector{S})
     n_x, n_y = length(x), length(y)
     xy_max = max(maximum(x), maximum(y)) #maximum of both x and y
@@ -98,6 +98,19 @@ function ksstats_ints{T<:Int, S<:Int}(x::AbstractVector{T}, y::AbstractVector{S}
     deltan = -minimum(cdf_diffs)
     delta = max(deltap,deltan)
     (n_x, n_y, deltap, deltan, delta)
+end
+
+##### Function to compute the 2-sample Anderson-Darling (AD) distance between two empirical CDFs (continuous distributions):
+function ADstats{T<:Real, S<:Real}(x::AbstractVector{T}, y::AbstractVector{S})
+    #This function computes the AD distance according to A. N. Pettitt (1976) Eq. (1.2)
+    n, m = length(x), length(y)
+    N = n + m
+    sort_idx = sortperm([x; y]) #array of indices that would sort the combined array
+    M_i_diffs = [ones(n); zeros(m)][sort_idx]
+    M_i_array = cumsum(M_i_diffs)[1:end-1] #array of M_i except for last element, i.e. from i=1 to i=N-1
+    i_array = 1:(N-1) #array of i from i=1 to i=N-1
+    AD_dist = (1./(n*m))*sum(((M_i_array*N - n*i_array).^2.)./(i_array.*(N - i_array))) #AD distance
+    return AD_dist
 end
 
 

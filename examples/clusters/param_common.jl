@@ -1,19 +1,20 @@
 if !isdefined(:ExoplanetsSysSim) using ExoplanetsSysSim end 
+import Compat: UTF8String, ASCIIString
 
 ## simulation_parameters
 function setup_sim_param_model(args::Vector{String} = Array{String}(0) )   # allow this to take a list of parameter (e.g., from command line)
   sim_param = SimParam()
   # How many tatrges to generate
   #add_param_fixed(sim_param,"num_targets_sim_pass_one",150061)                      # Note this is used for the number of stars in the simulations, not necessarily related to number of Kepler targets
-  add_param_fixed(sim_param,"num_targets_sim_pass_one",2*150061)                      # Note this is used for the number of stars in the simulations, not necessarily related to number of Kepler targets
+  add_param_fixed(sim_param,"num_targets_sim_pass_one",150061)                      # Note this is used for the number of stars in the simulations, not necessarily related to number of Kepler targets
   add_param_fixed(sim_param,"num_kepler_targets",150061)                            # Note this is used for the number of Kepler targets for the observational catalog
 
   # For generating target star properties
   add_param_fixed(sim_param,"generate_kepler_target",generate_kepler_target_from_table)
   add_param_fixed(sim_param,"star_table_setup",setup_star_table_christiansen)
-#add_param_fixed(sim_param,"stellar_catalog","q1_q17_dr24_stellar.jld")
-  add_param_fixed(sim_param,"stellar_catalog","q1_q17_dr24_stellar.csv")
-  # add_param_fixed(sim_param,"generate_kepler_target",ExoplanetsSysSim.generate_kepler_target_simple)  # An alternative that alternative can be used for testing if above breaks
+  #add_param_fixed(sim_param,"stellar_catalog","q1_q17_dr25_stellar.jld") #currently the JLD files do not have all the necessary fields
+  add_param_fixed(sim_param,"stellar_catalog","q1_q17_dr25_stellar.csv")
+  #add_param_fixed(sim_param,"generate_kepler_target",ExoplanetsSysSim.generate_kepler_target_simple)  # An alternative that alternative can be used for testing if above breaks
 
   # For generating planetary system properties
   add_param_fixed(sim_param,"generate_planetary_system", generate_planetary_system_clustered)
@@ -27,11 +28,11 @@ function setup_sim_param_model(args::Vector{String} = Array{String}(0) )   # all
 
   # generate_num_planets_in_cluster currently calls: generate_periods_power_law
   add_param_fixed(sim_param,"generate_sizes",ExoplanetsSysSim.generate_sizes_broken_power_law) # To choose the way we draw planetary radii; if "generate_sizes_power_law", then takes "power_law_r"; if "generate_sizes_broken_power_law", then takes "power_law_r1", "power_law_r2", and "break_radius"
-  add_param_active(sim_param,"power_law_P",-0.06)
-  #add_param_active(sim_param,"power_law_r",-2.56)
+  add_param_active(sim_param,"power_law_P",-0.060)
+  add_param_fixed(sim_param,"power_law_r",-2.5)
   add_param_active(sim_param,"power_law_r1",-1.83)
   add_param_active(sim_param,"power_law_r2",-4.07)
-  add_param_fixed(sim_param,"min_period",5.0)
+  add_param_fixed(sim_param,"min_period",3.0)
   add_param_fixed(sim_param,"max_period",300.0)
   add_param_fixed(sim_param,"min_radius",0.5*ExoplanetsSysSim.earth_radius)
   add_param_fixed(sim_param,"max_radius",10.*ExoplanetsSysSim.earth_radius)
@@ -40,6 +41,8 @@ function setup_sim_param_model(args::Vector{String} = Array{String}(0) )   # all
   # generate_num_planets_in_cluster currently use these for the Inclination distribution
   add_param_active(sim_param,"sigma_incl",1.57) # degrees; 0 = coplanar w/ generate_kepler_target_simple; ignored by generate_planetary_system_uncorrelated_incl
   add_param_active(sim_param,"sigma_incl_near_mmr",0.99)
+
+  add_param_fixed(sim_param,"max_incl_sys",0.0) #degrees; gives system inclinations from "max_incl_sys" (deg) to 90 (deg), so set to 0 for isotropic distribution of system inclinations; NOTE: make sure the difference between this and 90 (deg) is at least greater than "sigma_incl" and "sigma_incl_near_mmr"!
 
   # generate_num_planets_in_cluster currently use these for the Eccentricity distribution
   add_param_fixed(sim_param,"generate_e_omega",ExoplanetsSysSim.generate_e_omega_rayleigh)
@@ -78,4 +81,35 @@ end
 function test_setup_sim_param()
   setup_sim_param_model()
 end
+
+
+
+function write_model_params(f, sim_param::SimParam)
+    #This function writes all the model parameters to a file f as a header
+    println(f, "# num_targets_sim_pass_one: ", get_int(sim_param,"num_targets_sim_pass_one"))
+    println(f, "# max_incl_sys: ", get_real(sim_param,"max_incl_sys"))
+    println(f, "# log_rate_clusters: ", get_real(sim_param,"log_rate_clusters"))
+    println(f, "# max_clusters_in_sys: ", get_int(sim_param,"max_clusters_in_sys"))
+    println(f, "# log_rate_planets_per_cluster: ", get_real(sim_param,"log_rate_planets_per_cluster"))
+    println(f, "# max_planets_in_clusters: ", get_int(sim_param,"max_planets_in_cluster"))
+    println(f, "# power_law_P: ", get_real(sim_param,"power_law_P"))
+    println(f, "# min_period: ", get_real(sim_param,"min_period"))
+    println(f, "# max_period: ", get_real(sim_param,"max_period"))
+#println(f, "# power_law_r: ", get_real(sim_param,"power_law_r"))
+    println(f, "# power_law_r1: ", get_real(sim_param,"power_law_r1"))
+    println(f, "# power_law_r2: ", get_real(sim_param,"power_law_r2"))
+    println(f, "# min_radius (R_earth): ", get_real(sim_param,"min_radius")/ExoplanetsSysSim.earth_radius)
+    println(f, "# max_radius (R_earth): ", get_real(sim_param,"max_radius")/ExoplanetsSysSim.earth_radius)
+    println(f, "# break_radius (R_earth): ", get_real(sim_param,"break_radius")/ExoplanetsSysSim.earth_radius)
+    println(f, "# sigma_incl: ", get_real(sim_param,"sigma_incl"))
+    println(f, "# sigma_incl_near_mmr: ", get_real(sim_param,"sigma_incl_near_mmr"))
+    println(f, "# sigma_hk: ", get_real(sim_param,"sigma_hk"))
+    println(f, "# num_mutual_hill_radii: ", get_real(sim_param,"num_mutual_hill_radii"))
+    println(f, "# mr_power_index: ", get_real(sim_param,"mr_power_index"))
+    println(f, "# mr_max_mass (M_earth): ", get_real(sim_param,"mr_max_mass")/ExoplanetsSysSim.earth_mass)
+    println(f, "# sigma_log_radius_in_cluster: ", get_real(sim_param,"sigma_log_radius_in_cluster"))
+    println(f, "# sigma_logperiod_per_pl_in_cluster: ", get_real(sim_param,"sigma_logperiod_per_pl_in_cluster"))
+    println(f, "#")
+end
+
 
