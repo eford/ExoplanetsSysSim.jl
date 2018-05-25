@@ -2,5 +2,5 @@
 # Check with Matthias He
 
 How to use:
-- To run one system, update params_common.jl and then run generate_systems.jl
-- To run optimizer, run optimize.jl.
+- To run one catalog, update params_common.jl and then run generate_systems.jl.
+- To run the optimizer on a model, run optimize.jl.
