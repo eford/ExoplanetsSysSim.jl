@@ -82,9 +82,10 @@ end
 function generate_planet_periods_sizes_masses_in_cluster( star::StarAbstract, sim_param::SimParam; n::Int64 = 1 )  # TODO: IMPORTANT: Make this function work and test before using for science
    @assert n>=1
    const generate_planet_mass_from_radius = get_function(sim_param,"generate_planet_mass_from_radius")
+   const generate_sizes = get_function(sim_param,"generate_sizes")
 
    if n==1
-      R = ExoplanetsSysSim.generate_sizes_power_law(star,sim_param)[1]
+      R = generate_sizes(star,sim_param)[1]
       mass = map(r->generate_planet_mass_from_radius(r,sim_param),R)
       P = [1.0] # generate_periods_power_law(star,sim_param)
       return P, R, mass
@@ -92,15 +93,16 @@ function generate_planet_periods_sizes_masses_in_cluster( star::StarAbstract, si
 
    # If reach here, then at least 2 planets in cluster
 
-   mean_R = ExoplanetsSysSim.generate_sizes_power_law(star,sim_param)[1]
+   mean_R = generate_sizes(star,sim_param)[1]
    const sigma_log_radius_in_cluster = get_real(sim_param,"sigma_log_radius_in_cluster")
    #println("# mean_R = ",mean_R," sigma_log_radius_in_cluster= ",sigma_log_radius_in_cluster)
 
-   #R = ExoplanetsSysSim.generate_sizes_power_law(star,sim_param, num_pl=n) # if want non-clustered planet sizes 
    const min_radius::Float64 = get_real(sim_param,"min_radius")
    const max_radius::Float64 = get_real(sim_param,"max_radius")
    Rdist = Truncated(LogNormal(log(mean_R),sigma_log_radius_in_cluster),min_radius,max_radius) # if we want clustered planet sizes
+   #Rdist = LogNormal(log(mean_R),sigma_log_radius_in_cluster)
    R = rand(Rdist,n)
+   #R = generate_sizes(star,sim_param, num_pl=n) # if want non-clustered planet sizes instead
 
    #println("# Rp = ", R)
    mass = map(r->generate_planet_mass_from_radius(r,sim_param),R)
@@ -110,9 +112,7 @@ function generate_planet_periods_sizes_masses_in_cluster( star::StarAbstract, si
    log_mean_P = 0.0 # log(generate_periods_power_law(star,sim_param))
    # Note: Currently, drawing all periods within a cluster at once and either keeping or rejecting the whole cluster
    #       Should we instead draw periods one at a time?
-   const min_period::Float64 = get_real(sim_param,"min_period")
-   const max_period::Float64 = get_real(sim_param,"max_period")
-   Pdist = Truncated(LogNormal(log_mean_P,sigma_logperiod_per_pl_in_cluster*n),min_period,max_period)
+   Pdist = LogNormal(log_mean_P,sigma_logperiod_per_pl_in_cluster*n)
    local P
    found_good_periods = false
    attempts = 0
@@ -124,6 +124,9 @@ function generate_planet_periods_sizes_masses_in_cluster( star::StarAbstract, si
         found_good_periods = true
      end
    end # while trying to draw periods
+
+   #println("attempts for cluster: ", attempts)
+
    if !found_good_periods
       #println("# Warning: Did not find a good set of periods, sizes and masses for one cluster.")
       return fill(NaN,n), R, mass  # Return NaNs for periods to indicate failed
@@ -159,36 +162,39 @@ function generate_planetary_system_clustered(star::StarAbstract, sim_param::SimP
 
   # Generate a set of periods, planet radii, and planet masses.
   attempt_system = 0
-  max_attempts_system = 100
+  max_attempts_system = 100 #Note: currently this should not matter; each system is always attempted just once
   local num_pl, Plist, Rlist, masslist
   valid_system = false
-  while !valid_system && attempt_system <= max_attempts_system
+  while !valid_system && attempt_system < max_attempts_system
 
      # First, generate number of clusters (to attempt) and planets (to attempt) in each cluster
      num_clusters = generate_num_clusters(star,sim_param)::Int64
      #num_clusters = 1 # If we want to test singly-clustered model
      num_pl_in_cluster = map(x->generate_num_planets_in_cluster(star, sim_param)::Int64, 1:num_clusters)
+     #num_pl_in_cluster = ones(Int64, num_clusters) ##### If we want a non-clustered model, setting each cluster to have 1 planet is equivalent to having no clusters
      num_pl = sum(num_pl_in_cluster)
+
+     #println("num_clusters: ", num_clusters, " ; num_pl_in_clusters", num_pl_in_cluster)
 
      if( num_pl==0 )
        return PlanetarySystem(star)
      end
-     Plist = Array{Float64}(num_pl)
-     Rlist = Array{Float64}(num_pl)
-     masslist = Array{Float64}(num_pl)
+     Plist::Array{Float64,1} = Array{Float64}(num_pl)
+     Rlist::Array{Float64,1} = Array{Float64}(num_pl)
+     masslist::Array{Float64,1} = Array{Float64}(num_pl)
      @assert num_pl_in_cluster[1] >= 1
      pl_start = 1
      pl_stop = 0
      for c in 1:num_clusters
          pl_stop  += num_pl_in_cluster[c]
-         Plist_tmp, Rlist[pl_start:pl_stop], masslist[pl_start:pl_stop] = generate_planet_periods_sizes_masses_in_cluster(star, sim_param, n = num_pl_in_cluster[c])
-         valid_cluster = !any(isnan.(Plist))
+         Plist_tmp::Array{Float64,1}, Rlist[pl_start:pl_stop], masslist[pl_start:pl_stop] = generate_planet_periods_sizes_masses_in_cluster(star, sim_param, n = num_pl_in_cluster[c])
+         valid_cluster = !any(isnan.(Plist_tmp)) #should this be looking for nans in Plist or Plist_tmp? Was Plist but I think it should be Plist_tmp!
          valid_period_scale = false
          attempt_period_scale = 0
          max_attempts_period_scale = 100
-         while !valid_period_scale && attempt_period_scale<=max_attempts_period_scale && valid_cluster
+         while !valid_period_scale && attempt_period_scale<max_attempts_period_scale && valid_cluster
              attempt_period_scale += 1
-             period_scale = ExoplanetsSysSim.generate_periods_power_law(star,sim_param)
+             period_scale::Array{Float64,1} = ExoplanetsSysSim.generate_periods_power_law(star,sim_param)
              Plist[pl_start:pl_stop] = Plist_tmp .* period_scale
 
              periods_in_range = true
@@ -202,27 +208,46 @@ function generate_planetary_system_clustered(star::StarAbstract, sim_param::SimP
                 valid_period_scale = true
              end
          end  # while !valid_period_scale...
+
+         #println("attempts_period_scale: ", attempt_period_scale)
+
          if !valid_period_scale
             Plist[pl_start:pl_stop] = NaN
          end
          pl_start += num_pl_in_cluster[c]
      end # for c in 1:num_clusters
-     if any(isnan.(Plist))  # If any loop failed to generate valid planets, it should set a NaN in the period list
-        keep = .!(isnan.(Plist))  # Currently, keeping clusters that could be fit, rather than throwing out entirely and starting from scratch.  Is this a good idea?  Matthias tried the other approach in his python code.
+     isnanPlist::Array{Bool,1} = isnan.(Plist::Array{Float64,1})
+     if any(isnanPlist)  # If any loop failed to generate valid planets, it should set a NaN in the period list
+     keep::Array{Bool,1} = .!(isnanPlist)  # Currently, keeping clusters that could be fit, rather than throwing out entirely and starting from scratch.  Is this a good idea?  Matthias tried the other approach in his python code.
         num_pl = sum(keep)
         Plist = Plist[keep]
         Rlist = Rlist[keep]
         masslist = masslist[keep]
      end
-     valid_system = true
-     #= Note: This would be for drawing each cluster separately and then accepting or rejecting the whole lot.
-             By testing for stability before adding each cluster, this last test should be unnecessary.
-     if test_stability(Plist,masslist,star.mass,sim_param)
-        valid_system = true
+     valid_system = false #this was set to true but I think it should be false? But if this is set to false it gets stuck in an infinite loop!
+
+#println("P: ", Plist)
+#println("R: ", Rlist)
+#println("M: ", masslist)
+
+     #Note: This would be for drawing each cluster separately and then accepting or rejecting the whole lot. By testing for stability before adding each cluster, this last test should be unnecessary.
+     if length(Plist) > 0
+         if test_stability_circular(Plist,masslist,star.mass,sim_param)
+            valid_system = true
+         else
+            println("Warning: re-attempting system because it fails stability test even though its clusters each pass the test.")
+            #Note: this should never happen because we check for stability before adding each cluster, and unstable additions are set to NaN and then discarded
+         end
+     else
+         valid_system = true #this else statement is to allow for systems with no planets to pass
      end
-     =#
+
      attempt_system += 1
   end # while !valid_system...
+
+  if attempt_system > 1
+    println("attempt_system: ", attempt_system)
+  end
 
   # To print out periods, radii, and masses (for troubleshooting):
   #=
@@ -237,17 +262,19 @@ function generate_planetary_system_clustered(star::StarAbstract, sim_param::SimP
       end
   end
   =#
-    #println("R: ", Rlist)
-    #println("M: ", masslist)
+#println("P: ", Plist)
+#println("R: ", Rlist)
+#println("M: ", masslist)
 
   # Now assign orbits with given periods, sizes, and masses.
   const generate_e_omega = get_function(sim_param,"generate_e_omega")
   const sigma_ecc::Float64 = haskey(sim_param,"sigma_hk") ? get_real(sim_param,"sigma_hk") : 0.0
   const sigma_incl = deg2rad(get_real(sim_param,"sigma_incl"))
   const sigma_incl_near_mmr = deg2rad(get_real(sim_param,"sigma_incl_near_mmr"))
+  const max_incl_sys = get_real(sim_param,"max_incl_sys")
     pl = Array{Planet}(num_pl)
     orbit = Array{Orbit}(num_pl)
-    incl_sys = acos(rand())
+    incl_sys = acos(cos(max_incl_sys*pi/180)*rand()) #acos(rand()) for isotropic distribution of system inclinations; acos(cos(X*pi/180)*rand()) gives angles from X (deg) to 90 (deg)
     idx = sortperm(Plist)       # TODO OPT: Check to see if sorting is significant time sink.  If so, could reduce redundant sortperm
     is_near_resonance = calc_if_near_resonance(Plist[idx])
     for i in 1:num_pl
@@ -262,7 +289,7 @@ function generate_planetary_system_clustered(star::StarAbstract, sim_param::SimP
       asc_node = 2pi*rand()
       mean_anom = 2pi*rand()
       incl =  incl_mut!=zero(incl_mut) ? acos( cos(incl_sys)*cos(incl_mut) + sin(incl_sys)*sin(incl_mut)*cos(asc_node) ) : incl_sys
-      orbit[idx[i]] = Orbit(Plist[idx[i]],ecc,incl,omega,asc_node,mean_anom)
+      orbit[i] = Orbit(Plist[idx[i]],ecc,incl,omega,asc_node,mean_anom)
       pl[i] = Planet( Rlist[idx[i]],  masslist[idx[i]] )
     end # for i in 1:num_pl
 

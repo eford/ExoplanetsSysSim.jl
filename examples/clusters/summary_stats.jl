@@ -129,9 +129,9 @@ function calc_summary_stats_period_radius_ratios_neighbors_internal!(css::Catalo
        perm = sortperm(period_in_sys)
        for j in 1:(n-1)                       # Loop over period ratios within a system
           k = k+1
-          period_ratio_list[k] = period_in_sys[perm[j]]/period_in_sys[perm[j+1]]
-          #radius_ratio_list[k] = radius_in_sys[perm[j]]/radius_in_sys[perm[j+1]]
-          radius_ratio_list[k] = sqrt(depth_in_sys[perm[j]]/depth_in_sys[perm[j+1]]) 
+          period_ratio_list[k] = period_in_sys[perm[j+1]]/period_in_sys[perm[j]]
+          #radius_ratio_list[k] = radius_in_sys[perm[j+1]]/radius_in_sys[perm[j]]
+          radius_ratio_list[k] = sqrt(depth_in_sys[perm[j+1]]/depth_in_sys[perm[j]])
        end
     end
   end
@@ -143,7 +143,7 @@ end
 
 
 function calc_summary_stats_period_radius_ratios_neighbors!(css::CatalogSummaryStatistics, cat_obs::KeplerObsCatalog, param::SimParam)
-  (period_ratio_list,radius_ratio_list) = calc_summary_stats_period_radius_ratios_neighbors!(css,cat_obs,param)
+  (period_ratio_list,radius_ratio_list) = calc_summary_stats_period_radius_ratios_neighbors_internal!(css,cat_obs,param)
   css.stat["period_ratio_list"] = period_ratio_list
   css.stat["radius_ratio_list"] = radius_ratio_list
   return (period_ratio_list, radius_ratio_list)
@@ -195,11 +195,12 @@ function calc_summary_stats_mean_std_log_period_depth!(css::CatalogSummaryStatis
   return (mean_log_P, std_log_P, mean_log_depth, std_log_depth) 
 end
 
-function calc_summary_stats_cuml_period_depth!(css::CatalogSummaryStatistics, cat_obs::KeplerObsCatalog, param::SimParam)
+function calc_summary_stats_cuml_period_depth_duration!(css::CatalogSummaryStatistics, cat_obs::KeplerObsCatalog, param::SimParam)
   # Allocate arrays to store values for each tranet
   num_tranets  = calc_summary_stats_num_tranets!(css, cat_obs, param)
   period_list = zeros(num_tranets)
   depth_list = zeros(num_tranets)
+  duration_list = zeros(num_tranets)
   #weight_list = ones(num_tranets)
 
   idx_n_tranets = calc_summary_stats_idx_n_tranets!(css, cat_obs, param)
@@ -212,16 +213,19 @@ function calc_summary_stats_cuml_period_depth!(css::CatalogSummaryStatistics, ca
          #println("# i= ",i," j= ",j)
          period_list[i] = targ.obs[j].period
          depth_list[i] = targ.obs[j].depth
+         duration_list[i] = targ.obs[j].duration
          #weight_list[i] = 1.0
       end
    end
   resize!(period_list,i)
   resize!(depth_list,i)
+  resize!(duration_list,i)
   css.stat["P list"] = period_list                                     # We can store whole lists, e.g., if we want to compute K-S distances
   css.stat["depth list"] = depth_list
+  css.stat["duration list"] = duration_list
   #css.cache["weight list"] = weight_list
   #println("# P list = ",period_list)
-  return (period_list,depth_list)
+  return (period_list,depth_list,duration_list)
 end
 
 
@@ -304,10 +308,10 @@ function calc_summary_stats_model(cat_obs::KeplerObsCatalog, param::SimParam; tr
   calc_summary_stats_num_targets!(css,cat_obs,param,trueobs_cat=trueobs_cat)
   calc_summary_stats_num_tranets!(css,cat_obs,param)
   calc_summary_stats_num_n_tranet_systems!(css,cat_obs,param)
-  calc_summary_stats_cuml_period_depth!(css,cat_obs,param)
+  calc_summary_stats_cuml_period_depth_duration!(css,cat_obs,param)
   #calc_summary_stats_obs_binned_rates!(css,cat_obs,param)
   #calc_summary_stats_mean_std_log_period_depth!(css,cat_obs,param)
-  calc_summary_stats_period_ratios_neighbors!(css,cat_obs,param)
+  calc_summary_stats_period_radius_ratios_neighbors!(css,cat_obs,param)
   calc_summary_stats_duration_ratios_neighbors!(css,cat_obs,param)
   return css
 end

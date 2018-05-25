@@ -1,4 +1,4 @@
-To reproduce a calculation from Hsu et al. (2018), you need to a jld version of the Q1-16 stellar catalog that has been filtered to include a subset of stars (similar to that of Christianset et al. (201X).  For now, that comes with the repository.
+To reproduce a calculation from Hsu et al. (2018), you need a jld version of the Q1-16 stellar catalog that has been filtered to include a subset of stars (similar to that of Christiansen et al. (2015)).  For now, that comes with the repository.
 If you'd like to regenerate it yourself, you can by running:  
 > julia make_q1_q16_christiansen.jl
 That only needs to be done once, and most people won't need to do it anyway.
@@ -6,6 +6,6 @@ That only needs to be done once, and most people won't need to do it anyway.
 Then to perform the actual calculations, you run:
 > julia abc_run.jl
 
-This defaults to computing a planet occurence rate (IS THAT THE RIGHT NAME?) for a period-radius bin of 1-1.5 R_Earth and 237-320 days.
-For other ranges, you'd edit the values  of p_lim_arr_num and r_lim_arr_num in param.in.
+This defaults to computing a planet candidate occurrence rate and rate density for a period-radius bin of 1-1.5 R_Earth and 237-320 days.
+For other ranges, you'd edit the values of p_bin_lim and r_bin_lim in param.in.
 

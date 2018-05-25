@@ -1,5 +1,10 @@
+## ExoplanetsSysSim/examples/hsu_etal_2018/make_q1_q16_christiansen.jl
+## (c) 2018 Danley C. Hsu & Eric B. Ford
+# Script for creating the Q1-Q16 FGK subset stellar catalog in jld format
+#    used in the Hsu et al. 2018 paper
+
 using ExoplanetsSysSim
-using HDF5, JLD
+using JLD
 
 include(joinpath(Pkg.dir(),"ExoplanetsSysSim","examples","hsu_etal_2018", "christiansen_func.jl"))
 
