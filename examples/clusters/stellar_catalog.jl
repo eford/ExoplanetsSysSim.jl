@@ -38,15 +38,15 @@ function setup_star_table_christiansen(filename::String; force_reread::Bool = fa
   catch
     error(string("# Failed to read stellar catalog >",filename,"< in jld format."))
   end
-  println("Test 1?")
-  else # not .jld file
+
+  else
   try 
     df = CSV.read(filename,nullable=true)
   catch
     error(string("# Failed to read stellar catalog >",filename,"< in ascii format."))
   end
   end # if ismatch
-  println("Test 2?")
+
   has_mass = .! (ismissing.(df[:mass]) .| ismissing.(df[:mass_err1]) .| ismissing.(df[:mass_err2]))
   has_radius = .! (ismissing.(df[:radius]) .| ismissing.(df[:radius_err1]) .| ismissing.(df[:radius_err2]))
   has_dens = .! (ismissing.(df[:dens]) .| ismissing.(df[:dens_err1]) .| ismissing.(df[:dens_err2]))
