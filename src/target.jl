@@ -66,7 +66,7 @@ function generate_kepler_target_from_table(sim_param::SimParam)
   # ch = rand(DiscreteUniform(1,84))
   ps = generate_planetary_system(star, sim_param)  
     #return KeplerTarget([ps],fill(cdpp,num_cdpp_timescales,num_quarters),contam,data_span,duty_cycle) #,ch )
-  return KeplerTarget([ps],repeat(cdpp_arr, outer=[1,num_quarters]),contam,data_span,duty_cycle)
+  return KeplerTarget([ps],repeat(cdpp_arr, outer=[1,1]),contam,data_span,duty_cycle)
 end
 
 function generate_kepler_target_simple(sim_param::SimParam)   
