@@ -358,7 +358,7 @@ function calc_summary_stats_obs_binned_rates(cat_obs::KeplerObsCatalog, param::S
         period_list[n] = cat_obs.target[i].obs[j].period
         weight_list[n] = ExoplanetsSysSim.prob_detect(cat_obs.target[i].prob_detect,j)
         #radius_list[n] = sqrt(cat_obs.target[i].obs[j].depth)*cat_obs.target[i].star.radius
-        radius_list[n] = sqrt(cat_obs.target[i].obs[j].depth)*ExoplanetsSysSim.star_table(cat_obs.target[i].star.id, :radius)
+        radius_list[n] = sqrt(cat_obs.target[i].obs[j].depth)*ExoplanetsSysSim.StellarTable.star_table(cat_obs.target[i].star.id, :radius)
         n = n+1
       end
     end
