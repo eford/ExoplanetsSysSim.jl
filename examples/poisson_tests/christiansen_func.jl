@@ -179,7 +179,7 @@ function setup_christiansen(filename::String; force_reread::Bool = false)
   end
   else
   try 
-    df = CSV.read(filename,nullable=true)
+    df = CSV.read(filename,allowmissing=:all)
   catch
     error(string("# Failed to read stellar catalog >",filename,"< in ascii format."))
   end
@@ -208,7 +208,7 @@ function setup_christiansen(filename::String; force_reread::Bool = false)
       push!(is_FGK, false)
     end
   end
-  is_usable = has_radius .& is_FGK .& has_mass .& has_rest .& has_dens
+  is_usable = has_radius .& is_FGK .& has_mass .& has_rest .& has_dens .& has_cdpp
   if contains(filename,"q1_q16_stellar.csv")
     is_usable = is_usable .& in_Q1Q12
   end
