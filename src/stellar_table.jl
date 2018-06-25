@@ -59,7 +59,7 @@ function setup(filename::String; force_reread::Bool = false)
   is_usable = .&(has_mass, has_radius, has_dens, has_rest)
   # See options at: http://exoplanetarchive.ipac.caltech.edu/docs/API_keplerstellar_columns.html
   # TODO SCI DETAIL or IMPORTANT?: Read in all CDPP's, so can interpolate?
-  symbols_to_keep = [ :kepid, :mass, :mass_err1, :mass_err2, :radius, :radius_err1, :radius_err2, :dens, :dens_err1, :dens_err2, :rrmscdpp04p5, :dataspan, :dutycycle ]
+  symbols_to_keep = [ :kepid, :mass, :mass_err1, :mass_err2, :radius, :radius_err1, :radius_err2, :dens, :dens_err1, :dens_err2, :rrmscdpp01p5, :rrmscdpp02p0, :rrmscdpp02p5, :rrmscdpp03p0, :rrmscdpp03p5, :rrmscdpp04p5, :rrmscdpp05p0, :rrmscdpp06p0, :rrmscdpp07p5, :rrmscdpp09p0, :rrmscdpp10p5, rrmscdpp12p0, rrmscdpp12p5, rrmscdpp15p0, :cdppslplong, :cdppslpshrt, :dataspan, :dutycycle ]
   delete!(df, [~(x in symbols_to_keep) for x in names(df)])    # delete columns that we won't be using anyway
   usable = find(is_usable)
   df = df[usable, symbols_to_keep]
@@ -140,7 +140,7 @@ end # module StellarTable
 
 # using ExoplanetsSysSim.StellarTable
 
-function generate_star_from_table(sim_param::SimParam, id::Integer)
+function generate_star_from_table(sim_param::SimParam, id::Integer)  # WARNING:  To be renamed once there's a working/tested version that uses a stellar catalog with GAIA data
   mu_r = StellarTable.star_table(id,:radius)
   sig_r1 = StellarTable.star_table(id,:radius_err1)
   sig_r2 = StellarTable.star_table(id,:radius_err2)
@@ -155,7 +155,7 @@ function generate_star_from_table(sim_param::SimParam, id::Integer)
     f = 1.0+0.1*randn()
   end
   # ld = LimbDarkeningParamQuadratic(0.5,0.5)
-  return SingleStar(r,m,f,0)
+  return SingleStar(r,m,f,id)
 end
 
 function generate_star_from_table(sim_param::SimParam)

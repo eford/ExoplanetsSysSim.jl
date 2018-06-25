@@ -9,9 +9,11 @@ immutable KeplerTarget
   cdpp::Array{Float64,2} # fractional, not ppm; 2D to allow for multiple time scales, months, quarters or seasons/spacecraft rotation angles
                            # QUERY: Do we want a separate CDPP for SC?  Or will CDPP's in different months be for LC/SC depending on this variable?
                             # QUERY: Should this be moved to KeplerTargetObs?
+                            # QUERY: Should we not add this to target and use the star id to lookup CDPP from the stellar table?
   contam::Float64     # QUERY: Do we want/need this, since we're able to generate multiple stars in a single target?
   data_span::Float64
   duty_cycle::Float64
+  window_function_id::Int64 # Points to the id of the window function for this target
   #channel::Int64         # E.g., if we cared which Kepler channel the target fell on
   #has_sc::Vector{Bool}   # TODO OPT: Make Immutable Vector or BitArray for speed?  QUERY: Should this go in KeplerTargetObs?
   #                       # QUERY: Do we want a separate CDPP for SC?  Or will CDPP's in different months be for LC/SC depending on this variable?
@@ -63,10 +65,11 @@ function generate_kepler_target_from_table(sim_param::SimParam)
   contam = 0.0 # rand(LogNormal(1.0e-3,1.0))      # TODO SCI: Come up with better description of Kepler targets, maybe draw from real contaminations
   data_span = star_table(star_id, :dataspan)
   duty_cycle = star_table(star_id, :dutycycle)
+  wf_id = 0 # TODO: Set to index containing window function information from stellar table
   # ch = rand(DiscreteUniform(1,84))
   ps = generate_planetary_system(star, sim_param)  
     #return KeplerTarget([ps],fill(cdpp,num_cdpp_timescales,num_quarters),contam,data_span,duty_cycle) #,ch )
-  return KeplerTarget([ps],repeat(cdpp_arr, outer=[1,1]),contam,data_span,duty_cycle)
+  return KeplerTarget([ps],repeat(cdpp_arr, outer=[1,1]),contam,data_span,duty_cycle,wf_id)
 end
 
 function generate_kepler_target_simple(sim_param::SimParam)   
@@ -81,7 +84,7 @@ function generate_kepler_target_simple(sim_param::SimParam)
   contam = 0.0 # rand(LogNormal(1.0e-3,1.0))   # TODO SCI: Come up with better description of Kepler targets, maybe draw from real contaminations
   #ch = rand(DiscreteUniform(1,84))
   ps = generate_planetary_system(star, sim_param)  
-  return KeplerTarget([ps],fill(cdpp,num_cdpp_timescales,num_quarters),contam,mission_data_span,mission_duty_cycle) #,ch)
+  return KeplerTarget([ps],fill(cdpp,num_cdpp_timescales,num_quarters),contam,mission_data_span,mission_duty_cycle,0) #,ch)
 end
 
 function test_target(sim_param::SimParam)
