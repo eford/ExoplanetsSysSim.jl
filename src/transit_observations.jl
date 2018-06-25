@@ -133,7 +133,7 @@ function calc_target_obs_sky_ave(t::KeplerTarget, sim_param::SimParam)
               b = rand()  # WARNING: Making an approximation: Using a uniform distribution for b (truncated to ensure detection probability >0) when generating measurement uncertainties, rather than accounting for increased detection probability for longer duration transits
               transit_duration_factor = sqrt((1+b)*(1-b)) 
 	      duration = duration_central * transit_duration_factor
-	      snr = snr_central * transit_duration_factor
+	      snr = snr_central * sqrt(transit_duration_factor)
               pdet_this_b = calc_prob_detect_if_transit(t, snr, sim_param, num_transit=ntr)
               if pdet_this_b > 0.0 
 	         pdet[p] = pdet_ave  
