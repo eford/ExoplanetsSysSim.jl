@@ -432,7 +432,7 @@ function calc_distance_vector_binned(summary1::CatalogSummaryStatistics, summary
            prob_detect = summary1.stat["prob_list"][pl_id]
            np2[n] += rand(Bernoulli(prob_detect))
         end
-        np_bin[n] = dist_L1_abs(np1[n]/summary1.stat["num targets"], np2[n]/summary2.stat["num targets"])
+        np_bin[n] = dist_L2_abs(np1[n]/summary1.stat["num targets"], np2[n]/summary2.stat["num targets"])
 
       #println("True # [Bin ", n,"] = ",np1[n],", Expected # [Bin ", n,"] = ",np2[n])
     end
