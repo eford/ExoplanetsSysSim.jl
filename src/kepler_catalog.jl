@@ -216,7 +216,7 @@ function setup_actual_planet_candidate_catalog(df_star::DataFrame, df_koi::DataF
             end
             num_pl = plid
             target_obs = KeplerTargetObs(num_pl)
-	    target_obs.star = ExoplanetsSysSim.StarObs(df_obs[i,:radius],df_obs[i,:mass])
+	    target_obs.star = ExoplanetsSysSim.StarObs(df_obs[i,:radius],df_obs[i,:mass],0)
         end
         
         target_obs.obs[plid] = ExoplanetsSysSim.TransitPlanetObs(df_obs[i,:koi_period],df_obs[i,:koi_time0bk],df_obs[i,:koi_depth]/1.0e6,df_obs[i,:koi_duration])

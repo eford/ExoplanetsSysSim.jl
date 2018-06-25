@@ -158,7 +158,7 @@ function setup_christiansen(sim_param::SimParam; force_reread::Bool = false)
   add_param_fixed(sim_param,"read_stellar_catalog",true)
   add_param_fixed(sim_param,"num_kepler_targets",StellarTable.num_usable_in_star_table())
   if !haskey(sim_param.param,"num_targets_sim_pass_one")
-      add_param_fixed(sim_param_closure,"num_targets_sim_pass_one", StellarTable.num_usable_in_star_table())
+      add_param_fixed(sim_param,"num_targets_sim_pass_one", StellarTable.num_usable_in_star_table())
   end
   StellarTable.set_star_table(df)
   return df  
@@ -179,7 +179,7 @@ function setup_christiansen(filename::String; force_reread::Bool = false)
   end
   else
   try 
-    df = CSV.read(filename,nullable=true)
+    df = CSV.read(filename,allowmissing=:all)
   catch
     error(string("# Failed to read stellar catalog >",filename,"< in ascii format."))
   end
@@ -187,7 +187,8 @@ function setup_christiansen(filename::String; force_reread::Bool = false)
   has_mass = .! (ismissing.(df[:mass]) .| ismissing.(df[:mass_err1]) .| ismissing.(df[:mass_err2]))
   has_radius = .! (ismissing.(df[:radius]) .| ismissing.(df[:radius_err1]) .| ismissing.(df[:radius_err2]))
   has_dens = .! (ismissing.(df[:dens]) .| ismissing.(df[:dens_err1]) .| ismissing.(df[:dens_err2]))
-  has_rest = .! (ismissing.(df[:rrmscdpp04p5]) .| ismissing.(df[:dataspan]) .| ismissing.(df[:dutycycle]))
+  has_cdpp = .! (ismissing.(df[:rrmscdpp01p5]) .| ismissing.(df[:rrmscdpp02p0]) .| ismissing.(df[:rrmscdpp02p5]) .| ismissing.(df[:rrmscdpp03p0]) .| ismissing.(df[:rrmscdpp03p5]) .| ismissing.(df[:rrmscdpp04p5]) .| ismissing.(df[:rrmscdpp05p0]) .| ismissing.(df[:rrmscdpp06p0]) .| ismissing.(df[:rrmscdpp07p5]) .| ismissing.(df[:rrmscdpp09p0]) .| ismissing.(df[:rrmscdpp10p5]) .| ismissing.(df[:rrmscdpp12p0]) .| ismissing.(df[:rrmscdpp12p5]) .| ismissing.(df[:rrmscdpp15p0]))
+  has_rest = .! (ismissing.(df[:dataspan]) .| ismissing.(df[:dutycycle]))
   in_Q1Q12 = []
   for x in df[:st_quarters]
     subx = string(x)
@@ -207,13 +208,13 @@ function setup_christiansen(filename::String; force_reread::Bool = false)
       push!(is_FGK, false)
     end
   end
-  is_usable = has_radius .& is_FGK .& has_mass .& has_rest .& has_dens
+  is_usable = has_radius .& is_FGK .& has_mass .& has_rest .& has_dens .& has_cdpp
   if contains(filename,"q1_q16_stellar.csv")
     is_usable = is_usable .& in_Q1Q12
   end
   # See options at: http://exoplanetarchive.ipac.caltech.edu/docs/API_keplerstellar_columns.html
   # TODO SCI DETAIL or IMPORTANT?: Read in all CDPP's, so can interpolate?
-  symbols_to_keep = [ :kepid, :mass, :mass_err1, :mass_err2, :radius, :radius_err1, :radius_err2, :dens, :dens_err1, :dens_err2, :rrmscdpp04p5, :dataspan, :dutycycle ]
+  symbols_to_keep = [ :kepid, :mass, :mass_err1, :mass_err2, :radius, :radius_err1, :radius_err2, :dens, :dens_err1, :dens_err2, :rrmscdpp01p5, :rrmscdpp02p0, :rrmscdpp02p5, :rrmscdpp03p0, :rrmscdpp03p5, :rrmscdpp04p5, :rrmscdpp05p0, :rrmscdpp06p0, :rrmscdpp07p5, :rrmscdpp09p0, :rrmscdpp10p5, :rrmscdpp12p0, :rrmscdpp12p5, :rrmscdpp15p0, :dataspan, :dutycycle ]
   delete!(df, [~(x in symbols_to_keep) for x in names(df)])    # delete columns that we won't be using anyway
   usable = find(is_usable)
   df = df[usable, symbols_to_keep]
@@ -313,7 +314,7 @@ function calc_summary_stats_sim_pass_one_binned_rates(cat_obs::KeplerObsCatalog,
   return CatalogSummaryStatistics(ssd, cache)
 end
 
-function calc_summary_stats_obs_binned_rates(cat_obs::KeplerObsCatalog, param::SimParam; trueobs_cat::Bool = false)
+function calc_summary_stats_obs_binned_rates(cat_obs::KeplerObsCatalog, param::SimParam; trueobs_cat::Bool = false, obs_skyavg::Bool = false)
   ssd = Dict{String,Any}()
   cache = Dict{String,Any}()
 
@@ -359,8 +360,13 @@ function calc_summary_stats_obs_binned_rates(cat_obs::KeplerObsCatalog, param::S
     for i in idx_tranets
       for j in 1:num_planets(cat_obs.target[i])
         period_list[n] = cat_obs.target[i].obs[j].period
-        weight_list[n] = ExoplanetsSysSim.prob_detect(cat_obs.target[i].prob_detect,j)
-        radius_list[n] = sqrt(cat_obs.target[i].obs[j].depth)*cat_obs.target[i].star.radius
+        if obs_skyavg  
+          weight_list[n] = ExoplanetsSysSim.prob_detect(cat_obs.target[i].prob_detect,j)
+        else
+          weight_list[n] = 1.0
+        end
+        #radius_list[n] = sqrt(cat_obs.target[i].obs[j].depth)*cat_obs.target[i].star.radius
+        radius_list[n] = sqrt(cat_obs.target[i].obs[j].depth)*ExoplanetsSysSim.StellarTable.star_table(cat_obs.target[i].star.id, :radius)
         n = n+1
       end
     end
@@ -580,7 +586,8 @@ function cnt_np_bin(cat_obs::KeplerObsCatalog, param::SimParam, verbose::Bool = 
 	        pdet = 0.0
 	        for star_id in 1:num_targ
 	            star = SingleStar(ExoplanetsSysSim.StellarTable.star_table(star_id,:radius),ExoplanetsSysSim.StellarTable.star_table(star_id,:mass),1.0, star_id)
-	            cdpp = 1.0e-6 * ExoplanetsSysSim.StellarTable.star_table(star_id, :rrmscdpp04p5) * sqrt(4.5/24.0 / ExoplanetsSysSim.LC_duration )
+                    cdpp_arr = (1.0e-6*sqrt(1./24.0/ExoplanetsSysSim.LC_duration)) .* [ExoplanetsSysSim.StellarTable.star_table(star_id, :rrmscdpp01p5)*sqrt(1.5), ExoplanetsSysSim.StellarTable.star_table(star_id, :rrmscdpp02p0)*sqrt(2.), ExoplanetsSysSim.StellarTable.star_table(star_id,:rrmscdpp02p5)*sqrt(2.5), ExoplanetsSysSim.StellarTable.star_table(star_id,:rrmscdpp03p0)*sqrt(3.), ExoplanetsSysSim.StellarTable.star_table(star_id,:rrmscdpp03p5)*sqrt(3.5), ExoplanetsSysSim.StellarTable.star_table(star_id,:rrmscdpp04p5)*sqrt(4.5), ExoplanetsSysSim.StellarTable.star_table(star_id,:rrmscdpp05p0)*sqrt(5.), ExoplanetsSysSim.StellarTable.star_table(star_id,:rrmscdpp06p0)*sqrt(6.), ExoplanetsSysSim.StellarTable.star_table(star_id,:rrmscdpp07p5)*sqrt(7.5), ExoplanetsSysSim.StellarTable.star_table(star_id,:rrmscdpp09p0)*sqrt(9.), ExoplanetsSysSim.StellarTable.star_table(star_id,:rrmscdpp10p5)*sqrt(10.5), ExoplanetsSysSim.StellarTable.star_table(star_id,:rrmscdpp12p0)*sqrt(12.), ExoplanetsSysSim.StellarTable.star_table(star_id,:rrmscdpp12p5)*sqrt(12.5), ExoplanetsSysSim.StellarTable.star_table(star_id,:rrmscdpp15p0)*sqrt(15.)]
+                    #cdpp = 1.0e-6 * ExoplanetsSysSim.StellarTable.star_table(star_id, :rrmscdpp04p5) * sqrt(4.5/24.0 / ExoplanetsSysSim.LC_duration )
 	            contam = 0.0
 	            data_span = ExoplanetsSysSim.StellarTable.star_table(star_id, :dataspan)
 	            duty_cycle = ExoplanetsSysSim.StellarTable.star_table(star_id, :dutycycle)
@@ -589,7 +596,7 @@ function cnt_np_bin(cat_obs::KeplerObsCatalog, param::SimParam, verbose::Bool = 
                     incl = acos(Base.rand()*star.radius*ExoplanetsSysSim.rsol_in_au/ExoplanetsSysSim.semimajor_axis(pper, star.mass))
 	            orbit_arr[1] = Orbit(pper, 0., incl, 0., 0., Base.rand()*2.*pi)
 	            pl_arr[1] = Planet(prad, 1.0e-6)
-	            kep_targ = KeplerTarget([PlanetarySystem(star, pl_arr, orbit_arr)], fill(cdpp,ExoplanetsSysSim.num_cdpp_timescales,ExoplanetsSysSim.num_quarters),contam,data_span,duty_cycle)
+	            kep_targ = KeplerTarget([PlanetarySystem(star, pl_arr, orbit_arr)], repeat(cdpp_arr, outer=[1,1]),contam,data_span,duty_cycle)
                     
 	            duration_central = ExoplanetsSysSim.calc_transit_duration(kep_targ,1,1) 
 	            if duration_central <= 0.
@@ -624,7 +631,7 @@ function stellar_ess(param::SimParam, verbose::Bool = true)
   println(string("Stellar ESS calculation beginning..."))
   for star_id in 1:num_targ
     star = SingleStar(ExoplanetsSysSim.StellarTable.star_table(star_id,:radius),ExoplanetsSysSim.StellarTable.star_table(star_id,:mass),1.0, star_id)
-    cdpp = 1.0e-6 * ExoplanetsSysSim.StellarTable.star_table(star_id, :rrmscdpp04p5) * sqrt(4.5/24.0 / ExoplanetsSysSim.LC_duration )
+    cdpp_arr = (1.0e-6*sqrt(1./24.0/ExoplanetsSysSim.LC_duration)) .* [ExoplanetsSysSim.StellarTable.star_table(star_id, :rrmscdpp01p5)*sqrt(1.5), ExoplanetsSysSim.StellarTable.star_table(star_id, :rrmscdpp02p0)*sqrt(2.), ExoplanetsSysSim.StellarTable.star_table(star_id,:rrmscdpp02p5)*sqrt(2.5), ExoplanetsSysSim.StellarTable.star_table(star_id,:rrmscdpp03p0)*sqrt(3.), ExoplanetsSysSim.StellarTable.star_table(star_id,:rrmscdpp03p5)*sqrt(3.5), ExoplanetsSysSim.StellarTable.star_table(star_id,:rrmscdpp04p5)*sqrt(4.5), ExoplanetsSysSim.StellarTable.star_table(star_id,:rrmscdpp05p0)*sqrt(5.), ExoplanetsSysSim.StellarTable.star_table(star_id,:rrmscdpp06p0)*sqrt(6.), ExoplanetsSysSim.StellarTable.star_table(star_id,:rrmscdpp07p5)*sqrt(7.5), ExoplanetsSysSim.StellarTable.star_table(star_id,:rrmscdpp09p0)*sqrt(9.), ExoplanetsSysSim.StellarTable.star_table(star_id,:rrmscdpp10p5)*sqrt(10.5), ExoplanetsSysSim.StellarTable.star_table(star_id,:rrmscdpp12p0)*sqrt(12.), ExoplanetsSysSim.StellarTable.star_table(star_id,:rrmscdpp12p5)*sqrt(12.5), ExoplanetsSysSim.StellarTable.star_table(star_id,:rrmscdpp15p0)*sqrt(15.)]
     contam = 0.0
     data_span = ExoplanetsSysSim.StellarTable.star_table(star_id, :dataspan)
     duty_cycle = ExoplanetsSysSim.StellarTable.star_table(star_id, :dutycycle)
@@ -644,7 +651,7 @@ function stellar_ess(param::SimParam, verbose::Bool = true)
           incl = acos(Base.rand()*star.radius*ExoplanetsSysSim.rsol_in_au/ExoplanetsSysSim.semimajor_axis(pper, star.mass))
 	  orbit_arr[1] = Orbit(pper, 0., incl, 0., 0., Base.rand()*2.*pi)
 	  pl_arr[1] = Planet(prad, 1.0e-6)
-	  kep_targ = KeplerTarget([PlanetarySystem(star, pl_arr, orbit_arr)], fill(cdpp,ExoplanetsSysSim.num_cdpp_timescales,ExoplanetsSysSim.num_quarters),contam,data_span,duty_cycle)
+	  kep_targ = KeplerTarget([PlanetarySystem(star, pl_arr, orbit_arr)], repeat(cdpp_arr, outer=[1,1]),contam,data_span,duty_cycle)
 
 	  duration_central = ExoplanetsSysSim.calc_transit_duration(kep_targ,1,1) 
 	  if duration_central <= 0.

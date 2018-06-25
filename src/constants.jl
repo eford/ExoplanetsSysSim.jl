@@ -5,7 +5,7 @@
  const num_channels = 84
  const num_modules = 42
  const num_quarters = 17              # QUERY:  I'm favoring leaving out quarter 0, since that was engineering data.  Agree?
- const num_cdpp_timescales = 1        # TODO SCI: Increase if incorporate CDPPs for multiple timescales, also LC/SC issue
+ const num_cdpp_timescales = 14       # TODO SCI: Increase if incorporate CDPPs for multiple timescales, also LC/SC issue
  const mission_data_span = 1459.789   # maximum(ExoplanetsSysSim.StellarTable.df[:dataspan])
  const mission_duty_cycle = 0.8751    # median(ExoplanetsSysSim.StellarTable.df[:dutycycle])
 

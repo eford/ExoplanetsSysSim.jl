@@ -18,6 +18,7 @@ TransitPlanetObs() = TransitPlanetObs(0.0,0.0,0.0,0.0)
 immutable StarObs
   radius::Float64      # in Rsol
   mass::Float64        # in Msol
+  id::Int64            # row number in stellar dataframe  
 end
 
 
@@ -94,7 +95,7 @@ type KeplerTargetObs                        # QUERY:  Do we want to make this ty
   star::StarObs                             # TODO SCI DETAIL: Add more members to StarObs, so can used observed rather than actual star properties
 end
 #KeplerTargetObs(n::Integer) = KeplerTargetObs( fill(TransitPlanetObs(),n), fill(TransitPlanetObs(),n), fill(tuple(0,0),n),  ObservedSystemDetectionProbsEmpty(),  fill(false,num_quarters), StarObs(0.0,0.0) )
-KeplerTargetObs(n::Integer) = KeplerTargetObs( fill(TransitPlanetObs(),n), fill(TransitPlanetObs(),n), ObservedSystemDetectionProbsEmpty(),  falses(has_sc_bit_array_size), StarObs(0.0,0.0) )
+KeplerTargetObs(n::Integer) = KeplerTargetObs( fill(TransitPlanetObs(),n), fill(TransitPlanetObs(),n), ObservedSystemDetectionProbsEmpty(),  falses(has_sc_bit_array_size), StarObs(0.0,0.0,0) )
 num_planets(t::KeplerTargetObs) = length(t.obs)
 
 function calc_target_obs_sky_ave(t::KeplerTarget, sim_param::SimParam)
@@ -160,7 +161,7 @@ function calc_target_obs_sky_ave(t::KeplerTarget, sim_param::SimParam)
   sdp_target = sdp_sys[s1]
 
   has_no_sc = falses(has_sc_bit_array_size)
-  star_obs = StarObs( t.sys[1].star.radius, t.sys[1].star.mass )  # NOTE:  This sets the observed star properties to be those in the stellar catalog.  If want to incorporate uncertainty in stellar properties, that would be done elsewhere when translating depths into planet radii.  
+  star_obs = StarObs( t.sys[1].star.radius, t.sys[1].star.mass, t.sys[1].star.id )  # NOTE:  This sets the observed star properties to be those in the stellar catalog.  If want to incorporate uncertainty in stellar properties, that would be done elsewhere when translating depths into planet radii.  
   #return KeplerTargetObs(obs, sigma, id, sdp_target, has_no_sc, star_obs )
   return KeplerTargetObs(obs, sigma, sdp_target, has_no_sc, star_obs )
 end
@@ -215,7 +216,7 @@ function calc_target_obs_single_obs(t::KeplerTarget, sim_param::SimParam)
   sdp_target = sdp_sys[s1]
 
   has_no_sc = falses(3*num_quarters)
-  star_obs = StarObs( t.sys[1].star.radius, t.sys[1].star.mass )  # TODO SCI DETAIL: Could improve.  WARNING: ASSUMES STAR IS KNOWN PERFECTLY
+  star_obs = StarObs( t.sys[1].star.radius, t.sys[1].star.mass, t.sys[1].star.id )  # TODO SCI DETAIL: Could improve.  WARNING: ASSUMES STAR IS KNOWN PERFECTLY
   #return KeplerTargetObs(obs, sigma, id, sdp_target, has_no_sc, star_obs )
   return KeplerTargetObs(obs, sigma, sdp_target, has_no_sc, star_obs )
 end
