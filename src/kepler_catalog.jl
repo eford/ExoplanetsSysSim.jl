@@ -142,7 +142,8 @@ function read_koi_catalog(filename::String, force_reread::Bool = false)
             end
 
             #df = readtable(filename, skipstart=num_skip)
-            df = CSV.read(filename,nullable=true, header=num_skip, rows_for_type_detect = size(tmp_koi_cat,1)-num_skip )
+            #df = CSV.read(filename,nullable=true, header=num_skip, rows_for_type_detect = size(tmp_koi_cat,1)-num_skip )
+            df = CSV.read(filename,allowmissing=:all, header=num_skip, rows_for_type_detect = size(tmp_koi_cat,1)-num_skip )
 
             # Choose which KOIs to keep
             #is_cand = (csv_data[:,koi_disposition_idx] .== "CONFIRMED") | (csv_data[:,koi_disposition_idx] .== "CANDIDATE")
@@ -198,7 +199,8 @@ function setup_actual_planet_candidate_catalog(df_star::DataFrame, df_koi::DataF
     
     output = KeplerObsCatalog([])
     df_obs = join(df_star, df_koi, on = :kepid)
-    df_obs = sort!(df_obs, cols=(:kepid))
+    #df_obs = sort!(df_obs, cols=(:kepid))
+    df_obs = sort!(df_obs, (:kepid))
 
     if haskey(sim_param, "koi_subset_csv")
         tot_plan -= length(df_obs[:kepoi_name])
