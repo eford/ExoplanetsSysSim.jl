@@ -274,7 +274,12 @@ function calc_summary_stats_sim_pass_one_binned_rates(cat_obs::KeplerObsCatalog,
       (s,p) = cat_obs.target[i].phys_id[j]
       
       period_list[n] = cat_phys.target[i].sys[s].orbit[p].P
-      weight_list[n] = p_tr_and_det
+      #weight_list[n] = p_tr_and_det
+        if obs_skyavg  
+          weight_list[n] = p_tr_and_det
+        else
+          weight_list[n] = 1.0
+        end
       radius_list[n] = cat_phys.target[i].sys[s].planet[p].radius
       n = n+1
     end
@@ -295,7 +300,7 @@ function calc_summary_stats_sim_pass_one_binned_rates(cat_obs::KeplerObsCatalog,
 
   np_bin = zeros((length(limitP)-1) * (length(limitRp)-1))
   np_bin_idx = 1
-  bin_match_list = fill(fill(0,0),length(limitP)-1*length(limitRp)-1)
+  bin_match_list = fill(fill(0,0),(length(limitP)-1)*(length(limitRp)-1))
   for i in 1:(length(limitP)-1)
     P_match = find(x -> ((x > limitP[i]) && (x < limitP[i+1])), period_list)
     for j in 1:(length(limitRp)-1)
@@ -381,23 +386,29 @@ function calc_summary_stats_obs_binned_rates(cat_obs::KeplerObsCatalog, param::S
     end
   end
 
+  #ssd["period_list"] = period_list
+  ssd["weight_list"] = weight_list
+  #ssd["radius_list"] = radius_list
+  
   limitP::Array{Float64,1} = get_any(param, "p_lim_arr", Array{Float64,1})
   limitRp::Array{Float64,1} = get_any(param, "r_lim_arr", Array{Float64,1})
 
   np_bin = zeros((length(limitP)-1) * (length(limitRp)-1))
   np_bin_idx = 1
+  bin_match_list = fill(fill(0,0),(length(limitP)-1)*(length(limitRp)-1))
   for i in 1:(length(limitP)-1)
     P_match = find(x -> ((x > limitP[i]) && (x < limitP[i+1])), period_list)
     for j in 1:(length(limitRp)-1)
       R_match = find(x -> ((x > limitRp[j]) && (x < limitRp[j+1])), radius_list)
       
       bin_match = intersect(P_match, R_match)
-
+      bin_match_list[np_bin_idx] = bin_match
       np_bin[np_bin_idx] = sum(weight_list[bin_match])
       np_bin_idx += 1
     end
   end
 
+  cache["bin_match_list"] = bin_match_list
   #ssd["planets detected"] = sum(np_bin)
   ssd["planets table"] = np_bin
 
@@ -426,7 +437,8 @@ function calc_distance_vector_binned(summary1::CatalogSummaryStatistics, summary
 
     bin_match_list = summary2.cache["bin_match_list"]
     @assert length(bin_match_list) == length(np1) 
-    np2 = zeros(In64,length(np1))
+    np2 = zeros(Int64,length(np1))
+    np_bin = zeros(length(np1))
     for n in 1:length(np1)
         #np_bin[n] = dist_L1_abs(np1[n]/summary1.stat["num targets"], np2[n]/summary2.stat["num targets"])
         #np_bin[n] = dist_L2_abs(np1[n]/summary1.stat["num targets"], np2[n]/summary2.stat["num targets"])
@@ -435,7 +447,7 @@ function calc_distance_vector_binned(summary1::CatalogSummaryStatistics, summary
         num_pl_match_p_and_r = length(bin_match_list[n])
         for i in 1:num_pl_match_p_and_r
            pl_id = bin_match_list[n][i]
-           prob_detect = summary1.stat["prob_list"][pl_id]
+           prob_detect = summary2.stat["weight_list"][pl_id]
            np2[n] += rand(Bernoulli(prob_detect))
         end
         np_bin[n] = dist_L2_abs(np1[n]/summary1.stat["num targets"], np2[n]/summary2.stat["num targets"])
