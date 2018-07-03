@@ -361,7 +361,7 @@ function calc_summary_stats_obs_binned_rates(cat_obs::KeplerObsCatalog, param::S
       for j in 1:num_planets(cat_obs.target[i])
         period_list[n] = cat_obs.target[i].obs[j].period
         if obs_skyavg  
-          weight_list[n] = ExoplanetsSysSim.prob_detect(cat_obs.target[i].prob_detect,j)
+          weight_list[n] = ExoplanetsSysSim.prob_detect(cat_obs.target[i].prob_detect,j) # CHECK WHAT THIS DOES
         else
           weight_list[n] = 1.0
         end
@@ -381,6 +381,10 @@ function calc_summary_stats_obs_binned_rates(cat_obs::KeplerObsCatalog, param::S
     end
   end
 
+  #ssd["period_list"] = period_list
+  ssd["weight_list"] = weight_list
+  #ssd["radius_list"] = radius_list
+  
   limitP::Array{Float64,1} = get_any(param, "p_lim_arr", Array{Float64,1})
   limitRp::Array{Float64,1} = get_any(param, "r_lim_arr", Array{Float64,1})
 
@@ -430,6 +434,8 @@ function calc_distance_vector_binned(summary1::CatalogSummaryStatistics, summary
     bin_match_list = summary2.cache["bin_match_list"]
     @assert length(bin_match_list) == length(np1) 
     np2 = zeros(Int64,length(np1))
+    np_bin = zeros(length(np1))
+      
     for n in 1:length(np1)
         #np_bin[n] = dist_L1_abs(np1[n]/summary1.stat["num targets"], np2[n]/summary2.stat["num targets"])
         #np_bin[n] = dist_L2_abs(np1[n]/summary1.stat["num targets"], np2[n]/summary2.stat["num targets"])
