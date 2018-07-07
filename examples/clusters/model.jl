@@ -99,8 +99,8 @@ function generate_planet_periods_sizes_masses_in_cluster( star::StarAbstract, si
 
    const min_radius::Float64 = get_real(sim_param,"min_radius")
    const max_radius::Float64 = get_real(sim_param,"max_radius")
-   Rdist = Truncated(LogNormal(log(mean_R),sigma_log_radius_in_cluster),min_radius,max_radius) # if we want clustered planet sizes
    #Rdist = LogNormal(log(mean_R),sigma_log_radius_in_cluster)
+   Rdist = Truncated(LogNormal(log(mean_R),sigma_log_radius_in_cluster), min_radius, max_radius) # if we want clustered planet sizes
    R = rand(Rdist,n)
    #R = generate_sizes(star,sim_param, num_pl=n) # if want non-clustered planet sizes instead
 
@@ -109,10 +109,14 @@ function generate_planet_periods_sizes_masses_in_cluster( star::StarAbstract, si
    #println("# mass = ", mass)
 
    const sigma_logperiod_per_pl_in_cluster = get_real(sim_param,"sigma_logperiod_per_pl_in_cluster")
+   const min_period = get_real(sim_param,"min_period")
+   const max_period = get_real(sim_param,"max_period")
    log_mean_P = 0.0 # log(generate_periods_power_law(star,sim_param))
    # Note: Currently, drawing all periods within a cluster at once and either keeping or rejecting the whole cluster
    #       Should we instead draw periods one at a time?
-   Pdist = LogNormal(log_mean_P,sigma_logperiod_per_pl_in_cluster*n)
+   max_period_ratio = max_period/min_period
+   #Pdist = LogNormal(log_mean_P,sigma_logperiod_per_pl_in_cluster*n)
+   Pdist = Truncated(LogNormal(log_mean_P,sigma_logperiod_per_pl_in_cluster*n), 1/sqrt(max_period_ratio), sqrt(max_period_ratio)) #Truncated unscaled period distribution to ensure that the cluster can fit in the period range [min_period, max_period] after scaling by a period scale
    local P
    found_good_periods = false
    attempts = 0
@@ -151,6 +155,7 @@ function generate_planetary_system_clustered(star::StarAbstract, sim_param::SimP
   # load functions to use for drawing parameters
   const generate_num_clusters = get_function(sim_param,"generate_num_clusters")
   const generate_num_planets_in_cluster = get_function(sim_param,"generate_num_planets_in_cluster")
+  const power_law_P = get_real(sim_param,"power_law_P")
   const min_period = get_real(sim_param,"min_period")
   const max_period = get_real(sim_param,"max_period")
 
@@ -162,7 +167,7 @@ function generate_planetary_system_clustered(star::StarAbstract, sim_param::SimP
 
   # Generate a set of periods, planet radii, and planet masses.
   attempt_system = 0
-  max_attempts_system = 100 #Note: currently this should not matter; each system is always attempted just once
+  max_attempts_system = 1 #Note: currently this should not matter; each system is always attempted just once
   local num_pl, Plist, Rlist, masslist
   valid_system = false
   while !valid_system && attempt_system < max_attempts_system
@@ -194,13 +199,21 @@ function generate_planetary_system_clustered(star::StarAbstract, sim_param::SimP
          max_attempts_period_scale = 100
          while !valid_period_scale && attempt_period_scale<max_attempts_period_scale && valid_cluster
              attempt_period_scale += 1
-             period_scale::Array{Float64,1} = ExoplanetsSysSim.generate_periods_power_law(star,sim_param)
+
+             #period_scale::Array{Float64,1} = ExoplanetsSysSim.generate_periods_power_law(star,sim_param)
+             period_scale::Array{Float64,1} = power_law_P!=-1.0 ? ExoplanetsSysSim.draw_power_law(power_law_P, min_period/min(Plist_tmp...), max_period/max(Plist_tmp...), 1) : exp(log(min_period/min(Plist_tmp...)).+rand()*log((max_period/max(Plist_tmp...))/(min_period/min(Plist_tmp...))))
+             #Note: this ensures that the minimum and maximum periods will be in the range [min_period, max_period]
+             #Warning: not sure about the behaviour when min_period/min(Plist_tmp...) > max_period/max(Plist_tmp...) (i.e. when the cluster cannot fit in the given range)?
+             #TODO OPT: could draw period_scale more efficiently by computing the allowed regions in [min_period, max_period] given the previous cluster draws
+
              Plist[pl_start:pl_stop] = Plist_tmp .* period_scale
 
+             #Note: Checking whether the periods are in the range [min_period, max_period] should be redundant now:
              periods_in_range = true
              for p in Plist_tmp .* period_scale # To check if the periods are still in the range [min_period, max_period] after scaling by period_scale
                 if (p < min_period) || (p > max_period)
                     periods_in_range = false
+                    println("Pscale = ", period_scale, " , P = ", p, " ; Pmax/Pmin = ", max(Plist_tmp...)/min(Plist_tmp...))
                 end
              end
 
@@ -209,7 +222,9 @@ function generate_planetary_system_clustered(star::StarAbstract, sim_param::SimP
              end
          end  # while !valid_period_scale...
 
-         #println("attempts_period_scale: ", attempt_period_scale)
+         #if attempt_period_scale > 1
+             #println("attempts_period_scale: ", attempt_period_scale)
+         #end
 
          if !valid_period_scale
             Plist[pl_start:pl_stop] = NaN
