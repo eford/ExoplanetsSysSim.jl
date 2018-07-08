@@ -166,12 +166,7 @@ function calc_simulated_system_detection_probs(ps::PlanetarySystemSingleStar, pr
       for combo in combinations(1:n,ntr)  # Loop over specific combinations of detectable planets
         prob_det_this_combo = 1.0    
         for p in combo  # Loop over each planet in this combination of detectable planets
-            @assert prob_det_if_tr[idx_detectable[p]] <= 1.0
             prob_det_this_combo *= prob_det_if_tr[idx_detectable[p]] 
-        end
-
-        if n > 1
-                print(string("Det. prob. of ",combo," = ",prob_det_this_combo))
         end
 
         if prob_det_this_combo < min_detect_prob_to_be_included
@@ -190,10 +185,6 @@ function calc_simulated_system_detection_probs(ps::PlanetarySystemSingleStar, pr
 	else
 	   error(string("typeof(",observer_trait,") is not a valid trait."))
 	end
-        @assert geo_factor <= 1.0
-        if n > 1
-            print(string("Geo. factor of ",combo," = ",geo_factor))
-        end
         prob_det_this_combo *= geo_factor 
 
 	# Store samples of combinations of planets detected drawn from the full joint multi-planet density
@@ -209,7 +200,9 @@ function calc_simulated_system_detection_probs(ps::PlanetarySystemSingleStar, pr
         for p in combo                # Accumulate the probability of detecting each planet individually
             sdp.pairwise[p,p] += prob_det_this_combo
             if sdp.pairwise[p,p] > 1.0
-                print(string("Error! Invalid prob: ", sdp.pairwise[p,p]))
+                print(string("Error! Invalid prob: ", sdp.pairwise[p,p], "\n"))
+                print(string("Geo. factor of ",combo," = ",geo_factor, "\n"))
+                print(string("Det. prob. of ",combo," = ",prob_det_this_combo/geo_factor, "\n"))
                 quit()
             end
         end
