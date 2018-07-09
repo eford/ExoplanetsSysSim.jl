@@ -200,7 +200,7 @@ function calc_simulated_system_detection_probs(ps::PlanetarySystemSingleStar, pr
         for p in combo                # Accumulate the probability of detecting each planet individually
             sdp.pairwise[p,p] += prob_det_this_combo
             if sdp.pairwise[p,p] > 1.0
-                print(string("Error! Invalid prob: ", sdp.pairwise[p,p], "\n"))
+                print(string("Error! Invalid prob for planet ",p,": ", sdp.pairwise[p,p], "\n\n"))
                 for ntr in 1:min(n,max_tranets_in_sys)
                     for combo in combinations(1:n,ntr)
                         fill!(planet_should_transit,zero(Cint))
@@ -212,7 +212,7 @@ function calc_simulated_system_detection_probs(ps::PlanetarySystemSingleStar, pr
                         for p in combo  # Loop over each planet in this combination of detectable planets
                             prob_det_this_combo *= prob_det_if_tr[idx_detectable[p]] 
                         end
-                        print(string("Det. prob. of ",combo," = ",prob_det_this_combo, "\n"))
+                        print(string("Det. prob. of ",combo," = ",prob_det_this_combo, "\n\n"))
                     end
                 end
                 quit()
