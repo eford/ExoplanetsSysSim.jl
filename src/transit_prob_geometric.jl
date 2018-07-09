@@ -60,7 +60,9 @@ function prob_combo_transits_obs_ave( ps::PlanetarySystemSingleStar, use_pl::Vec
   #for i in 1:length(combo)
   #  use_pl[i] = 1
   #end
-  if false
+  prob = prob_of_transits_approx(a, r_star, r, ecc, Omega, omega, inc, use_pl)
+
+  if prob > 0.2
   println("# a = ", a)
   println("# r_star = ", r_star)
   println("# r = ", r)
@@ -70,8 +72,6 @@ function prob_combo_transits_obs_ave( ps::PlanetarySystemSingleStar, use_pl::Vec
   println("# inc = ", inc)
   println("# use_pl = ", use_pl)
   end
-  prob = prob_of_transits_approx(a, r_star, r, ecc, Omega, omega, inc, use_pl)
-
   return prob 
 end
 
