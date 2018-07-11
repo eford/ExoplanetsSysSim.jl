@@ -51,7 +51,7 @@ function generate_kepler_target_from_table(sim_param::SimParam)
     while !(0.0<dens<1000.0)
       dens = draw_asymmetric_normal( star_table(star_id,:dens), star_table(star_id,:dens_err1), star_table(star_id,:dens_err2) )
     end
-    while !(0.0<radius<10000.0)
+    while !(0.0<radius<2.0)
       radius = draw_asymmetric_normal( star_table(star_id,:radius), star_table(star_id,:radius_err1), star_table(star_id,:radius_err2) )
     end
   else
