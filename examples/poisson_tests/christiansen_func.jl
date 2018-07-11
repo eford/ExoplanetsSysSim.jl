@@ -236,84 +236,6 @@ setup_star_table_christiansen(filename::String; force_reread::Bool = false) = se
 
 
 ## summary_statistics
-# function calc_summary_stats_sim_pass_one_binned_rates(cat_obs::KeplerObsCatalog, cat_phys::KeplerPhysicalCatalog, param::SimParam )      # DEPRECATED version for simulated data,  includes cat_phys
-#   ssd = Dict{String,Any}()
-#   cache = Dict{String,Any}()
-
-#   max_tranets_in_sys = get_int(param,"max_tranets_in_sys")    # Demo that simulation parameters can specify how to evalute models, too
-#   @assert max_tranets_in_sys >= 1
-#   idx_tranets = find(x::KeplerTargetObs-> length(x.obs) > 0, cat_obs.target)::Array{Int64,1}             # Find indices of systems with at least 1 tranet = potentially detectable transiting planet
-
-#   # Count total number of tranets and compile indices for N-tranet systems
-#   num_tranets = 0
-#   idx_n_tranets = Vector{Int64}[ Int64[] for m = 1:max_tranets_in_sys]
-#   for n in 1:max_tranets_in_sys-1
-#     idx_n_tranets[n] = find(x::KeplerTargetObs-> length(x.obs) == n, cat_obs.target[idx_tranets] )
-#     num_tranets += n*length(idx_n_tranets[n])
-#   end
-#   idx_n_tranets[max_tranets_in_sys] = find(x::KeplerTargetObs-> length(x.obs) >= max_tranets_in_sys, cat_obs.target[idx_tranets] )
-
-#   num_tranets += max_tranets_in_sys*length(idx_n_tranets[max_tranets_in_sys])  # WARNING: this means we need to ignore planets w/ indices > max_tranets_in_sys
-#   num_tranets  = convert(Int64,num_tranets)            # TODO OPT: Figure out why isn't this already an Int.  I may be doing something that prevents some optimizations
-
-#   cache["num_tranets"] = num_tranets                                   
-#   cache["idx_tranets"] = idx_tranets                                   # We can save lists of indices to summary stats for pass 2, even though we won't use these for computing a distance or probability
-#   #cache["idx_n_tranets"] = idx_n_tranets
-
-#   expected_num_detect = 0.0
-#   expected_num_sys_n_tranets = zeros(max_tranets_in_sys)
-#   period_list = zeros(num_tranets)
-#   weight_list = zeros(num_tranets)
-#   radius_list = zeros(num_tranets)
-
-#   n = 1    # tranet id
-#   for i in idx_tranets
-#     for j in 1:num_planets(cat_obs.target[i])
-#       p_tr_and_det = ExoplanetsSysSim.prob_detect(cat_obs.target[i].prob_detect,j)
-#       expected_num_detect += p_tr_and_det
-#       (s,p) = cat_obs.target[i].phys_id[j]
-      
-#       period_list[n] = cat_phys.target[i].sys[s].orbit[p].P
-#       weight_list[n] = p_tr_and_det
-#       radius_list[n] = cat_phys.target[i].sys[s].planet[p].radius
-#       n = n+1
-#     end
-#     for k in 1:max_tranets_in_sys
-#       expected_num_sys_n_tranets[k] += ExoplanetsSysSim.prob_detect_n_planets(cat_obs.target[i].prob_detect,k)
-#     end
-#   end
-#   #ssd["period_list"] = period_list
-#   ssd["weight_list"] = weight_list
-#   #ssd["radius_list"] = radius_list
-#   ssd["expected planets detected"] = expected_num_detect
-#   ssd["num_sys_tranets"] = expected_num_sys_n_tranets
-#   ssd["num targets"] = get_int(param,"num_targets_sim_pass_one")
-#   #println("expected planets = ",expected_num_detect,", num_sys_tranets = ",expected_num_sys_n_tranets,", num targets = ",ssd["num targets"])
-
-#   limitP::Array{Float64,1} = get_any(param, "p_lim_arr", Array{Float64,1})
-#   limitRp::Array{Float64,1} = get_any(param, "r_lim_arr", Array{Float64,1})
-
-#   np_bin = zeros((length(limitP)-1) * (length(limitRp)-1))
-#   np_bin_idx = 1
-#   bin_match_list = fill(fill(0,0),length(limitP)-1*length(limitRp)-1)
-#   for i in 1:(length(limitP)-1)
-#     P_match = find(x -> ((x > limitP[i]) && (x < limitP[i+1])), period_list)
-#     for j in 1:(length(limitRp)-1)
-#       R_match = find(x -> ((x > limitRp[j]) && (x < limitRp[j+1])), radius_list)
-      
-#       bin_match = intersect(P_match, R_match)
-#       bin_match_list[np_bin_idx] = bin_match
-#       np_bin[np_bin_idx] = sum(weight_list[bin_match])
-#       np_bin_idx += 1
-#     end
-#   end
-#   cache["bin_match_list"] = bin_match_list
-#   #ssd["expected planets detected"] = sum(np_bin)
-#   ssd["expected planets table"] = np_bin
-
-#   return CatalogSummaryStatistics(ssd, cache)
-# end
-
 function calc_summary_stats_obs_binned_rates(cat_obs::KeplerObsCatalog, param::SimParam; trueobs_cat::Bool = false, obs_skyavg::Bool = false)
   ssd = Dict{String,Any}()
   cache = Dict{String,Any}()
@@ -421,33 +343,31 @@ function calc_distance_vector_binned(summary1::CatalogSummaryStatistics, summary
       println("# Summary 2, pass 1: ",summary2)
     end
     d = zeros(3)
-    # Since observed and simulated catalogs can have different summary statistics for the number of planets, prefer detections if avaliable (e.g., after pass2), otherwise use expected (e.g., from pass 1)
-    #np1 = haskey(summary1.stat,"planets detected") ? summary1.stat["planets detected"] : summary1.stat["expected planets detected"]
-    #np2 = haskey(summary2.stat,"planets detected") ? summary2.stat["planets detected"] : summary2.stat["expected planets detected"]
-    #d[1] = dist_L1_abs(np1/summary1.stat["num targets"],np2/summary2.stat["num targets"])    #  Normalize so different statistics weighted appropriately and not dominated by this one
-    #println("np1 = ",np1,", np2 = ",np2)
-    #println("np1 (normalized) = ",np1/summary1.stat["num targets"],", np2 (normalized) = ",np2/summary2.stat["num targets"],", d[1] = ",d[1])
 
     np1 = haskey(summary1.stat,"planets table") ? summary1.stat["planets table"] : summary1.stat["expected planets table"]
-    #np2 = haskey(summary2.stat,"planets table") ? summary2.stat["planets table"] : summary2.stat["expected planets table"]
+    np2 = haskey(summary2.stat,"planets table") ? summary2.stat["planets table"] : summary2.stat["expected planets table"]
 
-    bin_match_list = summary2.cache["bin_match_list"]
-    @assert length(bin_match_list) == length(np1) 
-    np2 = zeros(Int64,length(np1))
-    np_bin = zeros(length(np1))
+    ### Bernoulli distance
+    # bin_match_list = summary2.cache["bin_match_list"]
+    # @assert length(bin_match_list) == length(np1) 
+    # np2 = zeros(Int64,length(np1))
+    # np_bin = zeros(length(np1))
+    ###  
       
     for n in 1:length(np1)
         #np_bin[n] = dist_L1_abs(np1[n]/summary1.stat["num targets"], np2[n]/summary2.stat["num targets"])
-        #np_bin[n] = dist_L2_abs(np1[n]/summary1.stat["num targets"], np2[n]/summary2.stat["num targets"])
-        #np_bin[n] = distance_poisson_draw(np2[n]/summary2.stat["num targets"]*summary1.stat["num targets"], convert(Int64, np1[n]))
-        
-        num_pl_match_p_and_r = length(bin_match_list[n])
-        for i in 1:num_pl_match_p_and_r
-           pl_id = bin_match_list[n][i]
-           prob_detect = summary2.stat["weight_list"][pl_id]
-           np2[n] += rand(Bernoulli(prob_detect))
-        end
         np_bin[n] = dist_L2_abs(np1[n]/summary1.stat["num targets"], np2[n]/summary2.stat["num targets"])
+        #np_bin[n] = distance_poisson_draw(np2[n]/summary2.stat["num targets"]*summary1.stat["num targets"], convert(Int64, np1[n]))
+
+        ### Bernoulli distance
+        # num_pl_match_p_and_r = length(bin_match_list[n])
+        # for i in 1:num_pl_match_p_and_r
+        #    pl_id = bin_match_list[n][i]
+        #    prob_detect = summary2.stat["weight_list"][pl_id]
+        #    np2[n] += rand(Bernoulli(prob_detect))
+        # end
+        # np_bin[n] = dist_L2_abs(np1[n]/summary1.stat["num targets"], np2[n]/summary2.stat["num targets"])
+        ###
 
       #println("True # [Bin ", n,"] = ",np1[n],", Expected # [Bin ", n,"] = ",np2[n])
     end
