@@ -133,7 +133,7 @@ function calc_ave_prob_detect_if_transit(t::KeplerTarget, snr_central::Real, sim
   const mes_threshold = 7.1                                                   # WARNING: Assuming 7.1 for all stars, durations
   const min_pdet_nonzero = 0.0                                                # TODO OPT: Figure out how to prevent a plethora of planets that are very unlikely to be detected due to using 0.0
   wf = kepler_window_function(num_transit, t.duty_cycle, min_transits=min_transits)   
-  num_impact_param = 5
+  num_impact_param = 20
   ave_detection_efficiency = 0.5*detection_efficiency_model(snr_central, min_pdet_nonzero=min_pdet_nonzero)	  
   for i in 1:(num_impact_param-1)
     b = i/num_impact_param
