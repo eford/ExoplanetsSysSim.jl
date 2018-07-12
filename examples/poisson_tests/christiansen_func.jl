@@ -346,14 +346,14 @@ function calc_distance_vector_binned(summary1::CatalogSummaryStatistics, summary
 
     np1 = haskey(summary1.stat,"planets table") ? summary1.stat["planets table"] : summary1.stat["expected planets table"]
     np2 = haskey(summary2.stat,"planets table") ? summary2.stat["planets table"] : summary2.stat["expected planets table"]
+    np_bin = zeros(length(np1))
 
     ### Bernoulli distance
     # bin_match_list = summary2.cache["bin_match_list"]
     # @assert length(bin_match_list) == length(np1) 
     # np2 = zeros(Int64,length(np1))
-    # np_bin = zeros(length(np1))
     ###  
-      
+
     for n in 1:length(np1)
         #np_bin[n] = dist_L1_abs(np1[n]/summary1.stat["num targets"], np2[n]/summary2.stat["num targets"])
         np_bin[n] = dist_L2_abs(np1[n]/summary1.stat["num targets"], np2[n]/summary2.stat["num targets"])
