@@ -216,7 +216,7 @@ function calc_simulated_system_detection_probs(ps::PlanetarySystemSingleStar, pr
                         print(string("Det. prob. of ",combo," = ",prob_det_this_combo, "\n\n"))
                     end
                 end
-                quit()
+                #quit()
             end
         end
 
