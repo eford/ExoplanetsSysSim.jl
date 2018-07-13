@@ -47,7 +47,7 @@ function prob_combo_transits_one_obs( ps::PlanetarySystemSingleStar, use_pl::Vec
   return 1.0
 end
 
-function prob_combo_transits_obs_ave( ps::PlanetarySystemSingleStar, use_pl::Vector{Cint} )    
+function prob_combo_transits_obs_ave( ps::PlanetarySystemSingleStar, use_pl::Vector{Cint}; print_orbit::Bool = false)    
   n = num_planets(ps)
   a =  Cdouble[ semimajor_axis(ps,i) for i in 1:n ]
   r_star = convert(Cdouble,ps.star.radius *  rsol_in_au )
@@ -60,7 +60,9 @@ function prob_combo_transits_obs_ave( ps::PlanetarySystemSingleStar, use_pl::Vec
   #for i in 1:length(combo)
   #  use_pl[i] = 1
   #end
-  if false
+  prob = prob_of_transits_approx(a, r_star, r, ecc, Omega, omega, inc, use_pl)
+
+  if print_orbit
   println("# a = ", a)
   println("# r_star = ", r_star)
   println("# r = ", r)
@@ -69,9 +71,8 @@ function prob_combo_transits_obs_ave( ps::PlanetarySystemSingleStar, use_pl::Vec
   println("# omega = ", omega)
   println("# inc = ", inc)
   println("# use_pl = ", use_pl)
+  println("")
   end
-  prob = prob_of_transits_approx(a, r_star, r, ecc, Omega, omega, inc, use_pl)
-
   return prob 
 end
 
@@ -199,6 +200,24 @@ function calc_simulated_system_detection_probs(ps::PlanetarySystemSingleStar, pr
 
         for p in combo                # Accumulate the probability of detecting each planet individually
             sdp.pairwise[p,p] += prob_det_this_combo
+            if sdp.pairwise[p,p] > 1.0
+                print(string("Error! Invalid prob for planet ",p,": ", sdp.pairwise[p,p], "\n\n"))
+                for ntr in 1:min(n,max_tranets_in_sys)
+                    for combo in combinations(1:n,ntr)
+                        fill!(planet_should_transit,zero(Cint))
+	                for i in 1:length(combo)
+      	                    planet_should_transit[combo[i]] = one(Cint)
+	                end
+                        geo_factor = prob_combo_transits_obs_ave(ps_detectable,planet_should_transit, print_orbit = true)
+                        print(string("Geo. factor of ",combo," = ",geo_factor, "\n"))
+                        for p in combo  # Loop over each planet in this combination of detectable planets
+                            prob_det_this_combo *= prob_det_if_tr[idx_detectable[p]] 
+                        end
+                        print(string("Det. prob. of ",combo," = ",prob_det_this_combo, "\n\n"))
+                    end
+                end
+                #quit()
+            end
         end
 
         for pq in combinations(combo,2)                # Accumulate the probability of detecting each planet pair

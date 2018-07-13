@@ -2,7 +2,7 @@
 ## (c) 2018 Danley C. Hsu & Eric B. Ford
 # Script for producing Q1-Q16 FGK planet candidate occurrence rate estimates
 
-include(joinpath(pwd(), "abc_setup.jl"))
+include(joinpath(dirname(pwd()), "abc_setup.jl"))
 
 using SysSimABC
 using ExoplanetsSysSim

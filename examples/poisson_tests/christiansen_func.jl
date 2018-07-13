@@ -313,6 +313,7 @@ function calc_summary_stats_obs_binned_rates(cat_obs::KeplerObsCatalog, param::S
   np_bin = zeros((length(limitP)-1) * (length(limitRp)-1))
   np_bin_idx = 1
   bin_match_list = fill(fill(0,0),(length(limitP)-1)*(length(limitRp)-1))
+  
   for i in 1:(length(limitP)-1)
     P_match = find(x -> ((x > limitP[i]) && (x < limitP[i+1])), period_list)
     for j in 1:(length(limitRp)-1)
@@ -342,32 +343,31 @@ function calc_distance_vector_binned(summary1::CatalogSummaryStatistics, summary
       println("# Summary 2, pass 1: ",summary2)
     end
     d = zeros(3)
-    # Since observed and simulated catalogs can have different summary statistics for the number of planets, prefer detections if avaliable (e.g., after pass2), otherwise use expected (e.g., from pass 1)
-    #np1 = haskey(summary1.stat,"planets detected") ? summary1.stat["planets detected"] : summary1.stat["expected planets detected"]
-    #np2 = haskey(summary2.stat,"planets detected") ? summary2.stat["planets detected"] : summary2.stat["expected planets detected"]
-    #d[1] = dist_L1_abs(np1/summary1.stat["num targets"],np2/summary2.stat["num targets"])    #  Normalize so different statistics weighted appropriately and not dominated by this one
-    #println("np1 = ",np1,", np2 = ",np2)
-    #println("np1 (normalized) = ",np1/summary1.stat["num targets"],", np2 (normalized) = ",np2/summary2.stat["num targets"],", d[1] = ",d[1])
 
     np1 = haskey(summary1.stat,"planets table") ? summary1.stat["planets table"] : summary1.stat["expected planets table"]
-    #np2 = haskey(summary2.stat,"planets table") ? summary2.stat["planets table"] : summary2.stat["expected planets table"]
-
-    bin_match_list = summary2.cache["bin_match_list"]
-    @assert length(bin_match_list) == length(np1) 
-    np2 = zeros(Int64,length(np1))
+    np2 = haskey(summary2.stat,"planets table") ? summary2.stat["planets table"] : summary2.stat["expected planets table"]
     np_bin = zeros(length(np1))
+
+    ### Bernoulli distance
+    # bin_match_list = summary2.cache["bin_match_list"]
+    # @assert length(bin_match_list) == length(np1) 
+    # np2 = zeros(Int64,length(np1))
+    ###  
+
     for n in 1:length(np1)
         #np_bin[n] = dist_L1_abs(np1[n]/summary1.stat["num targets"], np2[n]/summary2.stat["num targets"])
-        #np_bin[n] = dist_L2_abs(np1[n]/summary1.stat["num targets"], np2[n]/summary2.stat["num targets"])
-        #np_bin[n] = distance_poisson_draw(np2[n]/summary2.stat["num targets"]*summary1.stat["num targets"], convert(Int64, np1[n]))
-        
-        num_pl_match_p_and_r = length(bin_match_list[n])
-        for i in 1:num_pl_match_p_and_r
-           pl_id = bin_match_list[n][i]
-           prob_detect = summary2.stat["weight_list"][pl_id]
-           np2[n] += rand(Bernoulli(prob_detect))
-        end
         np_bin[n] = dist_L2_abs(np1[n]/summary1.stat["num targets"], np2[n]/summary2.stat["num targets"])
+        #np_bin[n] = distance_poisson_draw(np2[n]/summary2.stat["num targets"]*summary1.stat["num targets"], convert(Int64, np1[n]))
+
+        ### Bernoulli distance
+        # num_pl_match_p_and_r = length(bin_match_list[n])
+        # for i in 1:num_pl_match_p_and_r
+        #    pl_id = bin_match_list[n][i]
+        #    prob_detect = summary2.stat["weight_list"][pl_id]
+        #    np2[n] += rand(Bernoulli(prob_detect))
+        # end
+        # np_bin[n] = dist_L2_abs(np1[n]/summary1.stat["num targets"], np2[n]/summary2.stat["num targets"])
+        ###
 
       #println("True # [Bin ", n,"] = ",np1[n],", Expected # [Bin ", n,"] = ",np2[n])
     end
