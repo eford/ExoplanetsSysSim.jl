@@ -85,19 +85,27 @@ detection_efficiency_model = detection_efficiency_dr25_simple #christiansen2015 
 
 # Resume code original to SysSim
 
-function calc_snr_if_transit(t::KeplerTarget, depth::Real, duration::Real, sim_param::SimParam; num_transit::Real = 1)
-  dur_ind = 1
-   dur_idx = searchsortedlast(cdpp_durations,duration*24)
+
+function interpolate_cdpp_to_duration(t::KeplerTarget, duration::Real)
+   duration_in_hours = duration *24.0
+   dur_ind = 1
+   dur_idx = searchsortedlast(cdpp_durations,duration_in_hours)   # cdpp_durations is defined in constants.jl
    if dur_idx <= 0 
       cdpp = t.cdpp[1,1]
-   elseif dur_idx==length(cdpp_durations) && (duration*24. > cdpp_durations[end]) # 15.
+   elseif dur_idx==length(cdpp_durations) && (duration_in_hours > cdpp_durations[end]) # Should be 15 cdpp_durations.
       cdpp = t.cdpp[length(cdpp_durations),1]
    else
-      w = ((duration*24.)-cdpp_durations[dur_ind]) / (cdpp_durations[dur_ind+1]-cdpp_durations[dur_ind])
+      w = ((duration_in_hours)-cdpp_durations[dur_ind]) / (cdpp_durations[dur_ind+1]-cdpp_durations[dur_ind])
       cdpp = w*t.cdpp[dur_ind+1,1] + (1-w)*t.cdpp[dur_ind,1]
    end
-   depth_tps = frac_depth_to_tps_depth(depth)                                        # WARNING: Hardcoded this conversion 
-   snr = depth_tps*sqrt(num_transit*duration*LC_rate)/cdpp              # WARNING: Assumes measurement uncertainties are uncorrelated & CDPP based on LC
+   return cdpp
+end
+
+
+function calc_snr_if_transit(t::KeplerTarget, depth::Real, duration::Real, sim_param::SimParam; num_transit::Real = 1)
+   cdpp = interpolate_cdpp_to_duration(t, duration)
+   depth_tps = frac_depth_to_tps_depth(depth)               # WARNING: Hardcoded this conversion 
+snr = depth_tps*sqrt(num_transit*duration*LC_rate)/cdpp     # WARNING: Assumes measurement uncertainties are uncorrelated & CDPP based on LC
 end
 
 function calc_snr_if_transit(t::KeplerTarget, s::Integer, p::Integer, sim_param::SimParam)
