@@ -53,6 +53,19 @@ function calc_transit_duration_central(ps::PlanetarySystemAbstract, pl::Integer)
 end
 calc_transit_duration_central(t::KeplerTarget, s::Integer, p::Integer) = calc_transit_duration_central(t.sys[s],p)
 
+function calc_transit_duration_factor_for_impact_parameter_b(b::Real, size_ratio::Real)
+  @assert(b>=0.) 
+  if b < 1-size_ratio
+     return one(b)
+  elseif b < 1+size_ratio
+     return sqrt((1+b)^2-(1-b)^2)     
+  else
+     return zero(b)
+  end
+
+end
+
+
 function calc_transit_duration(ps::PlanetarySystemAbstract, pl::Integer)
   a = semimajor_axis(ps,pl)
   @assert a>=zero(a)
