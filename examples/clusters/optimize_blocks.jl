@@ -3,7 +3,7 @@ import DataArrays.skipmissing
 include("clusters.jl")
 
 sim_param = setup_sim_param_model()
-add_param_fixed(sim_param,"num_targets_sim_pass_one",15006) #9)   # For "observed" data, use a realistic number of targets (after any cuts you want to perform)
+add_param_fixed(sim_param,"num_targets_sim_pass_one",150060) #9)   # For "observed" data, use a realistic number of targets (after any cuts you want to perform)
 add_param_fixed(sim_param,"max_incl_sys",80.0) #degrees; 0 (deg) for isotropic system inclinations; set closer to 90 (deg) for more transiting systems
 
 const max_incl_sys = get_real(sim_param,"max_incl_sys")
@@ -110,7 +110,7 @@ function calc_distance(ss1::ExoplanetsSysSim.CatalogSummaryStatistics, ss2::Exop
 
     #To handle empty arrays:
     if sum(M_cat_obs1 .>= 2) < 2 | sum(M_cat_obs2 .>= 2) < 2 #need at least 2 multi-systems per catalog in order to be able to compute AD distances for distributions of ratios of observables
-        println("One of the simulated catalogs has no observed planets.")
+        println("Not enough observed multi-planet systems in one of the catalogs to compute the AD distance.")
         d = ones(Int64,8)*1e6
 
         println("Distances: ", d, [sum(d)])
@@ -181,7 +181,7 @@ function calc_distance_Kepler(ss1::ExoplanetsSysSim.CatalogSummaryStatistics, al
     end
 
     if sum(M_cat_obs .>= 2) < 2 #need at least 2 observed multi-systems in order to be able to compute AD distances for distributions of ratios of observables
-        println("Simulated catalog has no observed planets.")
+        println("Not enough observed multi-planet systems in the simulated catalog.")
         d = ones(Int64,8)*1e6
 
         println("Distances: ", d, [sum(d)])
@@ -338,7 +338,7 @@ end
 
 model_name = "Clustered_P_R_broken_R_simulated_optimization_blocks"
 optimization_number = "" #if want to run on the cluster with random initial active parameters: "_random"*ARGS[1]
-max_evals = 5
+max_evals = 100
 cycles = 3
 file_name = model_name*optimization_number*"_targs"*string(get_int(sim_param,"num_targets_sim_pass_one"))*"_evals"*string(max_evals)*"_cycles"*string(cycles)*".txt"
 
@@ -363,7 +363,7 @@ active_param_true = make_vector_of_sim_param(sim_param)
 println("# True values: ", active_param_true)
 println(f, "# Format: Dist: [distances][total distance]")
 
-num_eval = 5
+num_eval = 20 #20
 dists_true = zeros(num_eval,8)
 for i in 1:num_eval
     dists_true[i,:] = target_function(active_param_true, true)
@@ -406,9 +406,11 @@ println(f, "#")
 
 #To specify the blocks of random parameters, their search ranges, and to draw initial values:
 active_param_keys = [["log_rate_clusters", "log_rate_planets_per_cluster", "num_mutual_hill_radii", "power_law_P", "sigma_logperiod_per_pl_in_cluster"], ["break_radius", "mr_power_index", "power_law_r1", "power_law_r2", "sigma_log_radius_in_cluster"], ["sigma_hk", "sigma_incl", "sigma_incl_near_mmr"]]
-active_params_box = [[(log(1.), log(5.)), (log(1.), log(5.)), (3., 20.), (-0.5, 1.5), (0., 0.3)], [(0.5*ExoplanetsSysSim.earth_radius, 10.*ExoplanetsSysSim.earth_radius),(1., 4.), (-5., 0.), (-6., 3.), (0.1, 1.0)], [(0., 0.1), (0., 5.), (0., 5.)]] #search ranges for all of the active parameters
+    #[["log_rate_clusters", "log_rate_planets_per_cluster", "num_mutual_hill_radii", "power_law_P", "sigma_logperiod_per_pl_in_cluster"], ["break_radius", "mr_power_index", "power_law_r1", "power_law_r2", "sigma_log_radius_in_cluster"], ["sigma_hk", "sigma_incl", "sigma_incl_near_mmr"]]
+active_params_box = [[(log(1.), log(5.)), (log(1.), log(5.)), (3., 20.), (-0.5, 1.5), (0., 0.3)], [(0.5*ExoplanetsSysSim.earth_radius, 10.*ExoplanetsSysSim.earth_radius),(1., 4.), (-6., 0.), (-6., 0.), (0.1, 1.0)], [(0., 0.1), (0., 5.), (0., 5.)]] #search ranges for all of the active parameters
+    #[[(log(1.), log(5.)), (log(1.), log(5.)), (3., 20.), (-0.5, 1.5), (0., 0.3)], [(0.5*ExoplanetsSysSim.earth_radius, 10.*ExoplanetsSysSim.earth_radius),(1., 4.), (-6., 0.), (-6., 0.), (0.1, 1.0)], [(0., 0.1), (0., 5.), (0., 5.)]] #search ranges for all of the active parameters
 
-active_param_draws = [Float64[], Float64[], Float64[]]
+active_param_draws = [Float64[], Float64[], Float64[]] #[Float64[], Float64[], Float64[]]
 for (i,active_param_block) in enumerate(active_param_keys)
     for (j,param_key) in enumerate(active_param_block)
         active_param_draw = active_params_box[i][j][1] + (active_params_box[i][j][2] - active_params_box[i][j][1])*rand(1)
@@ -421,6 +423,7 @@ println("# All active parameters: ", active_param_keys)
 println(f, "# All active parameters: ", active_param_keys)
 println(f, "# Starting active parameter values: ", active_param_draws)
 println(f, "# Optimization active parameters search bounds: ", active_params_box)
+println(f, "# Method: adaptive_de_rand_1_bin_radiuslimited")
 println(f, "# Format: Active_params: [active parameter values]")
 println(f, "# Format: Dist: [distances][total distance]")
 println(f, "# Format: Dist_weighted: [weighted distances][total weighted distance]")
@@ -450,7 +453,7 @@ for c in 1:cycles
         end
 
         tic()
-        opt_result = bboptimize(target_function_weighted; SearchRange = active_params_box[i], NumDimensions = length(active_param_block), Method = :adaptive_de_rand_1_bin_radiuslimited, PopulationSize = length(active_param_block)*4, MaxFuncEvals = max_evals, TargetFitness = mean_weighted_dist, FitnessTolerance = std_weighted_dist, TraceMode = :verbose)
+        opt_result = bboptimize(target_function_weighted; SearchRange = active_params_box[i], NumDimensions = length(active_param_block), Method = :adaptive_de_rand_1_bin_radiuslimited, PopulationSize = length(active_param_true)*4, MaxFuncEvals = max_evals, TargetFitness = mean_weighted_dist, FitnessTolerance = std_weighted_dist, TraceMode = :verbose)
         t_block = toc()
         active_params_best = best_candidate(opt_result)
         best_distance = best_fitness(opt_result)

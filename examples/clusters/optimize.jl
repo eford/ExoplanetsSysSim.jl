@@ -3,7 +3,7 @@ import DataArrays.skipmissing
 include("clusters.jl")
 
 sim_param = setup_sim_param_model()
-add_param_fixed(sim_param,"num_targets_sim_pass_one",15006) #9)   # For "observed" data, use a realistic number of targets (after any cuts you want to perform)
+add_param_fixed(sim_param,"num_targets_sim_pass_one",150060) #9)   # For "observed" data, use a realistic number of targets (after any cuts you want to perform)
 add_param_fixed(sim_param,"max_incl_sys",80.0) #degrees; 0 (deg) for isotropic system inclinations; set closer to 90 (deg) for more transiting systems
 
 const max_incl_sys = get_real(sim_param,"max_incl_sys")
@@ -109,8 +109,8 @@ function calc_distance(ss1::ExoplanetsSysSim.CatalogSummaryStatistics, ss2::Exop
     end
 
     #To handle empty arrays:
-    if length(M_cat_obs1)==0 | length(M_cat_obs2)==0
-        println("One of the simulated catalogs has no observed planets.")
+    if sum(M_cat_obs1 .>= 2) < 2 | sum(M_cat_obs2 .>= 2) < 2 #need at least 2 multi-systems per catalog in order to be able to compute AD distances for distributions of ratios of observables
+        println("Not enough observed multi-planet systems in one of the catalogs to compute the AD distance.")
         d = ones(Int64,8)*1e6
 
         println("Distances: ", d, [sum(d)])
@@ -158,11 +158,11 @@ function calc_distance(ss1::ExoplanetsSysSim.CatalogSummaryStatistics, ss2::Exop
 
     #To return the distances or total distance:
     if all_dist
-        #return d_KS
-        return d_AD
+        return d_KS
+        #return d_AD
     else
-        #return sum(d_KS)
-        return sum(d_AD)
+        return sum(d_KS)
+        #return sum(d_AD)
     end
 end
 
@@ -178,8 +178,8 @@ function calc_distance_Kepler(ss1::ExoplanetsSysSim.CatalogSummaryStatistics, al
         append!(M_cat_obs, k*ones(Int64, ss1.stat["num n-tranet systems"][k]))
     end
 
-    if length(M_cat_obs)==0
-        println("Simulated catalog has no observed planets.")
+    if sum(M_cat_obs .>= 2) < 2 #need at least 2 observed multi-systems in order to be able to compute AD distances for distributions of ratios of observables
+        println("Not enough observed multi-planet systems in the simulated catalog.")
         d = ones(Int64,8)*1e6
 
         println("Distances: ", d, [sum(d)])
@@ -227,11 +227,11 @@ function calc_distance_Kepler(ss1::ExoplanetsSysSim.CatalogSummaryStatistics, al
 
     #To return the distances or total distance:
     if all_dist
-        #return d_KS
-        return d_AD
+        return d_KS
+        #return d_AD
     else
-        #return sum(d_KS)
-        return sum(d_AD)
+        return sum(d_KS)
+        #return sum(d_AD)
     end
 end
 
@@ -241,8 +241,8 @@ function target_function(active_param::Vector, all_dist::Bool=false, save_dist::
     #If 'all_dist=true', the function outputs the individual distances in the distance function.
     #If 'save_dist=true', the function also saves the distances (individual and total) to a file (assuming file 'f' is open for writing).
 
-    #println("Active parameter values:", active_param)
-    #println(f, "Active_params: ", active_param) #if we also want to write the params to file
+    println("Active parameter values:", active_param)
+    println(f, "Active_params: ", active_param) #if we also want to write the params to file
 
     global sim_param, summary_stat_ref
     sim_param_here = deepcopy(sim_param)
@@ -332,9 +332,9 @@ end
 
 ##### To start saving the model iterations in the optimization into a file:
 
-model_name = "Clustered_P_R_broken_R_optimization"
+model_name = "Clustered_P_R_broken_R_simulated_optimization" #"Clustered_P_R_broken_R_simulated_optimization"
 optimization_number = "" #if want to run on the cluster with random initial active parameters: "_random"*ARGS[1]
-max_evals = 5
+max_evals = 1000
 file_name = model_name*optimization_number*"_targs"*string(get_int(sim_param,"num_targets_sim_pass_one"))*"_evals"*string(max_evals)*".txt"
 
 f = open(file_name, "w")
@@ -358,15 +358,17 @@ active_param_true = make_vector_of_sim_param(sim_param)
 println("# True values: ", active_param_true)
 println(f, "# Format: Dist: [distances][total distance]")
 
-num_eval = 5 #20
+num_eval = 20 #20
 dists_true = zeros(num_eval,8)
 for i in 1:num_eval
     dists_true[i,:] = target_function(active_param_true, true)
 end
 mean_dists = transpose(mean(dists_true,1))[:,] #array of mean distances for each individual distance
-mean_dist = mean(sum(dists_true,2)) #mean total distance
-rms_dists = transpose(std(dists_true,1))[:,] #array of std distances for each individual distance
-rms_dist = std(sum(dists_true,2)) #std of total distance
+mean_dist = mean(sum(dists_true, 2)) #mean total distance
+#std_dists = transpose(std(dists_true, 1))[:,] #array of std distances for each individual distance
+rms_dists = transpose(sqrt.(mean(dists_true.^2, 1)))[:,] #array of rms (std around 0)  distances for each individual distance
+std_dist = std(sum(dists_true, 2)) #std of total distance
+rms_dist = sqrt(mean(sum(dists_true, 2).^2)) #rms (std around 0) of total distance; should be similar to the mean total distance
 
 weights = rms_dists #to use the array 'rms_dists' as the weights for the individual distances
 weighted_dists_true = zeros(num_eval,8)
@@ -375,18 +377,18 @@ for i in 1:num_eval
 end
 mean_weighted_dists = transpose(mean(weighted_dists_true,1))[:,] #array of mean weighted distances for each individual distance
 mean_weighted_dist = mean(sum(weighted_dists_true,2)) #mean weighted total distance
-rms_weighted_dist = std(sum(weighted_dists_true,2)) #std of weighted total distance
+std_weighted_dist = std(sum(weighted_dists_true,2)) #std of weighted total distance
 
 println("Mean dists: ", mean_dists)
-println("Std dists: ", rms_dists)
+println("Rms dists: ", rms_dists)
 println("Mean weighted dists: ", mean_weighted_dists)
-println("# Distance using true values: ", mean_dist, " +/- ",rms_dist)
-println("# Weighted distance using true values: ", mean_weighted_dist, " +/- ", rms_weighted_dist)
+println("Distance using true values: ", mean_dist, " +/- ", std_dist)
+println("Weighted distance using true values: ", mean_weighted_dist, " +/- ", std_weighted_dist)
 println(f, "Mean: ", mean_dists, [mean_dist])
-println(f, "Std: ", rms_dists, [rms_dist])
+println(f, "Rms: ", rms_dists, [rms_dist])
 println(f, "Mean weighted dists: ", mean_weighted_dists, [mean_weighted_dist])
-println(f, "# Distance using true values (default parameter values): ", mean_dist, " +/- ", rms_dist)
-println(f, "# Weighted distance using true values (default parameter values): ", mean_weighted_dist, " +/- ", rms_weighted_dist)
+println(f, "# Distance using true values (default parameter values): ", mean_dist, " +/- ", std_dist)
+println(f, "# Weighted distance using true values (default parameter values): ", mean_weighted_dist, " +/- ", std_weighted_dist)
 t_elapsed = toc()
 println(f, "# elapsed time: ", t_elapsed, " seconds")
 println(f, "#")
@@ -416,8 +418,10 @@ toc()
 
 ##### To draw the initial values of the active parameters randomly within a search range:
 
-active_param_keys = ["break_radius", "log_rate_clusters", "log_rate_planets_per_cluster", "mr_power_index", "num_mutual_hill_radii", "power_law_P", "power_law_r1", "power_law_r2", "sigma_hk", "sigma_incl", "sigma_incl_near_mmr", "sigma_log_radius_in_cluster", "sigma_logperiod_per_pl_in_cluster"]
-active_params_box = [(0.5*ExoplanetsSysSim.earth_radius, 10.*ExoplanetsSysSim.earth_radius), (log(1.), log(5.)), (log(1.), log(5.)), (1., 4.), (3., 20.), (-0.5, 1.5), (-5., 0.), (-6., 3.), (0., 0.1), (0., 5.), (0., 5.), (0.1, 1.0), (0., 0.3)] #search ranges for all of the active parameters
+active_param_keys = ["break_radius", "log_rate_clusters", "log_rate_planets_per_cluster", "power_law_P", "power_law_r1", "power_law_r2"]
+    #["break_radius", "log_rate_clusters", "log_rate_planets_per_cluster", "mr_power_index", "num_mutual_hill_radii", "power_law_P", "power_law_r1", "power_law_r2", "sigma_hk", "sigma_incl", "sigma_incl_near_mmr", "sigma_log_radius_in_cluster", "sigma_logperiod_per_pl_in_cluster"]
+active_params_box = [(0.5*ExoplanetsSysSim.earth_radius, 10.*ExoplanetsSysSim.earth_radius), (log(1.), log(5.)), (log(1.), log(5.)), (-0.5, 1.5), (-6., 0.), (-6., 0.)] #search ranges for all of the active parameters
+    #[(0.5*ExoplanetsSysSim.earth_radius, 10.*ExoplanetsSysSim.earth_radius), (log(1.), log(5.)), (log(1.), log(5.)), (1., 4.), (3., 20.), (-0.5, 1.5), (-6., 0.), (-6., 0.), (0., 0.1), (0., 5.), (0., 5.), (0.1, 1.0), (0., 0.3)] #search ranges for all of the active parameters
 
 #To randomly draw (uniformly) a value for each active model parameter within its search range:
 for (i,param_key) in enumerate(active_param_keys)
@@ -426,16 +430,20 @@ for (i,param_key) in enumerate(active_param_keys)
 end
 active_param_start = make_vector_of_sim_param(sim_param)
 
+PopSize = length(active_param_true)*4 #length(active_param_true)*4
+
 println("# Active parameters: ", make_vector_of_active_param_keys(sim_param))
 println(f, "# Active parameters: ", make_vector_of_active_param_keys(sim_param))
 println(f, "# Starting active parameter values: ", active_param_start)
 println(f, "# Optimization active parameters search bounds: ", active_params_box)
+println(f, "# Method: adaptive_de_rand_1_bin_radiuslimited")
+println(f, "# PopulationSize: ", PopSize)
 println(f, "# Format: Active_params: [active parameter values]")
 println(f, "# Format: Dist: [distances][total distance]")
 println(f, "# Format: Dist_weighted: [weighted distances][total weighted distance]")
 println(f, "# Distances used: Dist_AD (all, weighted)") #Edit this line to specify which distances were actually used in the optimizer!
 
-target_function_Kepler_weighted(active_param_start) #to simulate the model once with the drawn parameters and compare to the Kepler population before starting the optimization
+target_function_weighted(active_param_start) #to simulate the model once with the drawn parameters and compare to the Kepler population before starting the optimization
 
 
 
@@ -458,9 +466,7 @@ using BlackBoxOptim              # see https://github.com/robertfeldt/BlackBoxOp
 
 # May want to experiment with different algorithms, number of evaluations, population size, etc.
 tic()
-#opt_result = bboptimize(target_function_Kepler; SearchRange = active_params_box, NumDimensions = length(active_param_true), Method = :adaptive_de_rand_1_bin_radiuslimited, PopulationSize = length(active_param_true)*4, MaxFuncEvals = 20, TraceMode = :verbose)
-
-opt_result = bboptimize(target_function_Kepler_weighted; SearchRange = active_params_box, NumDimensions = length(active_param_true), Method = :adaptive_de_rand_1_bin_radiuslimited, PopulationSize = length(active_param_true)*4, MaxFuncEvals = max_evals, TargetFitness = mean_weighted_dist, FitnessTolerance = rms_weighted_dist, TraceMode = :verbose)
+opt_result = bboptimize(target_function_weighted; SearchRange = active_params_box, NumDimensions = length(active_param_true), Method = :adaptive_de_rand_1_bin_radiuslimited, PopulationSize = PopSize, MaxFuncEvals = max_evals, TargetFitness = mean_weighted_dist, FitnessTolerance = std_weighted_dist, TraceMode = :verbose)
 t_elapsed = toc()
 
 println(f, "# best_candidate: ", best_candidate(opt_result))
