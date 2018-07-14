@@ -53,16 +53,53 @@ function calc_transit_duration_central(ps::PlanetarySystemAbstract, pl::Integer)
 end
 calc_transit_duration_central(t::KeplerTarget, s::Integer, p::Integer) = calc_transit_duration_central(t.sys[s],p)
 
-function calc_transit_duration_factor_for_impact_parameter_b(b::Real, size_ratio::Real)
-  @assert(b>=0.) 
-  if b < 1-size_ratio
-     return one(b)
-  elseif b < 1+size_ratio
-     return sqrt((1+b)^2-(1-b)^2)     
-  else
-     return zero(b)
-  end
+function calc_transit_duration_factor_for_impact_parameter_b(b::T, p::T)  where T <:Real
+  @assert(zero(b)<=b)         # b = Impact Parameter
+  @assert(zero(p)<=p<one(p))  # p = R_p/R_star
+  if b < 1-3p                 # Far enough from grazing for approximation
+        duration_ratio = sqrt(1-b^2)  # Approximation to (sqrt((1+p)^2-b^2)+sqrt((1-p)^2-b^2))/2, which is itself an approximation
+    elseif b < 1-p            # Planet is fully inscribed at mid-transit
+        duration_ratio = (sqrt((1+p)^2-b^2)+sqrt((1-p)^2-b^2))/2 # Average of full and flat transit durations approximates to duration between center of planet being over limb of star
+    elseif b < 1+p            # Planet never fully inscribed by star
+        duration_ratio = sqrt((1+p)^2-b^2)/2  # /2 since now triangular
+    else                      # There's no transit
+        duration_ratio = zero(b)
+    end
+    return duration_ratio
+end
 
+
+function calc_effective_transit_duration_factor_for_impact_parameter_b(b::T, p::T)  where T <:Real
+  @assert(zero(b)<=b)         # b = Impact Parameter
+  @assert(zero(p)<=p<one(p))  # p = R_p/R_star
+  if b < 1-3p                 # Far enough from grazing for approximation
+        duration_ratio = sqrt(1-b^2)  # Approximation to (sqrt((1+p)^2-b^2)+sqrt((1-p)^2-b^2))/2, which is itself an approximation
+        area_ratio = one(p)
+    elseif b < 1-p            # Planet is fully inscribed at mid-transit
+        duration_ratio = (sqrt((1+p)^2-b^2)+sqrt((1-p)^2-b^2))/2 # Average of full and flat transit durations approximates to duration between center of planet being over limb of star
+        area_ratio = one(p)   
+    elseif b < 1+p            # Planet never fully inscribed by star
+        duration_ratio = sqrt((1+p)^2-b^2)/2  # /2 since now triangular
+        area_ratio = (p^2*acos((b^2+p^2-1)/(2*b*p))+acos((b^2+1-p^2)/(2b))-0.5*sqrt((1+p-b)*(p+b-1)*(1-p+b)*(1+p+b))) / (pi*p^2)
+    else                      # There's no transit
+        duration_ratio = zero(b)
+        area_ratio = zero(p)
+    end
+    return duration_ratio*area_ratio
+end
+
+
+function calc_snr_correction_for_grazing_transit(b::T, p::T)  where T <:Real
+  @assert(zero(b)<=b)         # b = Impact Parameter
+  @assert(zero(p)<=p<one(p))  # p = R_p/R_star
+  if b < 1-2p                 # Far enough from grazing for approximation
+        area_ratio = one(p)   
+    elseif b < 1+p            # Planet never fully inscribed by star
+        area_ratio = (p^2*acos((b^2+p^2-1)/(2*b*p))+acos((b^2+1-p^2)/(2b))-0.5*sqrt((1+p-b)*(p+b-1)*(1-p+b)*(1+p+b))) / (pi*p^2)
+    else                      # There's no transit
+        area_ratio = zero(p)
+    end
+    return area_ratio
 end
 
 
@@ -71,11 +108,16 @@ function calc_transit_duration(ps::PlanetarySystemAbstract, pl::Integer)
   @assert a>=zero(a)
   ecc = ps.orbit[pl].ecc
   @assert zero(ecc)<=ecc<=one(ecc)
-  b = (a*abs(cos(ps.orbit[pl].incl))/(ps.star.radius*rsol_in_au)) * (1+ecc)*(1-ecc)/(1+ecc*sin(ps.orbit[pl].omega))
+  #b = (a*abs(cos(ps.orbit[pl].incl))/(ps.star.radius*rsol_in_au)) * (1+ecc)*(1-ecc)/(1+ecc*sin(ps.orbit[pl].omega))
+  b = calc_impact_parameter(ps, pl)
   @assert !isnan(b)
   @assert zero(b)<=b
   vel_fac = sqrt((1+ecc)*(1-ecc))/(1+ecc*sin(ps.orbit[pl].omega))
-  duration = 0.0<=b<1.0 ? calc_transit_duration_central_circ(ps,pl) * vel_fac * sqrt((1-b)*(1+b)) : 0.0
+  size_ratio = ps.planet[pl].radius/ps.star.radius
+  duration_ratio_for_impact_parameter = calc_transit_duration_factor_for_impact_parameter_b(b,size_ratio)
+
+  duration = zero(b)<=b<one(b)+size_ratio ? calc_transit_duration_central_circ(ps,pl) * vel_fac * duration_ratio_for_impact_parameter : 0.0
+  
 end
 calc_transit_duration(t::KeplerTarget, s::Integer, p::Integer ) = calc_transit_duration(t.sys[s],p)
 
@@ -134,9 +176,11 @@ function calc_target_obs_sky_ave(t::KeplerTarget, sim_param::SimParam)
         ntr = calc_expected_num_transits(t, s, p, sim_param)
         period = sys.orbit[p].P
         # t0 = rand(Uniform(0.0,period))   # WARNING: Not being calculated from orbit
+        size_ratio = t.sys[s].planet[p].radius/t.sys[s].star.radius
         depth = calc_transit_depth(t,s,p)
         duration_central = calc_transit_duration_central(t,s,p)
-	snr_central = calc_snr_if_transit(t, depth, duration_central, sim_param, num_transit=ntr)
+        cdpp_central = interpolate_cdpp_to_duration(t, duration_central)
+	snr_central = calc_snr_if_transit(t, depth, duration_central, cdpp_central, sim_param, num_transit=ntr)
 	pdet_ave = calc_ave_prob_detect_if_transit(t, snr_central, sim_param, num_transit=ntr)
 	add_to_catalog = pdet_ave > min_detect_prob_to_be_included  # Include all planets with sufficient detection probability
 	if add_to_catalog
@@ -145,9 +189,11 @@ function calc_target_obs_sky_ave(t::KeplerTarget, sim_param::SimParam)
            pdet_this_b = 0.0
            for j in 1:max_num_b_tries
               b = rand()  # WARNING: Making an approximation: Using a uniform distribution for b (truncated to ensure detection probability >0) when generating measurement uncertainties, rather than accounting for increased detection probability for longer duration transits
-              transit_duration_factor = sqrt((1+b)*(1-b)) 
+              # transit_duration_factor = sqrt((1+b)*(1-b)) 
+              transit_duration_factor = calc_effective_transit_duration_factor_for_impact_parameter_b(b,size_ratio)
 	      duration = duration_central * transit_duration_factor
-	      snr = snr_central * sqrt(transit_duration_factor)
+              cdpp = interpolate_cdpp_to_duration(t, duration)
+	      snr = snr_central * (cdpp_central/cdpp) * sqrt(transit_duration_factor) 
               pdet_this_b = calc_prob_detect_if_transit(t, snr, sim_param, num_transit=ntr)
               if pdet_this_b > 0.0 
 	         pdet[p] = pdet_ave  
@@ -208,8 +254,14 @@ function calc_target_obs_single_obs(t::KeplerTarget, sim_param::SimParam)
         period = sys.orbit[p].P
         # t0 = rand(Uniform(0.0,period))   # WARNING: Not being calculated from orbit
         depth = calc_transit_depth(t,s,p)
-	snr = calc_snr_if_transit(t, depth, duration, sim_param, num_transit=ntr)
-	pdet[p] = calc_prob_detect_if_transit(t, snr, sim_param, num_transit=ntr)
+        cdpp = interpolate_cdpp_to_duration(t, duration)
+        snr = calc_snr_if_transit(t, depth, duration, cdpp, sim_param, num_transit=ntr)
+        # Apply correction to snr if grazing transit
+        size_ratio = t.sys[s].planet[p].radius/t.sys[s].star.radius
+        b = calc_impact_parameter(t.sys[s],p)
+        snr *= calc_snr_correction_for_grazing_transit(b,size_ratio)  
+	
+        pdet[p] = calc_prob_detect_if_transit(t, snr, sim_param, num_transit=ntr)
 	if pdet[p] > min_detect_prob_to_be_included   
            obs[i], sigma[i] = transit_noise_model(t, s, p, depth, duration, snr, ntr) 
            #id[i] = tuple(convert(Int32,s),convert(Int32,p))

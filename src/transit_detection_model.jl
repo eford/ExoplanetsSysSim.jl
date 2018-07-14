@@ -102,17 +102,17 @@ function interpolate_cdpp_to_duration(t::KeplerTarget, duration::Real)
 end
 
 
-function calc_snr_if_transit(t::KeplerTarget, depth::Real, duration::Real, sim_param::SimParam; num_transit::Real = 1)
-   cdpp = interpolate_cdpp_to_duration(t, duration)
-   depth_tps = frac_depth_to_tps_depth(depth)               # WARNING: Hardcoded this conversion 
-snr = depth_tps*sqrt(num_transit*duration*LC_rate)/cdpp     # WARNING: Assumes measurement uncertainties are uncorrelated & CDPP based on LC
+function calc_snr_if_transit(t::KeplerTarget, depth::Real, duration::Real, cdpp::Real, sim_param::SimParam; num_transit::Real = 1)
+   depth_tps = frac_depth_to_tps_depth(depth)                  # WARNING: Hardcoded this conversion 
+   snr = depth_tps*sqrt(num_transit*duration*LC_rate)/cdpp     # WARNING: Assumes measurement uncertainties are uncorrelated & CDPP based on LC
 end
 
 function calc_snr_if_transit(t::KeplerTarget, s::Integer, p::Integer, sim_param::SimParam)
   depth = calc_transit_depth(t,s,p)
   duration = calc_transit_duration(t,s,p)
   num_transit = calc_expected_num_transits(t,s,p,sim_param)
-  calc_snr_if_transit(t,depth,duration,sim_param,num_transit=num_transit)
+  cdpp = interpolate_cdpp_to_duration(t, duration)
+  calc_snr_if_transit(t,depth,duration,cdpp, sim_param,num_transit=num_transit)
 end
 
 function calc_prob_detect_if_transit(t::KeplerTarget, snr::Real, sim_param::SimParam; num_transit::Real = 1)
@@ -123,8 +123,8 @@ function calc_prob_detect_if_transit(t::KeplerTarget, snr::Real, sim_param::SimP
   return wf*detection_efficiency_model(snr, min_pdet_nonzero=min_pdet_nonzero)	
 end
 
-function calc_prob_detect_if_transit(t::KeplerTarget, depth::Real, duration::Real, sim_param::SimParam; num_transit::Real = 1)
-  snr = calc_snr_if_transit(t,depth,duration,sim_param, num_transit=num_transit)
+function calc_prob_detect_if_transit(t::KeplerTarget, depth::Real, duration::Real, cdpp::Real, sim_param::SimParam; num_transit::Real = 1)
+  snr = calc_snr_if_transit(t,depth,duration,cdpp, sim_param, num_transit=num_transit)
   return calc_prob_detect_if_transit(t, snr, sim_param, num_transit=num_transit)
 end
 
@@ -132,34 +132,60 @@ function calc_prob_detect_if_transit(t::KeplerTarget, s::Integer, p::Integer, si
   depth = calc_transit_depth(t,s,p)
   duration = calc_transit_duration(t,s,p)
   ntr = calc_expected_num_transits(t,s,p,sim_param)
-  calc_prob_detect_if_transit(t,depth,duration, sim_param, num_transit=ntr)
+  cdpp = interpolate_cdpp_to_duration(t, duration)
+  calc_prob_detect_if_transit(t,depth,duration,cdpp, sim_param, num_transit=ntr)
 end
 
 # Compute probability of detection if we average over impact parameters b~U[0,1)
-function calc_ave_prob_detect_if_transit(t::KeplerTarget, snr_central::Real, sim_param::SimParam; num_transit::Real = 1)
+function calc_ave_prob_detect_if_transit(t::KeplerTarget, snr_central::Real, size_ratio::Real, cdpp_central::Real, sim_param::SimParam; num_transit::Real = 1)
   const min_transits = 3.0                                                    # WARNING: Hard coded 3 transit minimum
   const mes_threshold = 7.1                                                   # WARNING: Assuming 7.1 for all stars, durations
   const min_pdet_nonzero = 0.0                                                # TODO OPT: Figure out how to prevent a plethora of planets that are very unlikely to be detected due to using 0.0
   wf = kepler_window_function(num_transit, t.duty_cycle, min_transits=min_transits)   
-  num_impact_param = 20
-  ave_detection_efficiency = 0.5*detection_efficiency_model(snr_central, min_pdet_nonzero=min_pdet_nonzero)	  
-  for i in 1:(num_impact_param-1)
+  const num_impact_param = 8              # Breaking integral into two sections [0,1-p) and [1-p,1], so need at least 5 points to evaluate integral via trapezoid rule
+  @assert(num_impact_param >= 5)
+  b = Array(Float64,num_impact_param)
+  weight = Array(Float64,num_impact_param)
+  #=
+  b[1] = 0.                         
+  for i in 1:(num_impact_param-2)
+    b[i] = (1-p)*(i-1)/(num_impact_param-2)
+  end 
+  b[num_impact_param-2] = 1-p
+  =#
+  b[1:(num_impact_param-2)] = linspace(0.0,1-p,num_impact_param-2)
+  b[num_impact_param-1] = 1-0.5*p
+  b[num_impact_param]   = 1
+  weight[1:(num_impact_param-2)] = (1-p)/(num_impact_param-3)  # Points for first integral
+  weight[1] *= 0.5                        # Lower endpoint of first integral
+  weight[num_impact_param-2] *= 0.5       # Upper endpoint of first integral
+  weight[num_impact_param-2] += p/4       # Also lower endpoint of second integral
+  weight[num_impact_param-1] = p/2        # Midpoint of second integral
+  weight[num_impact_param]   = p/4        # Upper endpoint of second integral
+  ave_detection_efficiency = sum(weight .* map(b->detection_efficiency_model(snr_central*sqrt(calc_effective_transit_duration_factor_for_impact_parameter_b(b,size_ratio), min_pdet_nonzero=min_pdet_nonzero)),b) )    # WARNING:  Doesn't account for cdpp chaning for shorter duration transits 
+                                          # To accoutn for that should let snr<-snr*cdpp_central/cdpp(t,duration(b))
+  #=  
+  ave_detection_efficiency = 0.5*detection_efficiency_model(snr_central, min_pdet_nonzero=min_pdet_nonzero)  # First term w/ b=0 & weight=0.5  
+  for i in 1:(num_impact_param-1)    # WARNING: This assumes zero detection probability for b=1 transits.  See better strategy for integral above
     b = i/num_impact_param
     snr = snr_central*sqrt(sqrt((1-b)*(1+b)))
     ave_detection_efficiency += detection_efficiency_model(snr, min_pdet_nonzero=min_pdet_nonzero)
   end
-  ave_detection_efficiency /= num_impact_param
+  ave_detection_efficiency /= num_impact_param  
+  =#
   return wf*ave_detection_efficiency
 end
 
-function calc_ave_prob_detect_if_transit(t::KeplerTarget, depth::Real, duration_central::Real, sim_param::SimParam; num_transit::Real = 1)
-  snr_central = calc_snr_if_transit(t,depth,duration_central,sim_param, num_transit=num_transit)
-  return calc_ave_prob_detect_if_transit(t, snr_central, sim_param, num_transit=num_transit)
+function calc_ave_prob_detect_if_transit(t::KeplerTarget, depth::Real, duration_central::Real, size_ratio:::Real, sim_param::SimParam; num_transit::Real = 1)
+  cdpp_central = interpolate_cdpp_to_duration(t, duration_central)
+  snr_central = calc_snr_if_transit(t,depth,duration_central,cdpp_central, sim_param, num_transit=num_transit)
+  return calc_ave_prob_detect_if_transit(t, snr_central, size_ratio, cdpp_central, sim_param, num_transit=num_transit)
 end
 
 function calc_ave_prob_detect_if_transit(t::KeplerTarget, s::Integer, p::Integer, sim_param::SimParam)
+  size_ratio = t.sys[s].planet[p].radius/t.sys[s].star.radius
   depth = calc_transit_depth(t,s,p)
   duration_central = calc_transit_duration_central(t,s,p)
   ntr = calc_expected_num_transits(t,s,p,sim_param)
-  calc_ave_prob_detect_if_transit(t,depth,duration_central, sim_param, num_transit=ntr)
+  calc_ave_prob_detect_if_transit(t,depth,duration_central, size_ratio, sim_param, num_transit=ntr)
 end

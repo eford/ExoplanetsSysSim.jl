@@ -33,13 +33,21 @@ function corbits_placeholder_obs_ave( ps::PlanetarySystemSingleStar, use_pl::Vec
   return prob 
 end
 
-function prob_combo_transits_one_obs( ps::PlanetarySystemSingleStar, use_pl::Vector{Cint} )    
-  n = num_planets(ps)
-  for p in 1:n
+function calc_impact_parameter(ps::PlanetarySystemSingleStar, pl::Integer)
       one_minus_e2 = (1-ps.orbit[p].ecc)*(1+ps.orbit[p].ecc)
       a_semimajor_axis = semimajor_axis(ps,p)
       b = a_semimajor_axis *cos(ps.orbit[p].incl)/ps.star.radius
       b *= one_minus_e2/(1+ps.orbit[p].ecc*sin(ps.orbit[p].omega))
+end
+
+function prob_combo_transits_one_obs( ps::PlanetarySystemSingleStar, use_pl::Vector{Cint} )    
+  n = num_planets(ps)
+  for p in 1:n
+      #one_minus_e2 = (1-ps.orbit[p].ecc)*(1+ps.orbit[p].ecc)
+      #a_semimajor_axis = semimajor_axis(ps,p)
+      #b = a_semimajor_axis *cos(ps.orbit[p].incl)/ps.star.radius
+      #b *= one_minus_e2/(1+ps.orbit[p].ecc*sin(ps.orbit[p].omega))
+      b = calc_impact_parameter(ps, p)
       if ! ( (b<=1.0 && use_pl[p]==1) || (b> 1.0 && use_pl[p]!=1) )
         return 0.0
       end
