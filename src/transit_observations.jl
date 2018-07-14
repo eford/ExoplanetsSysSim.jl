@@ -80,7 +80,12 @@ function calc_effective_transit_duration_factor_for_impact_parameter_b(b::T, p::
         area_ratio = one(p)   
     elseif b < 1+p            # Planet never fully inscribed by star
         duration_ratio = sqrt((1+p)^2-b^2)/2  # /2 since now triangular
-        area_ratio = (p^2*acos((b^2+p^2-1)/(2*b*p))+acos((b^2+1-p^2)/(2b))-0.5*sqrt((1+p-b)*(p+b-1)*(1-p+b)*(1+p+b))) / (pi*p^2)
+        #area_ratio = (p^2*acos((b^2+p^2-1)/(2*b*p))+acos((b^2+1-p^2)/(2b))-0.5*sqrt((1+p-b)*(p+b-1)*(1-p+b)*(1+p+b))) / (pi*p^2)
+        #area_ratio = (p^2*acos((b^2-(1-p)*(1+p))/(2*b*p))+acos((b^2+(1+p)*(1-p))/(2b))-0.5*sqrt((1+p-b)*(p+b-1)*(1-p+b)*(1+p+b))) / (pi*p^2)
+        acos_arg1 = max(-1.0,min(1.0,(b^2-(1-p)*(1+p))/(2*b*p)))
+        acos_arg2 = max(-1.0,min(1.0,(b^2+(1+p)*(1-p))/(2b)))
+        sqrt_arg = max(0.0,(1+p-b)*(p+b-1)*(1-p+b)*(1+p+b))
+        area_ratio = (p^2*acos(acos_arg1)+acos(acos_arg2)-0.5*sqrt(sqrt_arg)) / (pi*p^2)
     else                      # There's no transit
         duration_ratio = zero(b)
         area_ratio = zero(p)
@@ -89,6 +94,9 @@ function calc_effective_transit_duration_factor_for_impact_parameter_b(b::T, p::
 end
 
 
+# How SNR is affected for grazing transits due to not all of planet blocking starlight at mid-transit.  
+# Assumes uniform surface brightness star 
+# Expression comes from Eqn 14 of http://mathworld.wolfram.com/Circle-CircleIntersection.html
 function calc_snr_correction_for_grazing_transit(b::T, p::T)  where T <:Real
   @assert(zero(b)<=b)         # b = Impact Parameter
   @assert(zero(p)<=p<one(p))  # p = R_p/R_star
@@ -181,7 +189,7 @@ function calc_target_obs_sky_ave(t::KeplerTarget, sim_param::SimParam)
         duration_central = calc_transit_duration_central(t,s,p)
         cdpp_central = interpolate_cdpp_to_duration(t, duration_central)
 	snr_central = calc_snr_if_transit(t, depth, duration_central, cdpp_central, sim_param, num_transit=ntr)
-	pdet_ave = calc_ave_prob_detect_if_transit(t, snr_central, sim_param, num_transit=ntr)
+	pdet_ave = calc_ave_prob_detect_if_transit(t, depth, duration_central, size_ratio, sim_param, num_transit=ntr)
 	add_to_catalog = pdet_ave > min_detect_prob_to_be_included  # Include all planets with sufficient detection probability
 	if add_to_catalog
 	   const hard_max_num_b_tries = 100
@@ -191,10 +199,11 @@ function calc_target_obs_sky_ave(t::KeplerTarget, sim_param::SimParam)
               b = rand()  # WARNING: Making an approximation: Using a uniform distribution for b (truncated to ensure detection probability >0) when generating measurement uncertainties, rather than accounting for increased detection probability for longer duration transits
               # transit_duration_factor = sqrt((1+b)*(1-b)) 
               transit_duration_factor = calc_effective_transit_duration_factor_for_impact_parameter_b(b,size_ratio)
-	      duration = duration_central * transit_duration_factor
+	      duration = duration_central * transit_duration_factor   # WARNING:  Technically, this duration may be slightly reduced for grazing cases to account for reduction in SNR due to planet not being completely inscribed by star at mid-transit.  But this will be a smaller effect than limb-darkening for grazing transits
               cdpp = interpolate_cdpp_to_duration(t, duration)
+              pdet_this_b = calc_prob_detect_if_transit(t, depth, duration, cdpp, sim_param, num_transit=ntr)
 	      snr = snr_central * (cdpp_central/cdpp) * sqrt(transit_duration_factor) 
-              pdet_this_b = calc_prob_detect_if_transit(t, snr, sim_param, num_transit=ntr)
+              #pdet_this_b = calc_prob_detect_if_transit(t, snr, sim_param, num_transit=ntr)
               if pdet_this_b > 0.0 
 	         pdet[p] = pdet_ave  
                  obs[i], sigma[i] = transit_noise_model(t, s, p, depth, duration, snr, ntr)   # WARNING: noise properties don't have correct dependance on b
