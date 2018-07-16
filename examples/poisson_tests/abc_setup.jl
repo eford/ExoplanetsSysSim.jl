@@ -36,6 +36,7 @@ module EvalSysSimModel
     function calc_summary_stats(cat::KeplerObsCatalog)
       global sim_param_closure
       sum_stat = calc_summary_stats_obs_binned_rates(cat, sim_param_closure, obs_skyavg = true)
+      #sum_stat = calc_summary_stats_obs_binned_rates(cat, sim_param_closure, obs_skyavg = false)
       return sum_stat
     end
 
