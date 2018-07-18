@@ -46,7 +46,7 @@ function generate_kepler_target_from_table(sim_param::SimParam)
   radius = 0.0  
     if use_star_table_sigmas
         attmpt_num = 0
-        while (!(0.0<radius<5.0)) && (!(0.0<mass<100.0)) && (!(0.0<dens<1000.0))
+        while (!(0.0<radius<5.0)) || (!(0.0<mass<100.0)) || (!(0.0<dens<1000.0))
             if attmpt_num > 10
                 star_id = rand(1:max_star_id)
                 attmpt_num = 0
