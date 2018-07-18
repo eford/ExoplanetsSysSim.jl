@@ -129,6 +129,7 @@ function calc_transit_duration(ps::PlanetarySystemAbstract, pl::Integer)
   @assert zero(ecc)<=ecc<=one(ecc)
   #b = (a*abs(cos(ps.orbit[pl].incl))/(ps.star.radius*rsol_in_au)) * (1+ecc)*(1-ecc)/(1+ecc*sin(ps.orbit[pl].omega))
   b = calc_impact_parameter(ps, pl)
+  size_ratio = ps.planet[pl].radius/ps.star.radius
   @assert !isnan(b)
   @assert zero(b)<=b
   if b>one(b)+size_ratio
@@ -141,7 +142,6 @@ function calc_transit_duration(ps::PlanetarySystemAbstract, pl::Integer)
   one_plus_e_sin_w = 1+ecc*sin(ps.orbit[pl].omega)
   sqrt_one_minus_e_sq = sqrt((1+ecc)*(1-ecc))
   vel_fac = sqrt_one_minus_e_sq / sqrt_one_minus_e_sq
-  size_ratio = ps.planet[pl].radius/ps.star.radius
   duration_ratio_for_impact_parameter = calc_transit_duration_factor_for_impact_parameter_b(b,size_ratio)
 
   # WARNING: This is technically an approximation (see Kipping 2010 Eqn 15).  It avoids small angle for non-grazing transits, but does use a variant of the small angle approximation for nearly and graizing transits.  
