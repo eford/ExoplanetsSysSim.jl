@@ -42,7 +42,8 @@ end
 
 function calc_transit_duration_central_circ(ps::PlanetarySystemAbstract, pl::Integer)
   #duration = rsol_in_au*ps.star.radius * ps.orbit[pl].P /(pi*semimajor_axis(ps,pl) )    
-  duration = asin(rsol_in_au*ps.star.radius/semimajor_axis(ps,pl)) * ps.orbit[pl].P/pi
+  asin_arg = rsol_in_au*ps.star.radius/semimajor_axis(ps,pl)
+  duration = ps.orbit[pl].P/pi * (asin_arg < 1.0 ? asin(asin_arg) : 1.0)
 end
 calc_transit_duration_central_circ(t::KeplerTarget, s::Integer, p::Integer) = calc_transit_duration_central_circ(t.sys[s],p)
 
@@ -59,7 +60,8 @@ function calc_transit_duration_central(ps::PlanetarySystemAbstract, pl::Integer)
   # Based on Winn 2010
   # duration = asin(rsol_in_au*ps.star.radius/(semimajor_axis(ps,pl)) * ps.orbit[pl].P*radial_separation_over_a/(pi*sqrt_one_minus_ecc_sq)
   # Based on pasting cos i = 0 into Eqn 15 from Kipping 2010
-  duration = asin(rsol_in_au*ps.star.radius/(semimajor_axis(ps,pl)* radial_separation_over_a)) * ps.orbit[pl].P*radial_separation_over_a^2/(pi*sqrt_one_minus_ecc_sq)
+  asin_arg = rsol_in_au*ps.star.radius/(semimajor_axis(ps,pl)* radial_separation_over_a)
+  duration = ps.orbit[pl].P*radial_separation_over_a^2/(pi*sqrt_one_minus_ecc_sq) * ( asin_arg<1.0 ?  asin(asin_arg) : 1.0 )
 end
 
 calc_transit_duration_central(t::KeplerTarget, s::Integer, p::Integer) = calc_transit_duration_central(t.sys[s],p)
@@ -145,7 +147,8 @@ function calc_transit_duration(ps::PlanetarySystemAbstract, pl::Integer)
   duration_ratio_for_impact_parameter = calc_transit_duration_factor_for_impact_parameter_b(b,size_ratio)
 
   # WARNING: This is technically an approximation (see Kipping 2010 Eqn 15).  It avoids small angle for non-grazing transits, but does use a variant of the small angle approximation for nearly and graizing transits.  
-  duration = duration_central_circ * radial_separation_over_a^2/sqrt_one_minus_e_sq * asin(arcsin_circ_central * duration_ratio_for_impact_parameter/radial_separation_over_a) 
+  asin_arg = (arcsin_circ_central * duration_ratio_for_impact_parameter/radial_separation_over_a) 
+  duration = duration_central_circ * radial_separation_over_a^2/sqrt_one_minus_e_sq * (asin_arg < 1.0 ? asin(asin_arg) : 1.0)
 end
 calc_transit_duration(t::KeplerTarget, s::Integer, p::Integer ) = calc_transit_duration(t.sys[s],p)
 
