@@ -246,12 +246,18 @@ function generate_planetary_system_hardcoded_example(star::StarAbstract, sim_par
   if( num_pl==0 )
     return PlanetarySystem(star)
   else
-     pl = Array{Planet}(num_pl)
-     orbit = Array{Orbit}(num_pl)
-     (Plist::Vector{Float64}, Rlist::Vector{Float64}) = generate_period_and_sizes(star, sim_param, num_pl=num_pl)
-     idx = sortperm(Plist)                   # TODO OPT: Check to see if sorting is significant time sink.  If so, it might could be deferred
+    (Plist::Vector{Float64}, Rlist::Vector{Float64}) = generate_period_and_sizes(star, sim_param, num_pl=num_pl)
+    idx = sortperm(Plist)                   # TODO OPT: Check to see if sorting is significant time sink.  If so, it might could be deferred
 
-    for i in 1:num_pl
+    min_P_orbit = day_in_year*sqrt((2.*star.radius)^3 / star.mass) # minimum semi-major axis of two stellar radii
+    idx = idx[Plist[idx] .> min_P_orbit]
+    if( length(idx)==0 )
+        return PlanetarySystem(star)
+    end
+
+    pl = Array{Planet}(length(idx))
+    orbit = Array{Orbit}(length(idx))
+    for i in 1:length(idx)
       # if verbose   println("i=",i," idx=",idx," Plist=",Plist[idx] );     end
       P = Plist[idx[i]]
       (ecc::Float64,  omega::Float64) = generate_e_omega(sim_param)
