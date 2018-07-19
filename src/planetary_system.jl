@@ -249,7 +249,7 @@ function generate_planetary_system_hardcoded_example(star::StarAbstract, sim_par
     (Plist::Vector{Float64}, Rlist::Vector{Float64}) = generate_period_and_sizes(star, sim_param, num_pl=num_pl)
     idx = sortperm(Plist)                   # TODO OPT: Check to see if sorting is significant time sink.  If so, it might could be deferred
 
-    min_P_orbit = day_in_year*sqrt((2.*star.radius)^3 / star.mass) # minimum semi-major axis of two stellar radii
+    min_P_orbit = day_in_year*sqrt((2.*star.radius*rsol_in_au)^3 / star.mass) # minimum semi-major axis of two stellar radii
     idx = idx[Plist[idx] .> min_P_orbit]
     if( length(idx)==0 )
         return PlanetarySystem(star)
@@ -289,7 +289,7 @@ function generate_planetary_system_uncorrelated_incl(star::StarAbstract, sim_par
     (Plist::Vector{Float64}, Rlist::Vector{Float64}) = generate_period_and_sizes(star, sim_param, num_pl=num_pl)
     idx = sortperm(Plist)                   # TODO OPT: Check to see if sorting is significant time sink.  If so, it might could be deferred
 
-    min_P_orbit = day_in_year*sqrt((2.*star.radius)^3 / star.mass) # minimum semi-major axis of two stellar radii
+    min_P_orbit = day_in_year*sqrt((2.*star.radius*rsol_in_au)^3 / star.mass) # minimum semi-major axis of two stellar radii
     idx = idx[Plist[idx] .> min_P_orbit]
     if( length(idx)==0 )
         return PlanetarySystem(star)
@@ -337,7 +337,7 @@ function generate_planetary_system_simple(star::StarAbstract, sim_param::SimPara
     idx = sortperm(Plist)                   # TODO OPT: Check to see if sorting is significant time sink.  If so, it might could be deferred
     incl_sys = acos(rand())
 
-    min_P_orbit = day_in_year*sqrt((2.*star.radius)^3 / star.mass) # minimum semi-major axis of two stellar radii
+    min_P_orbit = day_in_year*sqrt((2.*star.radius*rsol_in_au)^3 / star.mass) # minimum semi-major axis of two stellar radii
     idx = idx[Plist[idx] .> min_P_orbit]
     if( length(idx)==0 )
         return PlanetarySystem(star)
