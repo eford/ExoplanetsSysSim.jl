@@ -3,11 +3,6 @@ import DataArrays.skipmissing
 include("clusters.jl")
 
 sim_param = setup_sim_param_model()
-add_param_fixed(sim_param,"num_targets_sim_pass_one",150060) #9)   # For "observed" data, use a realistic number of targets (after any cuts you want to perform)
-add_param_fixed(sim_param,"max_incl_sys",80.0) #degrees; 0 (deg) for isotropic system inclinations; set closer to 90 (deg) for more transiting systems
-
-const max_incl_sys = get_real(sim_param,"max_incl_sys")
-cos_factor = cos(max_incl_sys*pi/180) #factor to divide the number of targets in simulation by to get the actual number of targets needed (with an isotropic distribution of system inclinations) to produce as many transiting systems for a single observer
 
 
 
@@ -109,7 +104,7 @@ function calc_distance(ss1::ExoplanetsSysSim.CatalogSummaryStatistics, ss2::Exop
     end
 
     #To handle empty arrays:
-    if sum(M_cat_obs1 .>= 2) < 2 | sum(M_cat_obs2 .>= 2) < 2 #need at least 2 multi-systems per catalog in order to be able to compute AD distances for distributions of ratios of observables
+    if sum(M_cat_obs1 .>= 2) < 2 || sum(M_cat_obs2 .>= 2) < 2 #need at least 2 multi-systems per catalog in order to be able to compute AD distances for distributions of ratios of observables
         println("Not enough observed multi-planet systems in one of the catalogs to compute the AD distance.")
         d = ones(Int64,8)*1e6
 
@@ -332,8 +327,10 @@ end
 
 ##### To start saving the model iterations in the optimization into a file:
 
+add_param_fixed(sim_param,"num_targets_sim_pass_one",150060) #9)   # For "observed" data, use a realistic number of targets (after any cuts you want to perform)
+
 model_name = "Clustered_P_R_broken_R_simulated_optimization" #"Clustered_P_R_broken_R_simulated_optimization"
-optimization_number = "" #if want to run on the cluster with random initial active parameters: "_random"*ARGS[1]
+optimization_number = "_random"*ARGS[1] #if want to run on the cluster with random initial active parameters: "_random"*ARGS[1]
 max_evals = 1000
 file_name = model_name*optimization_number*"_targs"*string(get_int(sim_param,"num_targets_sim_pass_one"))*"_evals"*string(max_evals)*".txt"
 
@@ -352,6 +349,11 @@ cat_phys = generate_kepler_physical_catalog(sim_param)
 cat_phys_cut = ExoplanetsSysSim.generate_obs_targets(cat_phys,sim_param)
 cat_obs = observe_kepler_targets_single_obs(cat_phys_cut,sim_param)
 summary_stat_ref = calc_summary_stats_model(cat_obs,sim_param)
+
+#To simulate more observed planets for the subsequent model generations:
+add_param_fixed(sim_param,"max_incl_sys",80.0) #degrees; 0 (deg) for isotropic system inclinations; set closer to 90 (deg) for more transiting systems
+const max_incl_sys = get_real(sim_param,"max_incl_sys")
+cos_factor = cos(max_incl_sys*pi/180) #factor to divide the number of targets in simulation by to get the actual number of targets needed (with an isotropic distribution of system inclinations) to produce as many transiting systems for a single observer
 
 tic()
 active_param_true = make_vector_of_sim_param(sim_param)
@@ -441,7 +443,7 @@ println(f, "# PopulationSize: ", PopSize)
 println(f, "# Format: Active_params: [active parameter values]")
 println(f, "# Format: Dist: [distances][total distance]")
 println(f, "# Format: Dist_weighted: [weighted distances][total weighted distance]")
-println(f, "# Distances used: Dist_AD (all, weighted)") #Edit this line to specify which distances were actually used in the optimizer!
+println(f, "# Distances used: Dist_KS (all, weighted)") #Edit this line to specify which distances were actually used in the optimizer!
 
 target_function_weighted(active_param_start) #to simulate the model once with the drawn parameters and compare to the Kepler population before starting the optimization
 
