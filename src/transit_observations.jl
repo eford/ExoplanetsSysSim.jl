@@ -143,7 +143,7 @@ function calc_transit_duration(ps::PlanetarySystemAbstract, pl::Integer)
   # vel_fac = sqrt((1+ecc)*(1-ecc))/(1+ecc*sin(ps.orbit[pl].omega))
   one_plus_e_sin_w = 1+ecc*sin(ps.orbit[pl].omega)
   sqrt_one_minus_e_sq = sqrt((1+ecc)*(1-ecc))
-  vel_fac = sqrt_one_minus_e_sq / sqrt_one_minus_e_sq
+  vel_fac = sqrt_one_minus_e_sq / one_plus_e_sin_w
   radial_separation_over_a = (1+ecc)*(1-ecc)/one_plus_e_sin_w
   duration_ratio_for_impact_parameter = calc_transit_duration_factor_for_impact_parameter_b(b,size_ratio)
 
