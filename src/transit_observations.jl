@@ -113,7 +113,7 @@ end
 function calc_snr_correction_for_grazing_transit(b::T, p::T)  where T <:Real
   @assert(zero(b)<=b)         # b = Impact Parameter
   @assert(zero(p)<=p<one(p))  # p = R_p/R_star
-  if b < 1-2p                 # Far enough from grazing for approximation
+  if b < 1-p                  # Planet fully inscribed by star
         area_ratio = one(p)   
     elseif b < 1+p            # Planet never fully inscribed by star
         area_ratio = (p^2*acos((b^2+p^2-1)/(2*b*p))+acos((b^2+1-p^2)/(2b))-0.5*sqrt((1+p-b)*(p+b-1)*(1-p+b)*(1+p+b))) / (pi*p^2)
