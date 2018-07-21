@@ -33,7 +33,7 @@ end
 function generate_kepler_target_from_table(sim_param::SimParam)  
   #const  generate_star = get_function(sim_param,"generate_star")
   const  generate_planetary_system = get_function(sim_param,"generate_planetary_system")
-  const use_star_table_sigmas = true
+  const use_star_table_sigmas = false
 
   max_star_id = StellarTable.num_usable_in_star_table()
 
