@@ -36,7 +36,7 @@ end
 function calc_impact_parameter(ps::PlanetarySystemSingleStar, pl::Integer)
       one_minus_e2 = (1-ps.orbit[pl].ecc)*(1+ps.orbit[pl].ecc)
       a_semimajor_axis = semimajor_axis(ps,pl)
-      b = a_semimajor_axis *cos(ps.orbit[pl].incl)/ps.star.radius
+      b = a_semimajor_axis *cos(ps.orbit[pl].incl)/(ps.star.radius*rsol_in_au)
       b *= one_minus_e2/(1+ps.orbit[pl].ecc*sin(ps.orbit[pl].omega))
 end
 
