@@ -86,7 +86,7 @@ function generate_obs_targets(cat_phys::KeplerPhysicalCatalog, sim_param::SimPar
    	a::Float64 = semimajor_axis(kep_targ,pl)
    	Rstar::Float64 = rsol_in_au*kep_targ.star.radius
        
-   	if (Rstar < (a*(1-ecc)*(1+ecc))/(1+ecc*sin(kep_targ.orbit[pl].omega))*cos(incl)) || (rand() > calc_prob_detect_if_transit(cat_phys.target[t], 1, pl, sim_param))
+   	if (Rstar < (a*(1-ecc)*(1+ecc))/(1+ecc*sin(kep_targ.orbit[pl].omega))*cos(incl)) || (rand() > calc_prob_detect_if_transit_with_actual_b(cat_phys.target[t], 1, pl, sim_param))
     	  splice!(cat_phys.target[t].sys[ps].orbit, pl)
 	  splice!(cat_phys.target[t].sys[ps].planet, pl)
      	end
