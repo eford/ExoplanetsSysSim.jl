@@ -176,7 +176,7 @@ function calc_transit_duration_small_angle_approx(ps::PlanetarySystemAbstract, p
   sqrt_one_minus_e_sq = sqrt((1+ecc)*(1-ecc))
   vel_fac = sqrt_one_minus_e_sq / one_plus_e_sin_w
   
-  duration = duration_central_circ * duration_ratio_for_impact_paramter / vel_fac
+  duration = duration_central_circ * duration_ratio_for_impact_parameter * vel_fac
 end
 calc_transit_duration_small_angle_approx(t::KeplerTarget, s::Integer, p::Integer ) = calc_transit_duration_small_angle_approx(t.sys[s],p)
 
