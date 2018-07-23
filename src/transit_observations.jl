@@ -113,7 +113,7 @@ end
 function calc_snr_correction_for_grazing_transit(b::T, p::T)  where T <:Real
   @assert(zero(b)<=b)         # b = Impact Parameter
   @assert(zero(p)<=p<one(p))  # p = R_p/R_star
-  if b < 1-2p                 # Far enough from grazing for approximation
+  if b < 1-p                  # Planet fully inscribed by star
         area_ratio = one(p)   
     elseif b < 1+p            # Planet never fully inscribed by star
         area_ratio = (p^2*acos((b^2+p^2-1)/(2*b*p))+acos((b^2+1-p^2)/(2b))-0.5*sqrt((1+p-b)*(p+b-1)*(1-p+b)*(1+p+b))) / (pi*p^2)
@@ -131,6 +131,7 @@ function calc_transit_duration(ps::PlanetarySystemAbstract, pl::Integer)
   @assert zero(ecc)<=ecc<=one(ecc)
   #b = (a*abs(cos(ps.orbit[pl].incl))/(ps.star.radius*rsol_in_au)) * (1+ecc)*(1-ecc)/(1+ecc*sin(ps.orbit[pl].omega))
   b = calc_impact_parameter(ps, pl)
+  size_ratio = ps.planet[pl].radius/ps.star.radius
   @assert !isnan(b)
   @assert zero(b)<=b
   if b>one(b)+size_ratio
@@ -142,11 +143,11 @@ function calc_transit_duration(ps::PlanetarySystemAbstract, pl::Integer)
   # vel_fac = sqrt((1+ecc)*(1-ecc))/(1+ecc*sin(ps.orbit[pl].omega))
   one_plus_e_sin_w = 1+ecc*sin(ps.orbit[pl].omega)
   sqrt_one_minus_e_sq = sqrt((1+ecc)*(1-ecc))
-  vel_fac = sqrt_one_minus_e_sq / sqrt_one_minus_e_sq
-  size_ratio = ps.planet[pl].radius/ps.star.radius
+  vel_fac = sqrt_one_minus_e_sq / one_plus_e_sin_w
+  radial_separation_over_a = (1+ecc)*(1-ecc)/one_plus_e_sin_w
   duration_ratio_for_impact_parameter = calc_transit_duration_factor_for_impact_parameter_b(b,size_ratio)
 
-  # WARNING: This is technically an approximation (see Kipping 2010 Eqn 15).  It avoids small angle for non-grazing transits, but does use a variant of the small angle approximation for nearly and graizing transits.  
+  # WARNING: This is technically an approximation (see Kipping 2010 Eqn 15).  It avoids small angle for non-grazing transits, but does use a variant of the small angle approximation for nearly and grazing transits.  
   asin_arg = (arcsin_circ_central * duration_ratio_for_impact_parameter/radial_separation_over_a) 
   duration = duration_central_circ * radial_separation_over_a^2/sqrt_one_minus_e_sq * (asin_arg < 1.0 ? asin(asin_arg) : 1.0)
 end

@@ -246,19 +246,25 @@ function generate_planetary_system_hardcoded_example(star::StarAbstract, sim_par
   if( num_pl==0 )
     return PlanetarySystem(star)
   else
-     pl = Array{Planet}(num_pl)
-     orbit = Array{Orbit}(num_pl)
-     (Plist::Vector{Float64}, Rlist::Vector{Float64}) = generate_period_and_sizes(star, sim_param, num_pl=num_pl)
-     idx = sortperm(Plist)                   # TODO OPT: Check to see if sorting is significant time sink.  If so, it might could be deferred
+    (Plist::Vector{Float64}, Rlist::Vector{Float64}) = generate_period_and_sizes(star, sim_param, num_pl=num_pl)
+    idx = sortperm(Plist)                   # TODO OPT: Check to see if sorting is significant time sink.  If so, it might could be deferred
 
-    for i in 1:num_pl
+    min_P_orbit = day_in_year*sqrt((2.*star.radius*rsol_in_au)^3 / star.mass) # minimum semi-major axis of two stellar radii
+    idx = idx[Plist[idx] .> min_P_orbit]
+    if( length(idx)==0 )
+        return PlanetarySystem(star)
+    end
+
+    pl = Array{Planet}(length(idx))
+    orbit = Array{Orbit}(length(idx))
+    for i in 1:length(idx)
       # if verbose   println("i=",i," idx=",idx," Plist=",Plist[idx] );     end
       P = Plist[idx[i]]
       (ecc::Float64,  omega::Float64) = generate_e_omega(sim_param)
       incl::Float64 = acos(rand())
-      orbit[idx[i]] = Orbit(P,ecc,incl,omega,2pi*rand(),2pi*rand())
+      orbit[i] = Orbit(P,ecc,incl,omega,2pi*rand(),2pi*rand())
       # set!(orbit[idx[i]],P,ecc,incl,omega,2pi*rand(),2pi*rand())
-      mass::Float64 = generate_planet_mass_from_radius(Rlist[idx[i]], star, orbit[idx[i]], sim_param)
+      mass::Float64 = generate_planet_mass_from_radius(Rlist[idx[i]], star, orbit[i], sim_param)
       pl[i] = Planet( Rlist[idx[i]],  mass )
     end
   return PlanetarySystem(star,pl,orbit)
@@ -280,12 +286,18 @@ function generate_planetary_system_uncorrelated_incl(star::StarAbstract, sim_par
   if( num_pl==0 )
     return PlanetarySystem(star)::PlanetarySystem
   else
-     pl = Array{Planet}(num_pl)
-     orbit = Array{Orbit}(num_pl)
-     (Plist::Vector{Float64}, Rlist::Vector{Float64}) = generate_period_and_sizes(star, sim_param, num_pl=num_pl)
-     idx = sortperm(Plist)                   # TODO OPT: Check to see if sorting is significant time sink.  If so, it might could be deferred
+    (Plist::Vector{Float64}, Rlist::Vector{Float64}) = generate_period_and_sizes(star, sim_param, num_pl=num_pl)
+    idx = sortperm(Plist)                   # TODO OPT: Check to see if sorting is significant time sink.  If so, it might could be deferred
 
-    for i in 1:num_pl
+    min_P_orbit = day_in_year*sqrt((2.*star.radius*rsol_in_au)^3 / star.mass) # minimum semi-major axis of two stellar radii
+    idx = idx[Plist[idx] .> min_P_orbit]
+    if( length(idx)==0 )
+        return PlanetarySystem(star)
+    end
+
+    pl = Array{Planet}(length(idx))
+    orbit = Array{Orbit}(length(idx))
+    for i in 1:length(idx)
       # if verbose   println("i=",i," idx=",idx," Plist=",Plist[idx] );     end
       P = Plist[idx[i]]
       if haskey(sim_param,"sigma_hk_one") && haskey(sim_param,"sigma_hk_multi")
@@ -293,9 +305,9 @@ function generate_planetary_system_uncorrelated_incl(star::StarAbstract, sim_par
       end
       (ecc::Float64,  omega::Float64) = generate_e_omega(sim_param)
       incl::Float64 = acos(rand())
-      orbit[idx[i]] = Orbit(P,ecc,incl,omega,2pi*rand(),2pi*rand())
+      orbit[i] = Orbit(P,ecc,incl,omega,2pi*rand(),2pi*rand())
       # set!(orbit[idx[i]],P,ecc,incl,omega,2pi*rand(),2pi*rand())
-      mass::Float64 = generate_planet_mass_from_radius(Rlist[idx[i]], star, orbit[idx[i]], sim_param)
+      mass::Float64 = generate_planet_mass_from_radius(Rlist[idx[i]], star, orbit[i], sim_param)
       pl[i] = Planet( Rlist[idx[i]],  mass )
     end
   return PlanetarySystem(star,pl,orbit)
@@ -321,13 +333,19 @@ function generate_planetary_system_simple(star::StarAbstract, sim_param::SimPara
   if( num_pl==0 )
     return PlanetarySystem(star)
   else
-     pl = Array{Planet}(num_pl)
-     orbit = Array{Orbit}(num_pl)
-     (Plist::Vector{Float64}, Rlist::Vector{Float64}) = generate_period_and_sizes(star, sim_param, num_pl=num_pl)
-     idx = sortperm(Plist)                   # TODO OPT: Check to see if sorting is significant time sink.  If so, it might could be deferred
-     incl_sys = acos(rand())
+    (Plist::Vector{Float64}, Rlist::Vector{Float64}) = generate_period_and_sizes(star, sim_param, num_pl=num_pl)
+    idx = sortperm(Plist)                   # TODO OPT: Check to see if sorting is significant time sink.  If so, it might could be deferred
+    incl_sys = acos(rand())
 
-    for i in 1:num_pl
+    min_P_orbit = day_in_year*sqrt((2.*star.radius*rsol_in_au)^3 / star.mass) # minimum semi-major axis of two stellar radii
+    idx = idx[Plist[idx] .> min_P_orbit]
+    if( length(idx)==0 )
+        return PlanetarySystem(star)
+    end
+
+    pl = Array{Planet}(length(idx))
+    orbit = Array{Orbit}(length(idx))
+    for i in 1:length(idx)
       # if verbose   println("i=",i," idx=",idx," Plist=",Plist[idx] );     end
       P = Plist[idx[i]]
       if haskey(sim_param,"sigma_hk_one") && haskey(sim_param,"sigma_hk_multi")
@@ -339,9 +357,9 @@ function generate_planetary_system_simple(star::StarAbstract, sim_param::SimPara
       mean_anom = 2pi*rand()
       #incl = incl_sys + sigma_incl*randn()
       incl =  incl_mut!=zero(incl_mut) ? acos( cos(incl_sys)*cos(incl_mut) + sin(incl_sys)*sin(incl_mut)*cos(asc_node) ) : incl_sys
-      orbit[idx[i]] = Orbit(P,ecc,incl,omega,asc_node,mean_anom)
+      orbit[i] = Orbit(P,ecc,incl,omega,asc_node,mean_anom)
       # set!(orbit[idx[i]], P,ecc,incl,omega,asc_node,mean_anom) # if Orbit were mutable
-      mass = generate_planet_mass_from_radius(Rlist[idx[i]], star, orbit[idx[i]], sim_param)::Float64
+      mass = generate_planet_mass_from_radius(Rlist[idx[i]], star, orbit[i], sim_param)::Float64
       pl[i] = Planet( Rlist[idx[i]],  mass )
     end
   return PlanetarySystem(star,pl,orbit)

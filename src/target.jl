@@ -43,17 +43,19 @@ function generate_kepler_target_from_table(sim_param::SimParam)
   star_id = rand(1:max_star_id)
   mass = 0.0
   dens = 0.0
-  radius = 0.0
-  if use_star_table_sigmas
-    while !(0.0<mass<100.0)
-       mass = draw_asymmetric_normal( star_table(star_id,:mass), star_table(star_id,:mass_err1), star_table(star_id,:mass_err2) )
-    end
-    while !(0.0<dens<1000.0)
-      dens = draw_asymmetric_normal( star_table(star_id,:dens), star_table(star_id,:dens_err1), star_table(star_id,:dens_err2) )
-    end
-    while !(0.0<radius<2.0)
-      radius = draw_asymmetric_normal( star_table(star_id,:radius), star_table(star_id,:radius_err1), star_table(star_id,:radius_err2) )
-    end
+  radius = 0.0  
+    if use_star_table_sigmas
+        attmpt_num = 0
+        while (!(0.0<radius<5.0)) || (!(0.0<mass<100.0)) || (!(0.0<dens<1000.0))
+            if attmpt_num > 20
+                star_id = rand(1:max_star_id)
+                attmpt_num = 0
+            end
+            radius = draw_asymmetric_normal( star_table(star_id,:radius), star_table(star_id,:radius_err1), abs(star_table(star_id,:radius_err2)) )
+            mass = draw_asymmetric_normal( star_table(star_id,:mass), star_table(star_id,:mass_err1), abs(star_table(star_id,:mass_err2)) )
+            dens = draw_asymmetric_normal( star_table(star_id,:dens), star_table(star_id,:dens_err1), abs(star_table(star_id,:dens_err2)) )
+            attmpt_num += 1
+        end
   else
     mass   = star_table(star_id,:mass)
     dens   = star_table(star_id,:dens)

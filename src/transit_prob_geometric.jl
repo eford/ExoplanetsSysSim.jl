@@ -34,10 +34,10 @@ function corbits_placeholder_obs_ave( ps::PlanetarySystemSingleStar, use_pl::Vec
 end
 
 function calc_impact_parameter(ps::PlanetarySystemSingleStar, pl::Integer)
-      one_minus_e2 = (1-ps.orbit[p].ecc)*(1+ps.orbit[p].ecc)
-      a_semimajor_axis = semimajor_axis(ps,p)
-      b = a_semimajor_axis *cos(ps.orbit[p].incl)/ps.star.radius
-      b *= one_minus_e2/(1+ps.orbit[p].ecc*sin(ps.orbit[p].omega))
+      one_minus_e2 = (1-ps.orbit[pl].ecc)*(1+ps.orbit[pl].ecc)
+      a_semimajor_axis = semimajor_axis(ps,pl)
+      b = a_semimajor_axis *cos(ps.orbit[pl].incl)/(ps.star.radius*rsol_in_au)
+      b *= one_minus_e2/(1+ps.orbit[pl].ecc*sin(ps.orbit[pl].omega))
 end
 
 function prob_combo_transits_one_obs( ps::PlanetarySystemSingleStar, use_pl::Vector{Cint} )    
@@ -208,24 +208,24 @@ function calc_simulated_system_detection_probs(ps::PlanetarySystemSingleStar, pr
 
         for p in combo                # Accumulate the probability of detecting each planet individually
             sdp.pairwise[p,p] += prob_det_this_combo
-            if sdp.pairwise[p,p] > 1.0
-                print(string("Error! Invalid prob for planet ",p,": ", sdp.pairwise[p,p], "\n\n"))
-                for ntr in 1:min(n,max_tranets_in_sys)
-                    for combo in combinations(1:n,ntr)
-                        fill!(planet_should_transit,zero(Cint))
-	                for i in 1:length(combo)
-      	                    planet_should_transit[combo[i]] = one(Cint)
-	                end
-                        geo_factor = prob_combo_transits_obs_ave(ps_detectable,planet_should_transit, print_orbit = true)
-                        print(string("Geo. factor of ",combo," = ",geo_factor, "\n"))
-                        for p in combo  # Loop over each planet in this combination of detectable planets
-                            prob_det_this_combo *= prob_det_if_tr[idx_detectable[p]] 
-                        end
-                        print(string("Det. prob. of ",combo," = ",prob_det_this_combo, "\n\n"))
-                    end
-                end
-                #quit()
-            end
+            # if sdp.pairwise[p,p] > 1.0
+            #     print(string("Error! Invalid prob for planet ",p,": ", sdp.pairwise[p,p], "\n\n"))
+            #     for ntr in 1:min(n,max_tranets_in_sys)
+            #         for combo in combinations(1:n,ntr)
+            #             fill!(planet_should_transit,zero(Cint))
+	    #             for i in 1:length(combo)
+      	    #                 planet_should_transit[combo[i]] = one(Cint)
+	    #             end
+            #             geo_factor = prob_combo_transits_obs_ave(ps_detectable,planet_should_transit, print_orbit = true)
+            #             print(string("Geo. factor of ",combo," = ",geo_factor, "\n"))
+            #             for p in combo  # Loop over each planet in this combination of detectable planets
+            #                 prob_det_this_combo *= prob_det_if_tr[idx_detectable[p]] 
+            #             end
+            #             print(string("Det. prob. of ",combo," = ",prob_det_this_combo, "\n\n"))
+            #         end
+            #     end
+            #     #quit()
+            # end
         end
 
         for pq in combinations(combo,2)                # Accumulate the probability of detecting each planet pair
