@@ -128,8 +128,11 @@ function calc_prob_detect_if_transit(t::KeplerTarget, depth::Real, duration::Rea
 end
 
 function calc_prob_detect_if_transit(t::KeplerTarget, s::Integer, p::Integer, sim_param::SimParam)
+  size_ratio = t.sys[s].planet[p].radius/t.sys[s].star.radius
   depth = calc_transit_depth(t,s,p)
-  duration = calc_transit_duration(t,s,p)
+  duration_central = calc_transit_duration_central(t,s,p)
+  b = rand()    # WARNING: Assumes random b in [0,1)
+  duration = duration_central * calc_effective_transit_duration_factor_for_impact_parameter_b(b,size_ratio)
   ntr = calc_expected_num_transits(t,s,p,sim_param)
   cdpp = interpolate_cdpp_to_duration(t, duration)
   calc_prob_detect_if_transit(t,depth,duration,cdpp, sim_param, num_transit=ntr)

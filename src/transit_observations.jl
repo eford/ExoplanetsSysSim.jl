@@ -52,8 +52,11 @@ function calc_transit_duration_central_circ_with_arcsin(ps::PlanetarySystemAbstr
 end
 calc_transit_duration_central_circ_with_arcsin(t::KeplerTarget, s::Integer, p::Integer) = calc_transit_duration_central_circ_with_arcsin(t.sys[s],p)
 
-#calc_transit_duration_central_circ(t::KeplerTarget, s::Integer, p::Integer) = calc_transit_duration_central_circ_small_angle_approx(t.sys[s],p)
-calc_transit_duration_central_circ(t::KeplerTarget, s::Integer, p::Integer) = calc_transit_duration_central_circ_with_arcsin(t.sys[s],p)
+
+#calc_transit_duration_central_circ(ps::PlanetarySystemAbstract, pl::Integer) = calc_transit_duration_central_circ_small_angle_approx(ps,pl)
+calc_transit_duration_central_circ(ps::PlanetarySystemAbstract, pl::Integer) = calc_transit_duration_central_circ_with_arcsin(ps,pl)
+
+calc_transit_duration_central_circ(t::KeplerTarget, s::Integer, p::Integer) = calc_transit_duration_central_circ(t.sys[s],p)
 
 
 function calc_transit_duration_central_small_angle_approx(ps::PlanetarySystemAbstract, pl::Integer)
@@ -63,6 +66,7 @@ function calc_transit_duration_central_small_angle_approx(ps::PlanetarySystemAbs
   vel_fac = sqrt_one_minus_ecc_sq/one_plus_e_sin_w
   duration = calc_transit_duration_central_circ_small_angle_approx(ps,pl) * vel_fac
 end
+calc_transit_duration_central_small_angle_approx(t::KeplerTarget, s::Integer, p::Integer) = calc_transit_duration_central_small_angle_approx(t.sys[s],p)
 
 # It seems above should be good enough, but we can try one of the following just to eliminate potential approximation errors.
 function calc_transit_duration_central_winn2010(ps::PlanetarySystemAbstract, pl::Integer)
@@ -75,7 +79,7 @@ function calc_transit_duration_central_winn2010(ps::PlanetarySystemAbstract, pl:
   # Based on Winn 2010
   duration = ( asin_arg<1.0 ?  asin(asin_arg) : 1.0 ) * ps.orbit[pl].P*radial_separation_over_a/(pi*sqrt_one_minus_ecc_sq)
 end
-#calc_transit_duration_central_winn2010(ps::PlanetarySystemAbstract, pl::Integer) = calc_transit_duration_central_winn2010(ps,pl)
+calc_transit_duration_central_winn2010(t::KeplerTarget, s::Integer, p::Integer) = calc_transit_duration_central_winn2010(t.sys[s],p)
 
 function calc_transit_duration_central_kipping2010(ps::PlanetarySystemAbstract, pl::Integer)
   ecc = ps.orbit[pl].ecc
@@ -87,12 +91,13 @@ function calc_transit_duration_central_kipping2010(ps::PlanetarySystemAbstract, 
   asin_arg = rsol_in_au*ps.star.radius/(semimajor_axis(ps,pl)* radial_separation_over_a)
   duration = ps.orbit[pl].P*radial_separation_over_a^2/(pi*sqrt_one_minus_ecc_sq) * ( asin_arg<1.0 ?  asin(asin_arg) : 1.0 )
 end
-#calc_transit_duration_central_kipping2010(ps::PlanetarySystemAbstract, pl::Integer) = calc_transit_duration_central_kipping2010(ps,pl)
+calc_transit_duration_central_kipping2010(t::KeplerTarget, s::Integer, p::Integer) = calc_transit_duration_central_kipping2010(t.sys[s],p)
 
+#calc_transit_duration_central(ps::PlanetarySystemAbstract, pl::Integer) = calc_transit_duration_central_small_angle_approx(ps,pl)
+#calc_transit_duration_central(ps::PlanetarySystemAbstract, pl::Integer) = calc_transit_duration_central_winn2010(ps,pl)
+calc_transit_duration_central(ps::PlanetarySystemAbstract, pl::Integer) = calc_transit_duration_central_kipping2010(ps,pl)
 
-#calc_transit_duration_central(t::KeplerTarget, s::Integer, p::Integer) = calc_transit_duration_central_small_angle_approx(t.sys[s],p)
-#calc_transit_duration_central(t::KeplerTarget, s::Integer, p::Integer) = calc_transit_duration_central_winn2010(t.sys[s],p)
-calc_transit_duration_central(t::KeplerTarget, s::Integer, p::Integer) = calc_transit_duration_central_kipping2010(t.sys[s],p)
+calc_transit_duration_central(t::KeplerTarget, s::Integer, p::Integer) = calc_transit_duration_central(t.sys[s],p)
 
 function calc_transit_duration_factor_for_impact_parameter_b(b::T, p::T)  where T <:Real
   @assert(zero(b)<=b)         # b = Impact Parameter
@@ -202,7 +207,9 @@ function calc_transit_duration_kipping2010(ps::PlanetarySystemAbstract, pl::Inte
 end
 calc_transit_duration_kipping2010(t::KeplerTarget, s::Integer, p::Integer ) = calc_transit_duration_kipping2010(t.sys[s],p)
 
-calc_transit_duration(t::KeplerTarget, s::Integer, p::Integer ) = calc_transit_duration_kipping2010(t,s,p)
+#calc_transit_duration(ps::PlanetarySystemAbstract, pl::Integer) = calc_transit_duration_small_angle_approx(ps,pl)
+calc_transit_duration(ps::PlanetarySystemAbstract, pl::Integer) = calc_transit_duration_kipping2010(ps,pl)
+calc_transit_duration(t::KeplerTarget, s::Integer, p::Integer ) = calc_transit_duration(t,s,p)
 
 function calc_expected_num_transits(t::KeplerTarget, s::Integer, p::Integer, sim_param::SimParam)  
  period = t.sys[s].orbit[p].P

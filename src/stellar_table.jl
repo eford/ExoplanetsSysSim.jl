@@ -145,7 +145,7 @@ function generate_star_from_table(sim_param::SimParam, id::Integer)  # WARNING: 
   sig_r1 = StellarTable.star_table(id,:radius_err1)
   sig_r2 = StellarTable.star_table(id,:radius_err2)
   z = randn() 
-  r += (z>0) ?  z*sig_r1 : z*sig_r2
+  r = mu_r + (z>0) ?  z*sig_r1 : z*sig_r2
   m = rand(Normal(r,0.1))::Float64
   while m<0.0
     m = rand(Normal(r,0.1))::Float64
