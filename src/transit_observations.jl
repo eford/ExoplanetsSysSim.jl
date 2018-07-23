@@ -431,7 +431,7 @@ function transit_noise_model_diagonal(t::KeplerTarget, s::Integer, p::Integer, d
 	# Use variable names from Price & Rogers
 	one_minus_e2 = (1-t.sys[s].orbit[p].ecc)*(1+t.sys[s].orbit[p].ecc)
 	a_semimajor_axis = semimajor_axis(t.sys[s],p)
-	b = a_semimajor_axis *cos(t.sys[s].orbit[p].incl)/t.sys[s].star.radius
+	b = a_semimajor_axis *cos(t.sys[s].orbit[p].incl)/ (t.sys[s].star.radius*rsol_in_au)
         b *= one_minus_e2/(1+t.sys[s].orbit[p].ecc*sin(t.sys[s].orbit[p].omega))
 	tau0 = t.sys[s].star.radius*period/(a_semimajor_axis*2pi)
 	tau0 *= sqrt(one_minus_e2)/(1+t.sys[s].orbit[p].ecc*sin(t.sys[s].orbit[p].omega))
