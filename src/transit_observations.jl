@@ -209,7 +209,7 @@ calc_transit_duration_kipping2010(t::KeplerTarget, s::Integer, p::Integer ) = ca
 
 #calc_transit_duration(ps::PlanetarySystemAbstract, pl::Integer) = calc_transit_duration_small_angle_approx(ps,pl)
 calc_transit_duration(ps::PlanetarySystemAbstract, pl::Integer) = calc_transit_duration_kipping2010(ps,pl)
-calc_transit_duration(t::KeplerTarget, s::Integer, p::Integer ) = calc_transit_duration(t,s,p)
+calc_transit_duration(t::KeplerTarget, s::Integer, p::Integer ) = calc_transit_duration(t.sys[s],p)
 
 function calc_expected_num_transits(t::KeplerTarget, s::Integer, p::Integer, sim_param::SimParam)  
  period = t.sys[s].orbit[p].P
