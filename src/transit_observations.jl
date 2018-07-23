@@ -75,7 +75,7 @@ function calc_transit_duration_central_winn2010(ps::PlanetarySystemAbstract, pl:
   # Based on Winn 2010
   duration = ( asin_arg<1.0 ?  asin(asin_arg) : 1.0 ) * ps.orbit[pl].P*radial_separation_over_a/(pi*sqrt_one_minus_ecc_sq)
 end
-calc_transit_duration_central_winn2010(ps::PlanetarySystemAbstract, pl::Integer) = calc_transit_duration_central_winn2010(ps,pl)
+#calc_transit_duration_central_winn2010(ps::PlanetarySystemAbstract, pl::Integer) = calc_transit_duration_central_winn2010(ps,pl)
 
 function calc_transit_duration_central_kipping2010(ps::PlanetarySystemAbstract, pl::Integer)
   ecc = ps.orbit[pl].ecc
@@ -87,7 +87,7 @@ function calc_transit_duration_central_kipping2010(ps::PlanetarySystemAbstract, 
   asin_arg = rsol_in_au*ps.star.radius/(semimajor_axis(ps,pl)* radial_separation_over_a)
   duration = ps.orbit[pl].P*radial_separation_over_a^2/(pi*sqrt_one_minus_ecc_sq) * ( asin_arg<1.0 ?  asin(asin_arg) : 1.0 )
 end
-calc_transit_duration_central_kipping2010(ps::PlanetarySystemAbstract, pl::Integer) = calc_transit_duration_central_kipping2010(ps,pl)
+#calc_transit_duration_central_kipping2010(ps::PlanetarySystemAbstract, pl::Integer) = calc_transit_duration_central_kipping2010(ps,pl)
 
 
 #calc_transit_duration_central(t::KeplerTarget, s::Integer, p::Integer) = calc_transit_duration_central_small_angle_approx(t.sys[s],p)
