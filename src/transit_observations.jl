@@ -143,7 +143,7 @@ end
 # How SNR is affected for grazing transits due to not all of planet blocking starlight at mid-transit.  
 # Assumes uniform surface brightness star 
 # Expression comes from Eqn 14 of http://mathworld.wolfram.com/Circle-CircleIntersection.html
-function calc_snr_correction_for_grazing_transit(b::T, p::T)  where T <:Real
+function calc_depth_correction_for_grazing_transit(b::T, p::T)  where T <:Real
   @assert(zero(b)<=b)         # b = Impact Parameter
   @assert(zero(p)<=p<one(p))  # p = R_p/R_star
   if b < 1-p                  # Planet fully inscribed by star
@@ -176,7 +176,7 @@ function calc_transit_duration_small_angle_approx(ps::PlanetarySystemAbstract, p
   sqrt_one_minus_e_sq = sqrt((1+ecc)*(1-ecc))
   vel_fac = sqrt_one_minus_e_sq / one_plus_e_sin_w
   
-  duration = duration_central_circ * duration_ratio_for_impact_paramter / vel_fac
+  duration = duration_central_circ * duration_ratio_for_impact_parameter * vel_fac
 end
 calc_transit_duration_small_angle_approx(t::KeplerTarget, s::Integer, p::Integer ) = calc_transit_duration_small_angle_approx(t.sys[s],p)
 
@@ -343,17 +343,20 @@ function calc_target_obs_single_obs(t::KeplerTarget, sim_param::SimParam)
 	   continue
 	end
         ntr = calc_expected_num_transits(t, s, p, sim_param)
-        period = sys.orbit[p].P
+        # period = sys.orbit[p].P
         # t0 = rand(Uniform(0.0,period))   # WARNING: Not being calculated from orbit
         depth = calc_transit_depth(t,s,p)
         cdpp = interpolate_cdpp_to_duration(t, duration)
-        snr = calc_snr_if_transit(t, depth, duration, cdpp, sim_param, num_transit=ntr)
         # Apply correction to snr if grazing transit
         size_ratio = t.sys[s].planet[p].radius/t.sys[s].star.radius
         b = calc_impact_parameter(t.sys[s],p)
-        snr *= calc_snr_correction_for_grazing_transit(b,size_ratio)  
-	
-        pdet[p] = calc_prob_detect_if_transit(t, snr, sim_param, num_transit=ntr)
+	snr_correction = calc_depth_correction_for_grazing_transit(b,size_ratio)  
+        depth *= snr_correction
+        snr = calc_snr_if_transit(t, depth, duration, cdpp, sim_param, num_transit=ntr)
+
+        pdet[p] = calc_prob_detect_if_transit(t, depth, duration, cdpp, sim_param, num_transit=ntr)
+        #pdet[p] = calc_prob_detect_if_transit(t, snr, sim_param, num_transit=ntr)
+
 	if pdet[p] > min_detect_prob_to_be_included   
            obs[i], sigma[i] = transit_noise_model(t, s, p, depth, duration, snr, ntr) 
            #id[i] = tuple(convert(Int32,s),convert(Int32,p))

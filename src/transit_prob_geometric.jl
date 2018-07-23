@@ -375,7 +375,7 @@ function calc_observed_system_detection_probs(targ::KeplerTarget, sim_param::Sim
   pl = 1
   for s in 1:length(targ.sys)
       for p in 1:length(targ.sys[s].planet)
-         pdet[pl] = calc_prob_detect_if_transit(targ, s, p, sim_param)
+         pdet[pl] = calc_prob_detect_if_transit_with_actual_b(targ, s, p, sim_param)
          ptr[pl]  = calc_transit_prob_single_planet_one_obs(targ, s, p)
          pl += 1
       end

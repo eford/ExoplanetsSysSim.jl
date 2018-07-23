@@ -106,9 +106,11 @@ function calc_snr_if_transit(t::KeplerTarget, depth::Real, duration::Real, cdpp:
    snr = depth_tps*sqrt(num_transit*duration*LC_rate)/cdpp     # WARNING: Assumes measurement uncertainties are uncorrelated & CDPP based on LC
 end
 
-function calc_snr_if_transit(t::KeplerTarget, s::Integer, p::Integer, sim_param::SimParam)
+function calc_snr_if_transit_central(t::KeplerTarget, s::Integer, p::Integer, sim_param::SimParam)
   depth = calc_transit_depth(t,s,p)
-  duration = calc_transit_duration(t,s,p)
+  duration_central = calc_transit_duration_central(t,s,p)
+  #b = rand()    # WARNING: Assumes random b in [0,1)
+  duration = duration_central #  * calc_effective_transit_duration_factor_for_impact_parameter_b(b,size_ratio)
   num_transit = calc_expected_num_transits(t,s,p,sim_param)
   cdpp = interpolate_cdpp_to_duration(t, duration)
   calc_snr_if_transit(t,depth,duration,cdpp, sim_param,num_transit=num_transit)
@@ -127,12 +129,21 @@ function calc_prob_detect_if_transit(t::KeplerTarget, depth::Real, duration::Rea
   return calc_prob_detect_if_transit(t, snr, sim_param, num_transit=num_transit)
 end
 
-function calc_prob_detect_if_transit(t::KeplerTarget, s::Integer, p::Integer, sim_param::SimParam)
+function calc_prob_detect_if_transit_central(t::KeplerTarget, s::Integer, p::Integer, sim_param::SimParam)
   size_ratio = t.sys[s].planet[p].radius/t.sys[s].star.radius
   depth = calc_transit_depth(t,s,p)
   duration_central = calc_transit_duration_central(t,s,p)
-  b = rand()    # WARNING: Assumes random b in [0,1)
-  duration = duration_central * calc_effective_transit_duration_factor_for_impact_parameter_b(b,size_ratio)
+  #b = rand()    # WARNING: Assumes random b in [0,1)
+  duration = duration_central #  * calc_effective_transit_duration_factor_for_impact_parameter_b(b,size_ratio)
+  ntr = calc_expected_num_transits(t,s,p,sim_param)
+  cdpp = interpolate_cdpp_to_duration(t, duration)
+  calc_prob_detect_if_transit(t,depth,duration,cdpp, sim_param, num_transit=ntr)
+end
+
+function calc_prob_detect_if_transit_with_actual_b(t::KeplerTarget, s::Integer, p::Integer, sim_param::SimParam)
+  size_ratio = t.sys[s].planet[p].radius/t.sys[s].star.radius
+  depth = calc_transit_depth(t,s,p)
+  duration = calc_transit_duration(t,s,p)
   ntr = calc_expected_num_transits(t,s,p,sim_param)
   cdpp = interpolate_cdpp_to_duration(t, duration)
   calc_prob_detect_if_transit(t,depth,duration,cdpp, sim_param, num_transit=ntr)
