@@ -148,7 +148,10 @@ function calc_transit_duration(ps::PlanetarySystemAbstract, pl::Integer)
   duration_ratio_for_impact_parameter = calc_transit_duration_factor_for_impact_parameter_b(b,size_ratio)
 
   # WARNING: This is technically an approximation (see Kipping 2010 Eqn 15).  It avoids small angle for non-grazing transits, but does use a variant of the small angle approximation for nearly and grazing transits.  
-  asin_arg = (arcsin_circ_central * duration_ratio_for_impact_parameter/radial_separation_over_a) 
+  asin_arg = (arcsin_circ_central * duration_ratio_for_impact_parameter/radial_separation_over_a)
+
+  #println(string("Old = ", duration_central_circ * vel_fac * sqrt((1-b)*(1+b)), " / New = ", duration_central_circ * radial_separation_over_a^2/sqrt_one_minus_e_sq * (asin_arg < 1.0 ? asin(asin_arg) : 1.0)))
+    
   duration = duration_central_circ * radial_separation_over_a^2/sqrt_one_minus_e_sq * (asin_arg < 1.0 ? asin(asin_arg) : 1.0)
 end
 calc_transit_duration(t::KeplerTarget, s::Integer, p::Integer ) = calc_transit_duration(t.sys[s],p)
