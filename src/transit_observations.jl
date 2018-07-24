@@ -206,7 +206,7 @@ function calc_transit_duration_kipping2010(ps::PlanetarySystemAbstract, pl::Inte
 
   #println(string("Old = ", duration_central_circ * vel_fac * sqrt((1-b)*(1+b)), " / New = ", duration_central_circ * radial_separation_over_a^2/sqrt_one_minus_e_sq * (asin_arg < 1.0 ? asin(asin_arg) : 1.0)))
     
-  duration = duration_central_circ * radial_separation_over_a^2/sqrt_one_minus_e_sq * (asin_arg < 1.0 ? asin(asin_arg) : 1.0)
+  duration = ps.orbit[pl].P /pi * radial_separation_over_a^2/sqrt_one_minus_e_sq * (asin_arg < 1.0 ? asin(asin_arg) : 1.0)
 end
 calc_transit_duration_kipping2010(t::KeplerTarget, s::Integer, p::Integer ) = calc_transit_duration_kipping2010(t.sys[s],p)
 
