@@ -155,9 +155,10 @@ function calc_ave_prob_detect_if_transit_from_snr(t::KeplerTarget, snr_central::
   const mes_threshold = 7.1                                                   # WARNING: Assuming 7.1 for all stars, durations
   const min_pdet_nonzero = 0.0                                                # TODO OPT: Figure out how to prevent a plethora of planets that are very unlikely to be detected due to using 0.0
   wf = kepler_window_function(num_transit, t.duty_cycle, min_transits=min_transits)   
+#=
   # Breaking integral into two sections [0,1-b_boundary) and [1-b_boundary,1], so need at least 5 points to evaluate integral via trapezoid rule
-  const num_impact_param_low_b = 20                            # Number of points to evaluate integral over [0,1-b_boundary) via trapezoid rule
-  const num_impact_param_high_b = (size_ratio<=0.05) ? 5 : 11  # Number of points to evaluate integral over [1-b_boudnary,1) via trapezoid rule.  If using 2*size_ratio for bondary for small planets, then keep this odd, so one point lands on 1-size_ratio.
+  const num_impact_param_low_b =  7                            # Number of points to evaluate integral over [0,1-b_boundary) via trapezoid rule
+  const num_impact_param_high_b = 5 # (size_ratio<=0.05) ? 5 : 11  # Number of points to evaluate integral over [1-b_boudnary,1) via trapezoid rule.  If using 2*size_ratio for bondary for small planets, then keep this odd, so one point lands on 1-size_ratio.
   @assert(num_impact_param_low_b >= 5)
   @assert(num_impact_param_high_b >= 3)
   const num_impact_param = num_impact_param_low_b+num_impact_param_high_b-1 # One point is shared
@@ -174,9 +175,11 @@ function calc_ave_prob_detect_if_transit_from_snr(t::KeplerTarget, snr_central::
   weight[num_impact_param] *= 0.5         # Upper endpoint of second integral
   #@assert isapprox(sum(weight),1.0)
 
-  ave_detection_efficiency = sum(weight .* map(b->detection_efficiency_model(snr_central*sqrt(calc_effective_transit_duration_factor_for_impact_parameter_b(b,size_ratio)), min_pdet_nonzero=min_pdet_nonzero),b) )    # WARNING:  Doesn't account for cdpp chaning for shorter duration transits 
+  ave_detection_efficiency = sum(weight .* map(b->detection_efficiency_model(snr_central*sqrt(calc_effective_transit_duration_factor_for_impact_parameter_b(b,size_ratio)), min_pdet_nonzero=min_pdet_nonzero),b)::Vector{Float64} )    # WARNING:  Doesn't account for cdpp chaning for shorter duration transits 
                                           # To accoutn for that should let snr<-snr*cdpp_central/cdpp(t,duration(b))
-  #=  
+=#
+#  #=  
+  const num_impact_param =  5                            # Number of points to evaluate integral over [0,1-b_boundary) via trapezoid rule
   ave_detection_efficiency = 0.5*detection_efficiency_model(snr_central, min_pdet_nonzero=min_pdet_nonzero)  # First term w/ b=0 & weight=0.5  
   for i in 1:(num_impact_param-1)    # WARNING: This assumes zero detection probability for b=1 transits.  See better strategy for integral above
     b = i/num_impact_param
@@ -184,7 +187,7 @@ function calc_ave_prob_detect_if_transit_from_snr(t::KeplerTarget, snr_central::
     ave_detection_efficiency += detection_efficiency_model(snr, min_pdet_nonzero=min_pdet_nonzero)
   end
   ave_detection_efficiency /= num_impact_param  
-  =#
+#  =#
   return wf*ave_detection_efficiency
 end
 

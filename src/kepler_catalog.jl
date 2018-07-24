@@ -73,20 +73,38 @@ function select_targets_one_obs(ps::PlanetarySystemAbstract)
  end
  return false
 end
+#=
+function select_targets_one_obs(ps::PlanetarySystemAbstract)
+  for pl in 1:length(ps.orbit)
+    if does_planet_transit(ps,pl)
+       return true
+    end
+  end
+  return false
+end
+=#
 
 # Remove undetected planets from physical catalog
 # TODO: OPT: Maybe create array of bools for which planets to keep, rather than splicing out non-detections?
 function generate_obs_targets(cat_phys::KeplerPhysicalCatalog, sim_param::SimParam )
   for t in 1:length(cat_phys.target)
+    kep_targ = cat_phys.target[t]
     for ps in 1:length(cat_phys.target[t].sys)
-      kep_targ = cat_phys.target[t].sys[ps]
-      for pl in length(kep_targ.orbit):-1:1    # Going in reverse since removing planets from end of list first is cheaper than starting at beginning
-        ecc::Float64 = kep_targ.orbit[pl].ecc
-	incl::Float64 = kep_targ.orbit[pl].incl
-   	a::Float64 = semimajor_axis(kep_targ,pl)
-   	Rstar::Float64 = rsol_in_au*kep_targ.star.radius
+      sys = kep_targ.sys[ps]
+      for pl in length(sys.orbit):-1:1    # Going in reverse since removing planets from end of list first is cheaper than starting at beginning
+        ecc::Float64 = sys.orbit[pl].ecc
+	incl::Float64 = sys.orbit[pl].incl
+   	a::Float64 = semimajor_axis(sys,pl)
+   	Rstar::Float64 = rsol_in_au*sys.star.radius
        
-   	if (Rstar < (a*(1-ecc)*(1+ecc))/(1+ecc*sin(kep_targ.orbit[pl].omega))*cos(incl)) || (rand() > calc_prob_detect_if_transit_with_actual_b(cat_phys.target[t], 1, pl, sim_param))
+        # TODO WARNING: CHECK WHAT SHOULD BE DOING HERE
+   	#if (Rstar < (a*(1-ecc)*(1+ecc))/(1+ecc*sin(sys.orbit[pl].omega))*cos(incl)) || (rand() > calc_prob_detect_if_transit_central(cat_phys.target[t], ps, pl, sim_param))
+   	if (Rstar < (a*(1-ecc)*(1+ecc))/(1+ecc*sin(sys.orbit[pl].omega))*cos(incl)) || (rand() > calc_prob_detect_if_transit_with_actual_b(cat_phys.target[t], ps, pl, sim_param))
+#=
+        does_it_transit = does_planet_transit(sys, pl)
+        pdet_if_tr = does_it_transit ? calc_prob_detect_if_transit_with_actual_b(kep_targ, ps, pl, sim_param) : 0.
+        if !does_it_transit || (rand()>pdet_if_tr)
+=#
     	  splice!(cat_phys.target[t].sys[ps].orbit, pl)
 	  splice!(cat_phys.target[t].sys[ps].planet, pl)
      	end
