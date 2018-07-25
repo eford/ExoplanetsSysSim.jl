@@ -306,14 +306,17 @@ function calc_target_obs_sky_ave(t::KeplerTarget, sim_param::SimParam)
         duration_central = calc_transit_duration_central(t,s,p)
         cdpp_central = interpolate_cdpp_to_duration(t, duration_central)
 	snr_central = calc_snr_if_transit(t, depth, duration_central, cdpp_central, sim_param, num_transit=ntr)
+        println("snr_central before calling calc_ave_prob_det = ", snr_central)
 	# TODO: COME BACK AND CHECK: WARNING: TRYING STUFF AROUND HERE
-        #pdet_ave = calc_ave_prob_detect_if_transit(t, snr_central, sim_param, num_transit=ntr)
-        pdet_ave = calc_ave_prob_detect_if_transit(t, snr_central, size_ratio, cdpp_central, sim_param, num_transit=ntr)
+        #pdet_ave = calc_ave_prob_detect_if_transit(t, snr_central, sim_param, num_transit=ntr) 
+        #pdet_ave = calc_prob_detect_if_transit(t, depth, duration_central, cdpp_central, sim_param, num_transit=ntr) # TODO WARNING NOT WHAT I WANT
+        pdet_ave = calc_ave_prob_detect_if_transit(t, snr_central, size_ratio, cdpp_central, sim_param, num_transit=ntr)  # WARNING SOMEHOW snr_central can become negative!?! inside function
         #pdet_ave = calc_ave_prob_detect_if_transit(t, depth, duration_central, size_ratio, sim_param, num_transit=ntr)
 	add_to_catalog = pdet_ave > min_detect_prob_to_be_included  # Include all planets with sufficient detection probability
 
+        #println("# Trying pdet_ave = ", pdet_ave, " snr_c= ",snr_central, " p= ",size_ratio, " cdpp= ",cdpp_central, " duration_c= ",duration_central, " ntr= ",ntr)
 
-	if add_to_catalog
+	if add_to_catalog 
 	   const hard_max_num_b_tries = 100
 	   max_num_b_tries = min_detect_prob_to_be_included == 0. ? hard_max_num_b_tries : min(hard_max_num_b_tries,convert(Int64,1/min_detect_prob_to_be_included))
            pdet_this_b = 0.0
@@ -329,6 +332,7 @@ function calc_target_obs_sky_ave(t::KeplerTarget, sim_param::SimParam)
 	      snr = snr_central * (cdpp_central/cdpp) * sqrt(transit_duration_factor) 
 	      #snr = snr_central * sqrt(transit_duration_factor)
               pdet_this_b = calc_prob_detect_if_transit(t, snr, sim_param, num_transit=ntr)
+              #println("# Added pdet_this = ", pdet_this_b, " snr= ",snr, " cdpp= ",cdpp, " duration= ",duration, " b=",b)
 
               if pdet_this_b > 0.0 
 	         pdet[p] = pdet_ave  
