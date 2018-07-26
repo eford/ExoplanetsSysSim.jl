@@ -407,7 +407,7 @@ end
 
 randtn() = rand(TruncatedNormal(0.0,1.0,-0.999,0.999))
 
-function transit_noise_model_no_noise(t::KeplerTarget, s::Integer, p::Integer, depth::Float64, duration::Float64, snr::Float64)   
+function transit_noise_model_no_noise(t::KeplerTarget, s::Integer, p::Integer, depth::Float64, duration::Float64, snr::Float64, num_tr::Real; b::Real = 0.0)   
   period = t.sys[s].orbit[p].P
   t0 = rand(Uniform(0.0,period))    # WARNING: Not being calculated from orbit
   sigma_period = 0.0
@@ -419,7 +419,7 @@ function transit_noise_model_no_noise(t::KeplerTarget, s::Integer, p::Integer, d
   return obs, sigma
 end
 
-function transit_noise_model_fixed_noise(t::KeplerTarget, s::Integer, p::Integer, depth::Float64, duration::Float64, snr::Float64, num_tr::Real) 
+function transit_noise_model_fixed_noise(t::KeplerTarget, s::Integer, p::Integer, depth::Float64, duration::Float64, snr::Float64, num_tr::Real; b::Real = 0.0) 
   period = t.sys[s].orbit[p].P
   t0 = rand(Uniform(0.0,period))   # WARNING: Not being calculated from orbit
 
@@ -442,11 +442,11 @@ function transit_noise_model_diagonal(t::KeplerTarget, s::Integer, p::Integer, d
 	one_minus_e2 = (1-t.sys[s].orbit[p].ecc)*(1+t.sys[s].orbit[p].ecc)
 	a_semimajor_axis = semimajor_axis(t.sys[s],p)
 	#b = a_semimajor_axis *cos(t.sys[s].orbit[p].incl)/ (t.sys[s].star.radius*rsol_in_au)
-        #b *= one_minus_e2/(1+t.sys[s].orbit[p].ecc*sin(t.sys[s].orbit[p].omega))
+	#b *= one_minus_e2/(1+t.sys[s].orbit[p].ecc*sin(t.sys[s].orbit[p].omega))
 	tau0 = t.sys[s].star.radius*period/(a_semimajor_axis*2pi)
 	tau0 *= sqrt(one_minus_e2)/(1+t.sys[s].orbit[p].ecc*sin(t.sys[s].orbit[p].omega))
 	r = t.sys[s].planet[p].radius/t.sys[s].star.radius
-        sqrt_one_minus_b2 = (0.0<=b<1.0) ? sqrt((1-b)*(1+b)) : 0.0
+	sqrt_one_minus_b2 = (0.0<=b<1.0) ? sqrt((1-b)*(1+b)) : 0.0
  	T = 2*tau0*sqrt_one_minus_b2
 	tau = 2*tau0*r/sqrt_one_minus_b2
 	Ttot = period
