@@ -285,7 +285,7 @@ function calc_summary_stats_obs_binned_rates(cat_obs::KeplerObsCatalog, param::S
       for j in 1:num_planets(cat_obs.target[i])
         period_list[n] = cat_obs.target[i].obs[j].period
         if obs_skyavg  
-          weight_list[n] = ExoplanetsSysSim.prob_detect(cat_obs.target[i].prob_detect,j) # CHECK WHAT THIS DOES
+          weight_list[n] = min(ExoplanetsSysSim.prob_detect(cat_obs.target[i].prob_detect,j), 1.0) # CHECK WHAT THIS DOES
         else
           weight_list[n] = 1.0
         end
@@ -299,7 +299,7 @@ function calc_summary_stats_obs_binned_rates(cat_obs::KeplerObsCatalog, param::S
     for i in idx_tranets
       for j in 1:num_planets(cat_obs.target[i])
         period_list[n] = cat_obs.target[i].obs[j].period
-          weight_list[n] = 1.0
+        weight_list[n] = 1.0
         radius_list[n] = sqrt(cat_obs.target[i].obs[j].depth)*cat_obs.target[i].star.radius
         n = n+1
       end
