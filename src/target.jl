@@ -26,8 +26,10 @@ flux(t::KeplerTarget) = sum(flux,t.sys)+t.contam
 
 
 function draw_asymmetric_normal(mu::Real, sig_plus::Real, sig_minus::Real)
+  @assert sig_minus >= zero(sig_minus)
   stdn = randn()
   mu + ( (stdn>=zero(stdn)) ? sig_plus*stdn : sig_minus*stdn )
+  #mu + ( (stdn>=zero(stdn)) ? sig_plus*stdn : abs(sig_minus)*stdn )
 end
 
 function make_cdpp_array(star_id::Integer)
