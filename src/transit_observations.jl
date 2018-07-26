@@ -332,7 +332,7 @@ function calc_target_obs_sky_ave(t::KeplerTarget, sim_param::SimParam)
               pdet_this_b = calc_prob_detect_if_transit(t, snr, sim_param, num_transit=ntr)
 
               if pdet_this_b >= threshold_pdet_ratio * pdet_central
-                  println("# Adding pdet_this_b = ", pdet_this_b, " pdet_c = ", pdet_central, " snr= ",snr, " cdpp= ",cdpp, " duration= ",duration, " b=",b, " u01= ", threshold_pdet_ratio)
+                  #println("# Adding pdet_this_b = ", pdet_this_b, " pdet_c = ", pdet_central, " snr= ",snr, " cdpp= ",cdpp, " duration= ",duration, " b=",b, " u01= ", threshold_pdet_ratio)
 	         pdet[p] = pdet_ave  
                  obs[i], sigma[i] = transit_noise_model(t, s, p, depth, duration, snr, ntr, b=b)  
                  #id[i] = tuple(convert(Int32,s),convert(Int32,p))
