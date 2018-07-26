@@ -162,18 +162,19 @@ function calc_ave_prob_detect_if_transit_from_snr(t::KeplerTarget, snr_central::
   weight[(num_impact_param_low_b+1):num_impact_param] = b_boundary/(num_impact_param_high_b-1)
   weight[num_impact_param] *= 0.5         # Upper endpoint of second integral
   #@assert isapprox(sum(weight),1.0)
-
+    
   ave_detection_efficiency = sum(weight .* map(b->detection_efficiency_model(snr_central*sqrt(calc_effective_transit_duration_factor_for_impact_parameter_b(b,size_ratio)), min_pdet_nonzero=min_pdet_nonzero),b) )    # WARNING:  Doesn't account for cdpp chaning for shorter duration transits 
                                           # To accoutn for that should let snr<-snr*cdpp_central/cdpp(t,duration(b))
-  #=  
+  #=
   ave_detection_efficiency = 0.5*detection_efficiency_model(snr_central, min_pdet_nonzero=min_pdet_nonzero)  # First term w/ b=0 & weight=0.5  
   for i in 1:(num_impact_param-1)    # WARNING: This assumes zero detection probability for b=1 transits.  See better strategy for integral above
     b = i/num_impact_param
     snr = snr_central*sqrt(sqrt((1-b)*(1+b)))
     ave_detection_efficiency += detection_efficiency_model(snr, min_pdet_nonzero=min_pdet_nonzero)
   end
-  ave_detection_efficiency /= num_impact_param  
+  ave_detection_efficiency /= num_impact_param
   =#
+
   return wf*ave_detection_efficiency
 end
 

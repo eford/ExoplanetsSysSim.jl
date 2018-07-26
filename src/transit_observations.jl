@@ -292,7 +292,7 @@ function calc_target_obs_sky_ave(t::KeplerTarget, sim_param::SimParam)
               #pdet_this_b = calc_prob_detect_if_transit(t, snr, sim_param, num_transit=ntr)
               if pdet_this_b > 0.0 
 	         pdet[p] = pdet_ave  
-                 obs[i], sigma[i] = transit_noise_model(t, s, p, depth, duration, snr, ntr)   # WARNING: noise properties don't have correct dependance on b
+                 obs[i], sigma[i] = transit_noise_model(t, s, p, depth, duration, snr, ntr, b=b)   # WARNING: noise properties don't have correct dependance on b
                  #id[i] = tuple(convert(Int32,s),convert(Int32,p))
       	         i += 1
                  break 
@@ -434,19 +434,19 @@ function transit_noise_model_fixed_noise(t::KeplerTarget, s::Integer, p::Integer
   return obs, sigma
 end
 
-function transit_noise_model_diagonal(t::KeplerTarget, s::Integer, p::Integer, depth::Float64, duration::Float64, snr::Float64, num_tr::Real) 
+function transit_noise_model_diagonal(t::KeplerTarget, s::Integer, p::Integer, depth::Float64, duration::Float64, snr::Float64, num_tr::Real; b::Real = calc_impact_parameter(t.sys[s],p)) 
   period = t.sys[s].orbit[p].P
   t0 = rand(Uniform(0.0,period))    # WARNING: Not being calculated from orbit
 
 	# Use variable names from Price & Rogers
 	one_minus_e2 = (1-t.sys[s].orbit[p].ecc)*(1+t.sys[s].orbit[p].ecc)
 	a_semimajor_axis = semimajor_axis(t.sys[s],p)
-	b = a_semimajor_axis *cos(t.sys[s].orbit[p].incl)/ (t.sys[s].star.radius*rsol_in_au)
-        b *= one_minus_e2/(1+t.sys[s].orbit[p].ecc*sin(t.sys[s].orbit[p].omega))
+	#b = a_semimajor_axis *cos(t.sys[s].orbit[p].incl)/ (t.sys[s].star.radius*rsol_in_au)
+        #b *= one_minus_e2/(1+t.sys[s].orbit[p].ecc*sin(t.sys[s].orbit[p].omega))
 	tau0 = t.sys[s].star.radius*period/(a_semimajor_axis*2pi)
 	tau0 *= sqrt(one_minus_e2)/(1+t.sys[s].orbit[p].ecc*sin(t.sys[s].orbit[p].omega))
 	r = t.sys[s].planet[p].radius/t.sys[s].star.radius
-	sqrt_one_minus_b2 = (0.0<=b<1.0) ? sqrt((1-b)*(1+b)) : 0.0
+        sqrt_one_minus_b2 = (0.0<=b<1.0) ? sqrt((1-b)*(1+b)) : 0.0
  	T = 2*tau0*sqrt_one_minus_b2
 	tau = 2*tau0*r/sqrt_one_minus_b2
 	Ttot = period
