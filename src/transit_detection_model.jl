@@ -89,7 +89,6 @@ detection_efficiency_model = detection_efficiency_dr25_simple
 
 
 function interpolate_cdpp_to_duration(t::KeplerTarget, duration::Real)
-   #return t.cdpp[1,1]   # TODO WARNING FIX ONCE DONE DEBUGGING
    duration_in_hours = duration *24.0
    dur_idx = searchsortedlast(cdpp_durations,duration_in_hours)   # cdpp_durations is defined in constants.jl
    if dur_idx <= 0 
@@ -112,17 +111,14 @@ end
 function calc_snr_if_transit_central(t::KeplerTarget, s::Integer, p::Integer, sim_param::SimParam)
   depth = calc_transit_depth(t,s,p)
   duration_central = calc_transit_duration_central(t,s,p)
-  #b = rand()    # WARNING: Assumes random b in [0,1)
-  duration = duration_central #  * calc_effective_transit_duration_factor_for_impact_parameter_b(b,size_ratio)
+  cdpp = interpolate_cdpp_to_duration(t, duration_central)
   num_transit = calc_expected_num_transits(t,s,p,sim_param)
-  cdpp = interpolate_cdpp_to_duration(t, duration)
-  calc_snr_if_transit(t,depth,duration,cdpp, sim_param,num_transit=num_transit)
+  calc_snr_if_transit(t,depth,duration_central,cdpp, sim_param,num_transit=num_transit)
 end
 
 function calc_prob_detect_if_transit(t::KeplerTarget, snr::Real, sim_param::SimParam; num_transit::Real = 1)
   const min_transits = 3.0                                                    # WARNING: Hard coded 3 transit minimum
-  const mes_threshold = 7.1                                                   # WARNING: Assuming 7.1 for all stars, durations
-  const min_pdet_nonzero = 0.0                                                # TODO OPT: Figure out how to prevent a plethora of planets that are very unlikely to be detected due to using 0.0
+  const min_pdet_nonzero = 1.0e-4                                                # TODO OPT: Figure out how to prevent a plethora of planets that are very unlikely to be detected due to using 0.0
   wf = kepler_window_function(num_transit, t.duty_cycle, min_transits=min_transits)   # TODO SCI DETAIL: Replace statistical model with checking actual transit times for long period planets
   return wf*detection_efficiency_model(snr, min_pdet_nonzero=min_pdet_nonzero)	
 end
@@ -133,37 +129,33 @@ function calc_prob_detect_if_transit(t::KeplerTarget, depth::Real, duration::Rea
 end
 
 function calc_prob_detect_if_transit_central(t::KeplerTarget, s::Integer, p::Integer, sim_param::SimParam)
-  size_ratio = t.sys[s].planet[p].radius/t.sys[s].star.radius
   depth = calc_transit_depth(t,s,p)
   duration_central = calc_transit_duration_central(t,s,p)
-  #b = rand()    # WARNING: Assumes random b in [0,1)
-  duration = duration_central #  * calc_effective_transit_duration_factor_for_impact_parameter_b(b,size_ratio)
+  cdpp = interpolate_cdpp_to_duration(t, duration_central)
   ntr = calc_expected_num_transits(t,s,p,sim_param)
-  cdpp = interpolate_cdpp_to_duration(t, duration)
-  calc_prob_detect_if_transit(t,depth,duration,cdpp, sim_param, num_transit=ntr)
+  calc_prob_detect_if_transit(t,depth,duration_central,cdpp, sim_param, num_transit=ntr)
 end
 
 function calc_prob_detect_if_transit_with_actual_b(t::KeplerTarget, s::Integer, p::Integer, sim_param::SimParam)
   size_ratio = t.sys[s].planet[p].radius/t.sys[s].star.radius
   depth = calc_transit_depth(t,s,p)
   duration = calc_transit_duration(t,s,p)
-  ntr = calc_expected_num_transits(t,s,p,sim_param)
   cdpp = interpolate_cdpp_to_duration(t, duration)
+  ntr = calc_expected_num_transits(t,s,p,sim_param)
   calc_prob_detect_if_transit(t,depth,duration,cdpp, sim_param, num_transit=ntr)
 end
 
 # Compute probability of detection if we average over impact parameters b~U[0,1)
-function calc_ave_prob_detect_if_transit_from_snr(t::KeplerTarget, snr_central::Real, size_ratio::Real, cdpp_central::Real, sim_param::SimParam; num_transit::Real = 1)
+function calc_ave_prob_detect_if_transit_from_snr(t::KeplerTarget, snr_central::Real, duration_central::Real, size_ratio::Real, cdpp_central::Real, sim_param::SimParam; num_transit::Real = 1)
   const min_transits = 3.0                                                    # WARNING: Hard coded 3 transit minimum
-  const mes_threshold = 7.1                                                   # WARNING: Assuming 7.1 for all stars, durations
-  const min_pdet_nonzero = 0.0                                                # TODO OPT: Figure out how to prevent a plethora of planets that are very unlikely to be detected due to using 0.0
+  const min_pdet_nonzero = 1.0e-4
   wf = kepler_window_function(num_transit, t.duty_cycle, min_transits=min_transits)   
-  #println("snr_c before dem = ", snr_central)
-  dem = detection_efficiency_model(snr_central, min_pdet_nonzero=min_pdet_nonzero)
-  if dem<=0.0
-     println("snr_c= ", snr_central, " dem_c= ",dem, " wf= ",wf)
-  end
-  #return wf*dem
+  
+  detection_efficiency_central = detection_efficiency_model(snr_central, min_pdet_nonzero=min_pdet_nonzero) 
+  if wf*detection_efficiency_central <= min_pdet_nonzero
+     return 0.
+  end 
+
   # Breaking integral into two sections [0,1-b_boundary) and [1-b_boundary,1], so need at least 5 points to evaluate integral via trapezoid rule
   const num_impact_param_low_b =  7                            # Number of points to evaluate integral over [0,1-b_boundary) via trapezoid rule
   const num_impact_param_high_b = 5 # (size_ratio<=0.05) ? 5 : 11  # Number of points to evaluate integral over [1-b_boudnary,1) via trapezoid rule.  If using 2*size_ratio for bondary for small planets, then keep this odd, so one point lands on 1-size_ratio.
@@ -183,28 +175,25 @@ function calc_ave_prob_detect_if_transit_from_snr(t::KeplerTarget, snr_central::
   weight[num_impact_param] *= 0.5         # Upper endpoint of second integral
   @assert isapprox(sum(weight),1.0)
 
-  ave_detection_efficiency = sum(weight .* map(b->detection_efficiency_model(snr_central*sqrt(calc_effective_transit_duration_factor_for_impact_parameter_b(b,size_ratio)), min_pdet_nonzero=min_pdet_nonzero),b)::Vector{Float64} )    # WARNING:  Doesn't account for cdpp chaning for shorter duration transits 
-                                          # To accoutn for that should let snr<-snr*cdpp_central/cdpp(t,duration(b))
+  function integrand(b::Real) 
+     depth_factor = calc_depth_correction_for_grazing_transit(b,size_ratio)
+     duration_factor = calc_transit_duration_factor_for_impact_parameter_b(b,size_ratio) 
+     cdpp = interpolate_cdpp_to_duration(t,duration_central*duration_factor)
+     snr_factor = depth_factor*sqrt(duration_factor)*(cdpp_central/cdpp)
+     detection_efficiency_model(snr_central*snr_factor, min_pdet_nonzero=min_pdet_nonzero)
+  end 
 
-#=  
-  const num_impact_param =  5                            # Number of points to evaluate integral over [0,1-b_boundary) via trapezoid rule
-  ave_detection_efficiency = 0.5*detection_efficiency_model(snr_central, min_pdet_nonzero=min_pdet_nonzero)  # First term w/ b=0 & weight=0.5  
-  for i in 1:(num_impact_param-1)    # WARNING: This assumes zero detection probability for b=1 transits.  See better strategy for integral above
-    b = i/num_impact_param
-    snr = snr_central*sqrt(sqrt((1-b)*(1+b)))
-    ave_detection_efficiency += detection_efficiency_model(snr, min_pdet_nonzero=min_pdet_nonzero)
-  end
-  ave_detection_efficiency /= num_impact_param  
-=#
+  ave_detection_efficiency = sum(weight .* map(integrand,b)::Vector{Float64} )    # WARNING:  Doesn't account for cdpp chaning for shorter duration transits 
+  #ave_detection_efficiency = sum(weight .* map(b->detection_efficiency_model(snr_central*sqrt(calc_effective_transit_duration_factor_for_impact_parameter_b(b,size_ratio)), min_pdet_nonzero=min_pdet_nonzero),b)::Vector{Float64} )    # WARNING:  Doesn't account for cdpp chaning for shorter duration transits 
+
   return wf*ave_detection_efficiency
-  #detection_efficiency_model(snr_central*sqrt(calc_effective_transit_duration_factor_for_impact_parameter_b(b,size_ratio)), min_pdet_nonzero=min_pdet_nonzero)
-  #detection_efficiency_model(snr_central, min_pdet_nonzero=min_pdet_nonzero)
 end
+
 
 function calc_ave_prob_detect_if_transit(t::KeplerTarget, depth::Real, duration_central::Real, size_ratio::Real, sim_param::SimParam; num_transit::Real = 1)
   cdpp_central = interpolate_cdpp_to_duration(t, duration_central)
   snr_central = calc_snr_if_transit(t,depth,duration_central,cdpp_central, sim_param, num_transit=num_transit)
-  return calc_ave_prob_detect_if_transit_from_snr(t, snr_central, size_ratio, cdpp_central, sim_param, num_transit=num_transit)
+  return calc_ave_prob_detect_if_transit_from_snr(t, snr_central, duration_central, size_ratio, cdpp_central, sim_param, num_transit=num_transit)
 end
 
 function calc_ave_prob_detect_if_transit(t::KeplerTarget, s::Integer, p::Integer, sim_param::SimParam)
