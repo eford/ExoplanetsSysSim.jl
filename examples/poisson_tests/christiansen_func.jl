@@ -49,6 +49,7 @@ function setup_sim_param_christiansen(args::Vector{String} = Array{String}(0) ) 
     add_param_fixed(sim_param,"sigma_incl",2.0)   # degrees 
     add_param_fixed(sim_param,"calc_target_obs_sky_ave",ExoplanetsSysSim.calc_target_obs_sky_ave)
     add_param_fixed(sim_param,"calc_target_obs_single_obs",ExoplanetsSysSim.calc_target_obs_single_obs)
+    #add_param_fixed(sim_param,"transit_noise_model",ExoplanetsSysSim.transit_noise_model_no_noise)
     add_param_fixed(sim_param,"transit_noise_model",ExoplanetsSysSim.transit_noise_model_diagonal)
     return sim_param
 end
@@ -280,6 +281,7 @@ function calc_summary_stats_obs_binned_rates(cat_obs::KeplerObsCatalog, param::S
 
   if !trueobs_cat
     for i in idx_tranets
+      #Rstar = trueobs_cat ? cat_obs.target[i].star.radius : ExoplanetsSysSim.StellarTable.star_table(cat_obs.target[i].star.id, :radius) 
       for j in 1:num_planets(cat_obs.target[i])
         period_list[n] = cat_obs.target[i].obs[j].period
         if obs_skyavg  
@@ -289,6 +291,7 @@ function calc_summary_stats_obs_binned_rates(cat_obs::KeplerObsCatalog, param::S
         end
         #radius_list[n] = sqrt(cat_obs.target[i].obs[j].depth)*cat_obs.target[i].star.radius
         radius_list[n] = sqrt(cat_obs.target[i].obs[j].depth)*ExoplanetsSysSim.StellarTable.star_table(cat_obs.target[i].star.id, :radius)
+        #radius_list[n] = sqrt(cat_obs.target[i].obs[j].depth)*Rstar
         n = n+1
       end
     end
@@ -296,7 +299,7 @@ function calc_summary_stats_obs_binned_rates(cat_obs::KeplerObsCatalog, param::S
     for i in idx_tranets
       for j in 1:num_planets(cat_obs.target[i])
         period_list[n] = cat_obs.target[i].obs[j].period
-        weight_list[n] = 1.0
+          weight_list[n] = 1.0
         radius_list[n] = sqrt(cat_obs.target[i].obs[j].depth)*cat_obs.target[i].star.radius
         n = n+1
       end
@@ -349,24 +352,27 @@ function calc_distance_vector_binned(summary1::CatalogSummaryStatistics, summary
     np_bin = zeros(length(np1))
 
     ### Bernoulli distance
-    # bin_match_list = summary2.cache["bin_match_list"]
-    # @assert length(bin_match_list) == length(np1) 
-    # np2 = zeros(Int64,length(np1))
+    bin_match_list = summary2.cache["bin_match_list"]
+    @assert length(bin_match_list) == length(np1) 
+    np2 = zeros(Int64,length(np1))
     ###  
 
     for n in 1:length(np1)
         #np_bin[n] = dist_L1_abs(np1[n]/summary1.stat["num targets"], np2[n]/summary2.stat["num targets"])
-        np_bin[n] = dist_L2_abs(np1[n]/summary1.stat["num targets"], np2[n]/summary2.stat["num targets"])
+        #np_bin[n] = dist_L2_abs(np1[n]/summary1.stat["num targets"], np2[n]/summary2.stat["num targets"])
         #np_bin[n] = distance_poisson_draw(np2[n]/summary2.stat["num targets"]*summary1.stat["num targets"], convert(Int64, np1[n]))
 
         ### Bernoulli distance
-        # num_pl_match_p_and_r = length(bin_match_list[n])
-        # for i in 1:num_pl_match_p_and_r
-        #    pl_id = bin_match_list[n][i]
-        #    prob_detect = summary2.stat["weight_list"][pl_id]
-        #    np2[n] += rand(Bernoulli(prob_detect))
-        # end
-        # np_bin[n] = dist_L2_abs(np1[n]/summary1.stat["num targets"], np2[n]/summary2.stat["num targets"])
+        num_pl_match_p_and_r = length(bin_match_list[n])
+        num_draws = floor(Int64, num_pl_match_p_and_r * (summary1.stat["num targets"]/summary2.stat["num targets"]))
+        #for i in 1:num_pl_match_p_and_r
+        for i in 1:num_draws
+           pl_id = bin_match_list[n][1+i%num_pl_match_p_and_r]
+           prob_detect = summary2.stat["weight_list"][pl_id]
+           np2[n] += rand(Bernoulli(prob_detect))
+        end
+        #np_bin[n] = dist_L2_abs(np1[n]/summary1.stat["num targets"], np2[n]/summary2.stat["num targets"])
+        np_bin[n] = dist_L2_abs(np1[n]/summary1.stat["num targets"], np2[n]/summary1.stat["num targets"])
         ###
 
       #println("True # [Bin ", n,"] = ",np1[n],", Expected # [Bin ", n,"] = ",np2[n])
