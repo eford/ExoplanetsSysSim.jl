@@ -247,9 +247,7 @@ function calc_simulated_system_detection_probs(ps::PlanetarySystemSingleStar, pr
                     end
                 end
                 prob_det_each = zeros(n)
-                for p in 1:n
-                    prob_det_each = prob_det_if_tr[idx_detectable[p]]
-                end
+                prob_det_each = prob_det_if_tr[idx_detectable]
                 print(string("Det. prob. = ",prob_det_each, "\n\n"))
                 #quit()
             end
