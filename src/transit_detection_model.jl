@@ -17,7 +17,7 @@ function real_binom(k::Real, BigM::Real, f::Real)
     return x
 end
   
-function kepler_window_function(num_transits_no_gaps::Real, duty_cycle::Real; min_transits::Real = 3.0)
+function kepler_window_function(num_transits_no_gaps::Real, duty_cycle::Real; min_transits::Real = 3.0)  # TODO: SCI DARIN:  This is where we'd use your window function data
   if num_transits_no_gaps < min_transits
      return 0.0
   else
@@ -64,7 +64,7 @@ end
 function detection_efficiency_christiansen2015(mes::Real; mes_threshold::Real = 7.1, min_pdet_nonzero::Float64 = 0.0)
    const a =  4.65  # from code for detection_efficiency(...) at https://github.com/christopherburke/KeplerPORTs/blob/master/KeplerPORTs_utils.py
    const b =  0.98
-   #const a =  4.35 # from arxiv abstract. TODO DETAIL: Figure out which is better.  Informal testing showed it didn't matter
+   #const a =  4.35 # from arxiv abstract. Informal testing showed it didn't matter
    #const b =  1.05
    usemes = max(0.0,mes - 7.1 - (mes_threshold - 7.1))
    pdet = cdf(Gamma(a,b), usemes)
@@ -118,7 +118,7 @@ end
 
 function calc_prob_detect_if_transit(t::KeplerTarget, snr::Real, sim_param::SimParam; num_transit::Real = 1)
   const min_transits = 3.0                                                    # WARNING: Hard coded 3 transit minimum
-  const min_pdet_nonzero = 1.0e-4                                                # TODO OPT: Figure out how to prevent a plethora of planets that are very unlikely to be detected due to using 0.0
+  const min_pdet_nonzero = 1.0e-4                                                # TODO OPT: Consider raising threshold to prevent a plethora of planets that are very unlikely to be detected due to using 0.0 or other small value here
   wf = kepler_window_function(num_transit, t.duty_cycle, min_transits=min_transits)   # TODO SCI DETAIL: Replace statistical model with checking actual transit times for long period planets
   return wf*detection_efficiency_model(snr, min_pdet_nonzero=min_pdet_nonzero)	
 end

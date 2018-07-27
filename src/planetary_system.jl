@@ -16,7 +16,6 @@ if !isdefined(:PlanetarySystemAbstract)
     #  new(s,p,o)
     #end
   end
-  #typealias PlanetarySystemSingleStar  PlanetarySystem{SingleStar}
   PlanetarySystemSingleStar = PlanetarySystem{SingleStar}
 
 end
@@ -62,7 +61,7 @@ function generate_num_planets_poisson(lambda::Real, max_planets::Integer; min_pl
   if lambda < min_planets*1e-3
       return min_planets
   end
-  bug_fixed = false # TODO: true case should work, but Danley found bug in Distributions package.  Revert once fixed for speed.
+  bug_fixed = false # TODO OPT: true case should work, but Danley found bug in Distributions package.  Revert once fixed for speed.
   local n
   if bug_fixed
      d = Distributions.Truncated(Distributions.Poisson(lambda),min_planets,max_planets)
@@ -89,7 +88,7 @@ function generate_num_planets_poisson(s::Star, sim_param::SimParam)
   generate_num_planets_poisson(lambda,max_tranets_in_sys)
 end
 
-function generate_period_and_sizes_log_normal(s::Star, sim_param::SimParam; num_pl::Integer = 1)  # TODO SCI:  IMPORTANT: Improve how periods and sizes are drawn
+function generate_period_and_sizes_log_normal(s::Star, sim_param::SimParam; num_pl::Integer = 1)  # TODO USER SCI:  User should make sure planetary properties are being drawn appropriately for their scientific purposes
     const mu_log_r::Float64 = get_real(sim_param,"mean_log_planet_radius")
     const sigma_log_r::Float64 = get_real(sim_param,"sigma_log_planet_radius")
     const mu_log_P::Float64 = get_real(sim_param,"mean_log_planet_period")
@@ -108,7 +107,7 @@ function generate_period_and_sizes_log_normal(s::Star, sim_param::SimParam; num_
     #Rlist = rand(rdist,num_pl)
     #Plist = rand(Pdist,num_pl)
     #idx_keep = find(i->(min_radius<=Rlist[i]<=max_radius) && (min_period<=Plist[i]<=max_period), 1:num_pl )
-    #return Plist[idx_keep], Rlist[idx_keep]  # replaced because want to return exactly num_pl
+    #return Plist[idx_keep], Rlist[idx_keep]  # replaced because want to return exactly num_pl.  Could use Truncated to restore above code.
     Rlist = zeros(num_pl)
     Plist = zeros(num_pl)
     for i in 1:num_pl

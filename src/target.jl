@@ -38,7 +38,7 @@ function make_cdpp_array(star_id::Integer)
 end
  
 function set_window_function_id(star_id::Integer)
-  wf_id = 0 # TODO: Set to index containing window function information from stellar table
+  wf_id = 0 # TODO: DARIN Set to index containing window function information from stellar table
 end
 
 
