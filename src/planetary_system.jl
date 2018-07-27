@@ -283,16 +283,18 @@ function generate_planetary_system_hardcoded_example(star::StarAbstract, sim_par
     pl = Array{Planet}(length(idx))
     orbit = Array{Orbit}(length(idx))
     a = map(i->semimajor_axis(Plist[i],star.mass),idx)
-    max_e = Array(Float64,length(idx))
+    max_e = ones(length(idx))
     max_e_factor = 0.999 # A factor just less than 1 to prevent numerical issues with near-crossing orbits
-    for i in 1:length(a)
-        if i==1
+    if length(a)>=2
+       for i in 1:length(a)
+         if i==1
            max_e[i] = max_e_factor*(1-a[i]/a[i+1])/(1+a[i]/a[i+1])
-        elseif i==length(a)
+         elseif i==length(a)
            max_e[i] = max_e_factor*(1-a[i-1]/a[i])/(1+a[i-1]/a[i])
-        else
+         else
            max_e[i] = max_e_factor*min( (1-a[i]/a[i+1])/(1+a[i]/a[i+1]), (1-a[i-1]/a[i])/(1+a[i-1]/a[i]) ) 
-        end
+         end
+       end
     end
     for i in 1:length(idx)
       # if verbose   println("i=",i," idx=",idx," Plist=",Plist[idx] );     end
@@ -335,6 +337,20 @@ function generate_planetary_system_uncorrelated_incl(star::StarAbstract, sim_par
 
     pl = Array{Planet}(length(idx))
     orbit = Array{Orbit}(length(idx))
+    a = map(i->semimajor_axis(Plist[i],star.mass),idx)
+    max_e = ones(length(idx))
+    max_e_factor = 0.999 # A factor just less than 1 to prevent numerical issues with near-crossing orbits
+    if length(a)>=2
+       for i in 1:length(a)
+          if i==1 
+            max_e[i] = max_e_factor*(1-a[i]/a[i+1])/(1+a[i]/a[i+1])
+          elseif i==length(a)
+            max_e[i] = max_e_factor*(1-a[i-1]/a[i])/(1+a[i-1]/a[i])
+          else
+            max_e[i] = max_e_factor*min( (1-a[i]/a[i+1])/(1+a[i]/a[i+1]), (1-a[i-1]/a[i])/(1+a[i-1]/a[i]) ) 
+          end
+        end
+    end
     for i in 1:length(idx)
       # if verbose   println("i=",i," idx=",idx," Plist=",Plist[idx] );     end
       P = Plist[idx[i]]
@@ -342,7 +358,7 @@ function generate_planetary_system_uncorrelated_incl(star::StarAbstract, sim_par
       if haskey(sim_param,"sigma_hk_one") && haskey(sim_param,"sigma_hk_multi")
          sigma_ecc = num_pl == 1 ? get_real(sim_param,"sigma_hk_one") : get_real(sim_param,"sigma_hk_multi")
       end
-      (ecc::Float64,  omega::Float64) = generate_e_omega(sim_param)
+      (ecc::Float64,  omega::Float64) = generate_e_omega(sim_param, max_e=max_e[i])
       incl::Float64 = acos(rand())
       orbit[i] = Orbit(P,ecc,incl,omega,2pi*rand(),2pi*rand())
       # set!(orbit[idx[i]],P,ecc,incl,omega,2pi*rand(),2pi*rand())
