@@ -214,9 +214,9 @@ function generate_period_and_sizes_power_law(s::Star, sim_param::SimParam; num_p
 end
 
 
-function generate_e_omega_rayleigh(sigma_hk::Float64)
+function generate_e_omega_rayleigh(sigma_hk::Float64; max_e::Float64 = 1.0)
   h = k = 1.0
-  while h*h+k*k >= 1.0
+  while h*h+k*k >= max_e*max_e
     h = sigma_hk*randn()
     k = sigma_hk*randn()
   end
@@ -257,11 +257,23 @@ function generate_planetary_system_hardcoded_example(star::StarAbstract, sim_par
 
     pl = Array{Planet}(length(idx))
     orbit = Array{Orbit}(length(idx))
+    a = map(i->semimajor_axis(Plist[i],star.mass),idx)
+    max_e = Array(Float64,length(idx))
+    max_e_factor = 0.999 # A factor just less than 1 to prevent numerical issues with near-crossing orbits
+    for i in 1:length(a)
+        if i==1
+           max_e[i] = max_e_factor*(1-a[i]/a[i+1])/(1+a[i]/a[i+1])
+        elseif i==length(a)
+           max_e[i] = max_e_factor*(1-a[i-1]/a[i])/(1+a[i-1]/a[i])
+        else
+           max_e[i] = max_e_factor*min( (1-a[i]/a[i+1])/(1+a[i]/a[i+1]), (1-a[i-1]/a[i])/(1+a[i-1]/a[i]) ) 
+        end
+    end
     for i in 1:length(idx)
       # if verbose   println("i=",i," idx=",idx," Plist=",Plist[idx] );     end
       P = Plist[idx[i]]
       Rpl = Rlist[idx[i]]
-      (ecc::Float64,  omega::Float64) = generate_e_omega(sim_param)
+      (ecc::Float64,  omega::Float64) = generate_e_omega(sim_param, max_e=max_e[i])
       incl::Float64 = acos(rand())
       orbit[i] = Orbit(P,ecc,incl,omega,2pi*rand(),2pi*rand())
       mass::Float64 = generate_planet_mass_from_radius(Rpl, star, orbit[i], sim_param)
