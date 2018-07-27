@@ -103,11 +103,13 @@ function distance_sum_of_bernoulli_draws(num_pl_obs::Integer, num_targets_obs::I
        prob_detect = min(prob_detect_list[pl_id],1.0)
        num_detect_sim += sum(rand(Bernoulli(prob_detect),num_draws_all))
    end
-   # If number of targets observed is not a multiple of number of targets simulated, then pick a random set to make total number of draws equal
-   for i in (num_targets_sim*num_draws_all+1):num_targets_obs
-       pl_id = bin_match_list[rand(1:num_pl_match)]
-       prob_detect = min(prob_detect_list[pl_id],1.0)
-       num_detect_sim += rand(Bernoulli(prob_detect))
+   # If number of targets observed is not a multiple of number of targets simulated, then pick a random set to make total number of draws equal (as long as there are some planets to choose from)
+   if num_pl_match >= 1 
+      for i in (num_targets_sim*num_draws_all+1):num_targets_obs
+          pl_id = bin_match_list[rand(1:num_pl_match)]
+          prob_detect = min(prob_detect_list[pl_id],1.0)
+          num_detect_sim += rand(Bernoulli(prob_detect))
+       end
    end
    distance = dist_L2_abs(num_pl_obs/num_targets_obs, num_detect_sim/num_targets_obs)
 end
