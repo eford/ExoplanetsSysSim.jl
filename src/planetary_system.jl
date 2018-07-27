@@ -214,7 +214,24 @@ function generate_period_and_sizes_power_law(s::Star, sim_param::SimParam; num_p
 end
 
 
-function generate_e_omega_rayleigh(sigma_hk::Float64; max_e::Float64 = 1.0)
+function TruncatedUpper(d::Distributions.UnivariateDistribution, u::Float64)
+    zero(u) < u || error("lower bound should be less than upper bound.")
+    lcdf = zero(u)
+    ucdf = isinf(u) ? one(u) : cdf(d, u)
+    tp = ucdf - lcdf
+    Distributions.Truncated{typeof(d),Distributions.value_support(typeof(d))}(d, zero(u), u, lcdf, ucdf, tp, log(tp))
+end
+
+
+function generate_e_omega_rayleigh_direct(sigma_hk::Float64; max_e::Float64 = 1.0)
+  @assert(0<max_e<=1.0)
+  ecc = rand( TruncatedUpper(Rayleigh(sigma_hk),max_e) )
+  w = 2pi*rand()
+  return ecc, w
+end
+
+function generate_e_omega_rayleigh_two_gaussians(sigma_hk::Float64; max_e::Float64 = 1.0)
+  @assert(0<max_e<=1.0)
   h = k = 1.0
   while h*h+k*k >= max_e*max_e
     h = sigma_hk*randn()
@@ -225,9 +242,17 @@ function generate_e_omega_rayleigh(sigma_hk::Float64; max_e::Float64 = 1.0)
   return ecc, w
 end
 
-function generate_e_omega_rayleigh(sim_param::SimParam)
+function generate_e_omega_rayleigh(sigma_hk::Float64; max_e::Float64 = 1.0)
+   if max_e > sigma_hk
+      return generate_e_omega_rayleigh_two_gaussians(sigma_hk,max_e=max_e)
+   else
+      return generate_e_omega_rayleigh_direct(sigma_hk,max_e=max_e)
+   end
+end
+
+function generate_e_omega_rayleigh(sim_param::SimParam; max_e::Float64 = 1.0)
   sigma_hk::Float64 = get_real(sim_param,"sigma_hk")
-  generate_e_omega_rayleigh(sigma_hk)
+  generate_e_omega_rayleigh(sigma_hk, max_e=max_e)
 end
 
 function generate_planetary_system_hardcoded_example(star::StarAbstract, sim_param::SimParam; verbose::Bool = false)
