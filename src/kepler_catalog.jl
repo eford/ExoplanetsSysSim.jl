@@ -99,12 +99,11 @@ function generate_obs_targets(cat_phys::KeplerPhysicalCatalog, sim_param::SimPar
        
         # TODO WARNING: CHECK WHAT SHOULD BE DOING HERE
    	#if (Rstar < (a*(1-ecc)*(1+ecc))/(1+ecc*sin(sys.orbit[pl].omega))*cos(incl)) || (rand() > calc_prob_detect_if_transit_central(cat_phys.target[t], ps, pl, sim_param))
-   	if (Rstar < (a*(1-ecc)*(1+ecc))/(1+ecc*sin(sys.orbit[pl].omega))*cos(incl)) || (rand() > calc_prob_detect_if_transit_with_actual_b(cat_phys.target[t], ps, pl, sim_param))
-#=
+   	#if (Rstar < (a*(1-ecc)*(1+ecc))/(1+ecc*sin(sys.orbit[pl].omega))*cos(incl)) || (rand() > calc_prob_detect_if_transit_with_actual_b(cat_phys.target[t], ps, pl, sim_param))
         does_it_transit = does_planet_transit(sys, pl)
         pdet_if_tr = does_it_transit ? calc_prob_detect_if_transit_with_actual_b(kep_targ, ps, pl, sim_param) : 0.
         if !does_it_transit || (rand()>pdet_if_tr)
-=#
+
     	  splice!(cat_phys.target[t].sys[ps].orbit, pl)
 	  splice!(cat_phys.target[t].sys[ps].planet, pl)
      	end
@@ -114,7 +113,10 @@ function generate_obs_targets(cat_phys::KeplerPhysicalCatalog, sim_param::SimPar
   return cat_phys
 end
 
-function simulated_read_kepler_observations(sim_param::SimParam ) # TODO SCI:  IMPORTANT:  Eventually, replace this with a function to read data from input file (see koi_table.jl)
+
+# The following function is primarily left for debugging.  
+function simulated_read_kepler_observations(sim_param::SimParam )
+   println("# WARNING: Using simulated_read_kepler_observations.")
    if haskey(sim_param,"stellar_catalog")
       star_tab_func = get_function(sim_param, "star_table_setup")
       star_tab_func(sim_param)

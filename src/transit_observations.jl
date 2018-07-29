@@ -257,6 +257,7 @@ function calc_expected_num_transits(t::KeplerTarget, s::Integer, p::Integer, sim
  if exp_num_transits <=6 
  end
  # TODO SCI DETAIL: Calculate more accurat number of transits, perhaps using star and specific window function or perhaps specific times of data gaps more given module
+  DARIN: Could your window function files help here?
  =#
  return exp_num_transits
 end

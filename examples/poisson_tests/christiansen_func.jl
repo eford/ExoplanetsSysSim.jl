@@ -49,7 +49,6 @@ function setup_sim_param_christiansen(args::Vector{String} = Array{String}(0) ) 
     add_param_fixed(sim_param,"sigma_incl",2.0)   # degrees 
     add_param_fixed(sim_param,"calc_target_obs_sky_ave",ExoplanetsSysSim.calc_target_obs_sky_ave)
     add_param_fixed(sim_param,"calc_target_obs_single_obs",ExoplanetsSysSim.calc_target_obs_single_obs)
-    #add_param_fixed(sim_param,"transit_noise_model",ExoplanetsSysSim.transit_noise_model_no_noise)
     add_param_fixed(sim_param,"transit_noise_model",ExoplanetsSysSim.transit_noise_model_diagonal)
     return sim_param
 end
@@ -136,7 +135,7 @@ function generate_period_and_sizes_christiansen(s::Star, sim_param::SimParam; nu
     idx = findfirst(x -> x > rollp, cuml)
     i_idx = (idx-1)%size(rate_tab,1)+1
     j_idx = floor(Int64,(idx-1)//size(rate_tab,1))+1
-    ### TODO: Keep uniform log sampling here?
+    # We assume uniform sampling in log P and log Rp within each bin
     Rp = exp(Base.rand()*(log(limitRp[i_idx+1])-log(limitRp[i_idx]))+log(limitRp[i_idx]))
     P = exp(Base.rand()*(log(limitP[j_idx+1])-log(limitP[j_idx]))+log(limitP[j_idx]))
     push!(Plist, P)
@@ -214,7 +213,6 @@ function setup_christiansen(filename::String; force_reread::Bool = false)
     is_usable = is_usable .& in_Q1Q12
   end
   # See options at: http://exoplanetarchive.ipac.caltech.edu/docs/API_keplerstellar_columns.html
-  # TODO SCI DETAIL or IMPORTANT?: Read in all CDPP's, so can interpolate?
   symbols_to_keep = [ :kepid, :mass, :mass_err1, :mass_err2, :radius, :radius_err1, :radius_err2, :dens, :dens_err1, :dens_err2, :rrmscdpp01p5, :rrmscdpp02p0, :rrmscdpp02p5, :rrmscdpp03p0, :rrmscdpp03p5, :rrmscdpp04p5, :rrmscdpp05p0, :rrmscdpp06p0, :rrmscdpp07p5, :rrmscdpp09p0, :rrmscdpp10p5, :rrmscdpp12p0, :rrmscdpp12p5, :rrmscdpp15p0, :dataspan, :dutycycle ]
   delete!(df, [~(x in symbols_to_keep) for x in names(df)])    # delete columns that we won't be using anyway
   usable = find(is_usable)
@@ -361,18 +359,21 @@ function calc_distance_vector_binned(summary1::CatalogSummaryStatistics, summary
         #np_bin[n] = dist_L1_abs(np1[n]/summary1.stat["num targets"], np2[n]/summary2.stat["num targets"])
         #np_bin[n] = dist_L2_abs(np1[n]/summary1.stat["num targets"], np2[n]/summary2.stat["num targets"])
         #np_bin[n] = distance_poisson_draw(np2[n]/summary2.stat["num targets"]*summary1.stat["num targets"], convert(Int64, np1[n]))
+        np_bin[n] = distance_sum_of_bernoulli_draws(floor(Int64,np1[n]),summary1.stat["num targets"], summary2.stat["weight_list"], summary2.stat["num targets"], bin_match_list[n])
 
         ### Bernoulli distance
+        #= 
         num_pl_match_p_and_r = length(bin_match_list[n])
         num_draws = floor(Int64, num_pl_match_p_and_r * (summary1.stat["num targets"]/summary2.stat["num targets"]))
         #for i in 1:num_pl_match_p_and_r
         for i in 1:num_draws
            pl_id = bin_match_list[n][1+i%num_pl_match_p_and_r]
-           prob_detect = summary2.stat["weight_list"][pl_id]
+           prob_detect = min(summary2.stat["weight_list"][pl_id],1.0)
            np2[n] += rand(Bernoulli(prob_detect))
         end
         #np_bin[n] = dist_L2_abs(np1[n]/summary1.stat["num targets"], np2[n]/summary2.stat["num targets"])
         np_bin[n] = dist_L2_abs(np1[n]/summary1.stat["num targets"], np2[n]/summary1.stat["num targets"])
+        =#
         ###
 
       #println("True # [Bin ", n,"] = ",np1[n],", Expected # [Bin ", n,"] = ",np2[n])
