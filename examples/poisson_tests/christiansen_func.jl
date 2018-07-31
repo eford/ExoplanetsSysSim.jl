@@ -178,9 +178,9 @@ function generate_period_and_sizes_christiansen(s::Star, sim_param::SimParam; nu
     tmp_ind = find(x -> x == j, j_idx)
     if length(tmp_ind) > 0
       n_range = length(tmp_ind)    
-      loga_min = log(ExoplanetsSysSim.semimajor_axis(limitP[j_idx], s.mass))
-      loga_min_ext = log(ExoplanetsSysSim.semimajor_axis(limitP[j_idx], s.mass)+sepa_min)  # Used for determining minimum semimajor axis separation
-      loga_max = log(ExoplanetsSysSim.semimajor_axis(limitP[j_idx+1], s.mass))
+      loga_min = log(ExoplanetsSysSim.semimajor_axis(limitP[j], s.mass))
+      loga_min_ext = log(ExoplanetsSysSim.semimajor_axis(limitP[j], s.mass)+sepa_min)  # Used for determining minimum semimajor axis separation
+      loga_max = log(ExoplanetsSysSim.semimajor_axis(limitP[j+1], s.mass))
       logsepa_min = min(loga_min_ext-loga_min, (loga_max-loga_min)/n_range)  # Prevents minimum separations too large
       tmp_logalist = draw_uniform_selfavoiding(n_range,min_separation=logsepa_min,lower_bound=loga_min,upper_bound=loga_max)
       tmp_Plist = exp.((3*tmp_logalist - log(s.mass))/2)*ExoplanetsSysSim.day_in_year  # Convert from log a (in AU) back to P (in days)
