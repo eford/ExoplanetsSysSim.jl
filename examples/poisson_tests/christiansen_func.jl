@@ -106,6 +106,38 @@ end
 
 
 ## planetary_system
+function draw_uniform_selfavoiding(n::Integer; lower_bound::Real=0.0, upper_bound=1.0, min_separation::Real = 0.05, return_sorted::Bool=false )
+    @assert(n>=1)
+    @assert(upper_bound>lower_bound)
+    @assert(2*min_separation*n<upper_bound-lower_bound)
+    list = rand(n)
+    sorted_idx = collect(1:n)
+    segment_length = upper_bound-lower_bound
+    list[1] = lower_bound+segment_length*list[1]   # First draw is standard uniform
+    segment_length -= min(upper_bound,list[1]+min_separation)-max(lower_bound,list[1]-min_separation) 
+    for i in 2:n
+        segment_length -= min(upper_bound,list[i-1]+min_separation)-max(lower_bound,list[i-1]-min_separation)   # Reduce length for future draws
+        list[i] *= segment_length    # Draw over reduced range based on which segments need to be excluded
+        list[i] += lower_bound
+        j = 1
+        while j<= i-1 # Checking for conflicts
+            k = sorted_idx[j]     # Going from low to high
+            if list[i]>list[k]-min_separation   # If too close, then bu
+               list[i] += min(upper_bound,list[k]+min_separation)-max(lower_bound,list[k]-min_separation)
+            else
+                break
+            end
+            j += 1
+        end
+        for k in i:-1:(j+1)   # Keep larger values sorted
+            sorted_idx[k]=sorted_idx[k-1]
+        end
+        sorted_idx[j] = i   # Save order for this draw
+        #segment_length -= min(upper_bound,list[i]+min_separation)-max(lower_bound,list[i]-min_separation)   # Reduce length for future draws
+   end 
+   return return_sorted ? list[sorted_idx] : list
+end
+
 function generate_num_planets_christiansen(s::Star, sim_param::SimParam)
   const max_tranets_in_sys::Int64 = get_int(sim_param,"max_tranets_in_sys")
   rate_tab::Array{Float64,2} = get_any(sim_param, "obs_par", Array{Float64,2})
