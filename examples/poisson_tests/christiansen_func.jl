@@ -151,27 +151,43 @@ function generate_period_and_sizes_christiansen(s::Star, sim_param::SimParam; nu
   
   limitP::Array{Float64,1} = get_any(sim_param, "p_lim_arr", Array{Float64,1})
   limitRp::Array{Float64,1} = get_any(sim_param, "r_lim_arr", Array{Float64,1})
-
+  sepa_min = 0.05  # Minimum orbital separation in AU
+    
   @assert ((length(limitP)-1) == size(rate_tab, 2))
   @assert ((length(limitRp)-1) == size(rate_tab, 1))
-  Plist = []
-  Rplist = []
+  Plist = zeros(num_pl)
+  Rplist = zeros(num_pl)
   rate_tab_1d = reshape(rate_tab,length(rate_tab))
   #logmaxcuml = logsumexp(rate_tab_1d)
   #cuml = cumsum_kbn(exp(rate_tab_1d-logmaxcuml))
   maxcuml = sum(rate_tab_1d)
   cuml = cumsum_kbn(rate_tab_1d/maxcuml)
 
+  # We assume uniform sampling in log P and log Rp within each bin
+  j_idx = ones(Int64, num_pl)
+    
   for n in 1:num_pl
     rollp = Base.rand()
     idx = findfirst(x -> x > rollp, cuml)
     i_idx = (idx-1)%size(rate_tab,1)+1
-    j_idx = floor(Int64,(idx-1)//size(rate_tab,1))+1
-    # We assume uniform sampling in log P and log Rp within each bin
-    Rp = exp(Base.rand()*(log(limitRp[i_idx+1])-log(limitRp[i_idx]))+log(limitRp[i_idx]))
-    P = exp(Base.rand()*(log(limitP[j_idx+1])-log(limitP[j_idx]))+log(limitP[j_idx]))
-    push!(Plist, P)
-    push!(Rplist, Rp)
+    j_idx[n] = floor(Int64,(idx-1)//size(rate_tab,1))+1
+    Rplist[n] = exp(Base.rand()*(log(limitRp[i_idx+1])-log(limitRp[i_idx]))+log(limitRp[i_idx]))
+  end
+    
+  for j in 1:(length(limitP)-1)
+    tmp_ind = find(x -> x == j, j_idx)
+    if length(tmp_ind) > 0
+      n_range = length(tmp_ind)    
+      loga_min = log(ExoplanetsSysSim.semimajor_axis(limitP[j_idx], s.mass))
+      loga_min_ext = log(ExoplanetsSysSim.semimajor_axis(limitP[j_idx], s.mass)+sepa_min)  # Used for determining minimum semimajor axis separation
+      loga_max = log(ExoplanetsSysSim.semimajor_axis(limitP[j_idx+1], s.mass))
+      logsepa_min = min(loga_min_ext-loga_min, (loga_max-loga_min)/n_range)  # Prevents minimum separations too large
+      tmp_logalist = draw_uniform_selfavoiding(n_range,min_separation=logsepa_min,lower_bound=loga_min,upper_bound=loga_max)
+      tmp_Plist = exp.((3*tmp_logalist - log(s.mass))/2)*ExoplanetsSysSim.day_in_year  # Convert from log a (in AU) back to P (in days)
+      for n in 1:n_range
+        Plist[tmp_ind[n]] = tmp_Plist[n]
+      end
+    end
   end
   return Plist, Rplist
 end
