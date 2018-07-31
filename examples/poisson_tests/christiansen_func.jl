@@ -152,6 +152,7 @@ function generate_period_and_sizes_christiansen(s::Star, sim_param::SimParam; nu
   limitP::Array{Float64,1} = get_any(sim_param, "p_lim_arr", Array{Float64,1})
   limitRp::Array{Float64,1} = get_any(sim_param, "r_lim_arr", Array{Float64,1})
   sepa_min = 0.05  # Minimum orbital separation in AU
+  backup_sepa_factor_slightly_less_than_one = 0.95  
     
   @assert ((length(limitP)-1) == size(rate_tab, 2))
   @assert ((length(limitRp)-1) == size(rate_tab, 1))
@@ -181,7 +182,7 @@ function generate_period_and_sizes_christiansen(s::Star, sim_param::SimParam; nu
       loga_min = log(ExoplanetsSysSim.semimajor_axis(limitP[j], s.mass))
       loga_min_ext = log(ExoplanetsSysSim.semimajor_axis(limitP[j], s.mass)+sepa_min)  # Used for determining minimum semimajor axis separation
       loga_max = log(ExoplanetsSysSim.semimajor_axis(limitP[j+1], s.mass))
-      logsepa_min = min(loga_min_ext-loga_min, ((loga_max-loga_min)/n_range/2) - ((loga_max-loga_min)/n_range/2/10))  # Prevents minimum separations too large
+      logsepa_min = min(loga_min_ext-loga_min, (loga_max-loga_min)/n_range/2*backup_sepa_factor_slightly_less_than_one)  # Prevents minimum separations too large
       tmp_logalist = draw_uniform_selfavoiding(n_range,min_separation=logsepa_min,lower_bound=loga_min,upper_bound=loga_max)
       tmp_Plist = exp.((3*tmp_logalist - log(s.mass))/2)*ExoplanetsSysSim.day_in_year  # Convert from log a (in AU) back to P (in days)
       for n in 1:n_range
