@@ -106,6 +106,38 @@ end
 
 
 ## planetary_system
+function draw_uniform_selfavoiding(n::Integer; lower_bound::Real=0.0, upper_bound=1.0, min_separation::Real = 0.05, return_sorted::Bool=false )
+    @assert(n>=1)
+    @assert(upper_bound>lower_bound)
+    @assert(2*min_separation*n<upper_bound-lower_bound)
+    list = rand(n)
+    sorted_idx = collect(1:n)
+    segment_length = upper_bound-lower_bound
+    list[1] = lower_bound+segment_length*list[1]   # First draw is standard uniform
+    segment_length -= min(upper_bound,list[1]+min_separation)-max(lower_bound,list[1]-min_separation) 
+    for i in 2:n
+        segment_length -= min(upper_bound,list[i-1]+min_separation)-max(lower_bound,list[i-1]-min_separation)   # Reduce length for future draws
+        list[i] *= segment_length    # Draw over reduced range based on which segments need to be excluded
+        list[i] += lower_bound
+        j = 1
+        while j<= i-1 # Checking for conflicts
+            k = sorted_idx[j]     # Going from low to high
+            if list[i]>list[k]-min_separation   # If too close, then bu
+               list[i] += min(upper_bound,list[k]+min_separation)-max(lower_bound,list[k]-min_separation)
+            else
+                break
+            end
+            j += 1
+        end
+        for k in i:-1:(j+1)   # Keep larger values sorted
+            sorted_idx[k]=sorted_idx[k-1]
+        end
+        sorted_idx[j] = i   # Save order for this draw
+        #segment_length -= min(upper_bound,list[i]+min_separation)-max(lower_bound,list[i]-min_separation)   # Reduce length for future draws
+   end 
+   return return_sorted ? list[sorted_idx] : list
+end
+
 function generate_num_planets_christiansen(s::Star, sim_param::SimParam)
   const max_tranets_in_sys::Int64 = get_int(sim_param,"max_tranets_in_sys")
   rate_tab::Array{Float64,2} = get_any(sim_param, "obs_par", Array{Float64,2})
@@ -119,27 +151,43 @@ function generate_period_and_sizes_christiansen(s::Star, sim_param::SimParam; nu
   
   limitP::Array{Float64,1} = get_any(sim_param, "p_lim_arr", Array{Float64,1})
   limitRp::Array{Float64,1} = get_any(sim_param, "r_lim_arr", Array{Float64,1})
-
+  sepa_min = 0.05  # Minimum orbital separation in AU
+    
   @assert ((length(limitP)-1) == size(rate_tab, 2))
   @assert ((length(limitRp)-1) == size(rate_tab, 1))
-  Plist = []
-  Rplist = []
+  Plist = zeros(num_pl)
+  Rplist = zeros(num_pl)
   rate_tab_1d = reshape(rate_tab,length(rate_tab))
   #logmaxcuml = logsumexp(rate_tab_1d)
   #cuml = cumsum_kbn(exp(rate_tab_1d-logmaxcuml))
   maxcuml = sum(rate_tab_1d)
   cuml = cumsum_kbn(rate_tab_1d/maxcuml)
 
+  # We assume uniform sampling in log P and log Rp within each bin
+  j_idx = ones(Int64, num_pl)
+    
   for n in 1:num_pl
     rollp = Base.rand()
     idx = findfirst(x -> x > rollp, cuml)
     i_idx = (idx-1)%size(rate_tab,1)+1
-    j_idx = floor(Int64,(idx-1)//size(rate_tab,1))+1
-    # We assume uniform sampling in log P and log Rp within each bin
-    Rp = exp(Base.rand()*(log(limitRp[i_idx+1])-log(limitRp[i_idx]))+log(limitRp[i_idx]))
-    P = exp(Base.rand()*(log(limitP[j_idx+1])-log(limitP[j_idx]))+log(limitP[j_idx]))
-    push!(Plist, P)
-    push!(Rplist, Rp)
+    j_idx[n] = floor(Int64,(idx-1)//size(rate_tab,1))+1
+    Rplist[n] = exp(Base.rand()*(log(limitRp[i_idx+1])-log(limitRp[i_idx]))+log(limitRp[i_idx]))
+  end
+    
+  for j in 1:(length(limitP)-1)
+    tmp_ind = find(x -> x == j, j_idx)
+    if length(tmp_ind) > 0
+      n_range = length(tmp_ind)    
+      loga_min = log(ExoplanetsSysSim.semimajor_axis(limitP[j], s.mass))
+      loga_min_ext = log(ExoplanetsSysSim.semimajor_axis(limitP[j], s.mass)+sepa_min)  # Used for determining minimum semimajor axis separation
+      loga_max = log(ExoplanetsSysSim.semimajor_axis(limitP[j+1], s.mass))
+      logsepa_min = min(loga_min_ext-loga_min, ((loga_max-loga_min)/n_range/2) - ((loga_max-loga_min)/n_range/2/10))  # Prevents minimum separations too large
+      tmp_logalist = draw_uniform_selfavoiding(n_range,min_separation=logsepa_min,lower_bound=loga_min,upper_bound=loga_max)
+      tmp_Plist = exp.((3*tmp_logalist - log(s.mass))/2)*ExoplanetsSysSim.day_in_year  # Convert from log a (in AU) back to P (in days)
+      for n in 1:n_range
+        Plist[tmp_ind[n]] = tmp_Plist[n]
+      end
+    end
   end
   return Plist, Rplist
 end
