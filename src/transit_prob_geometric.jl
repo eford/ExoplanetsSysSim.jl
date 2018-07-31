@@ -231,10 +231,6 @@ function calc_simulated_system_detection_probs(ps::PlanetarySystemSingleStar, pr
 
         for p in combo                # Accumulate the probability of detecting each planet individually
             sdp.pairwise[p,p] += prob_det_this_combo
-            if sdp.pairwise[p,p] > 1.0
-                invalid_prob_flag = true
-                print(string("Error! Invalid prob for planet ",p,": ", sdp.pairwise[p,p], "\n\n"))
-            end
         end
 
         for pq in combinations(combo,2)                # Accumulate the probability of detecting each planet pair
@@ -244,7 +240,15 @@ function calc_simulated_system_detection_probs(ps::PlanetarySystemSingleStar, pr
       end
   end
 
+  for p in 1:n
+      if sdp.pairwise[p,p] > 1.0
+          invalid_prob_flag = true
+          println(string("Error! Invalid prob for planet ",p,": ", sdp.pairwise[p,p]))
+      end
+  end
+
   if invalid_prob_flag
+      println("")
       for ntr in 1:min(n,max_tranets_in_sys)
           for combo in combinations(1:n,ntr)
               fill!(planet_should_transit,zero(Cint))
@@ -256,10 +260,11 @@ function calc_simulated_system_detection_probs(ps::PlanetarySystemSingleStar, pr
               else
                   geo_factor = prob_combo_transits_obs_ave(ps_detectable,planet_should_transit)
               end
-              print(string("Geo. factor of ",combo," = ",geo_factor, "\n"))
+              println(string("Geo. factor of ",combo," = ",geo_factor))
           end
       end
-      print(string("Det. prob. = ", prob_det_if_tr[idx_detectable], "\n\n"))
+      println(string("Det. prob. = ", prob_det_if_tr[idx_detectable]))
+      println("")
       #quit()
   end
   return sdp
