@@ -14,6 +14,8 @@ function calc_transit_prob_single_planet_obs_ave(ps::PlanetarySystemAbstract, pl
 end
 calc_transit_prob_single_planet_obs_ave(t::KeplerTarget, s::Integer, p::Integer) = calc_transit_prob_single_planet_obs_ave(t.sys[s], p)
 
+#=
+# WARNING: This knows about e and w, but still returns a fraction rather than a 0 or 1.  Commented out for now, so no one uses it accidentally until we figure out why it was this way
 function calc_transit_prob_single_planet_one_obs(ps::PlanetarySystemAbstract, pl::Integer)
  ecc::Float64 = ps.orbit[pl].ecc
  a::Float64 = semimajor_axis(ps,pl)
@@ -21,25 +23,53 @@ function calc_transit_prob_single_planet_one_obs(ps::PlanetarySystemAbstract, pl
  return min(Rstar*(1+ecc*sin(ps.orbit[pl].omega))/(a*(1-ecc)*(1+ecc)), 1.0)  
 end
 calc_transit_prob_single_planet_one_obs(t::KeplerTarget, s::Integer, p::Integer) = calc_transit_prob_single_planet_one_obs(t.sys[s], p)
+=#
+
+# WARNING: Assumes that planets with b>1 won't be detected/pass vetting
+function does_planet_transit(ps::PlanetarySystemAbstract, pl::Integer)
+   ecc::Float64 = ps.orbit[pl].ecc
+   incl::Float64 = ps.orbit[pl].incl
+   a::Float64 = semimajor_axis(ps,pl)
+   Rstar::Float64 = rsol_in_au*ps.star.radius
+   if (Rstar >= (a*(1-ecc)*(1+ecc))/(1+ecc*sin(ps.orbit[pl].omega))*cos(incl))
+     return true
+   else
+     return false
+   end
+end
 
 function corbits_placeholder_obs_ave( ps::PlanetarySystemSingleStar, use_pl::Vector{Cint} )    # Might be useful for someone to test w/o CORBITS
   n = num_planets(ps)
   prob = 1.0
   for p in 1:n
+     ptr = calc_transit_prob_single_planet_obs_ave(ps,p)
+     prob *= (use_pl[p]==1) ? ptr : 1.0-ptr
+     #=
      if(use_pl[p]==1)
        prob *= calc_transit_prob_single_planet_obs_ave(ps,p)
+     else
+       prob *= 1.0-calc_transit_prob_single_planet_obs_ave(ps,p)
      end
+     =#
   end
   return prob 
+end
+
+function calc_impact_parameter(ps::PlanetarySystemSingleStar, pl::Integer)
+      one_minus_e2 = (1-ps.orbit[pl].ecc)*(1+ps.orbit[pl].ecc)
+      a_semimajor_axis = semimajor_axis(ps,pl)
+      b = a_semimajor_axis *cos(ps.orbit[pl].incl)/(ps.star.radius*rsol_in_au)
+      b *= one_minus_e2/(1+ps.orbit[pl].ecc*sin(ps.orbit[pl].omega))
 end
 
 function prob_combo_transits_one_obs( ps::PlanetarySystemSingleStar, use_pl::Vector{Cint} )    
   n = num_planets(ps)
   for p in 1:n
-      one_minus_e2 = (1-ps.orbit[p].ecc)*(1+ps.orbit[p].ecc)
-      a_semimajor_axis = semimajor_axis(ps,p)
-      b = a_semimajor_axis *cos(ps.orbit[p].incl)/ps.star.radius
-      b *= one_minus_e2/(1+ps.orbit[p].ecc*sin(ps.orbit[p].omega))
+      #one_minus_e2 = (1-ps.orbit[p].ecc)*(1+ps.orbit[p].ecc)
+      #a_semimajor_axis = semimajor_axis(ps,p)
+      #b = a_semimajor_axis *cos(ps.orbit[p].incl)/ps.star.radius
+      #b *= one_minus_e2/(1+ps.orbit[p].ecc*sin(ps.orbit[p].omega))
+      b = calc_impact_parameter(ps, p)
       if ! ( (b<=1.0 && use_pl[p]==1) || (b> 1.0 && use_pl[p]!=1) )
         return 0.0
       end
@@ -47,7 +77,7 @@ function prob_combo_transits_one_obs( ps::PlanetarySystemSingleStar, use_pl::Vec
   return 1.0
 end
 
-function prob_combo_transits_obs_ave( ps::PlanetarySystemSingleStar, use_pl::Vector{Cint} )    
+function prob_combo_transits_obs_ave( ps::PlanetarySystemSingleStar, use_pl::Vector{Cint}; print_orbit::Bool = false)    
   n = num_planets(ps)
   a =  Cdouble[ semimajor_axis(ps,i) for i in 1:n ]
   r_star = convert(Cdouble,ps.star.radius *  rsol_in_au )
@@ -60,7 +90,9 @@ function prob_combo_transits_obs_ave( ps::PlanetarySystemSingleStar, use_pl::Vec
   #for i in 1:length(combo)
   #  use_pl[i] = 1
   #end
-  if false
+  prob = prob_of_transits_approx(a, r_star, r, ecc, Omega, omega, inc, use_pl)
+
+  if print_orbit
   println("# a = ", a)
   println("# r_star = ", r_star)
   println("# r = ", r)
@@ -69,9 +101,8 @@ function prob_combo_transits_obs_ave( ps::PlanetarySystemSingleStar, use_pl::Vec
   println("# omega = ", omega)
   println("# inc = ", inc)
   println("# use_pl = ", use_pl)
+  println("")
   end
-  prob = prob_of_transits_approx(a, r_star, r, ecc, Omega, omega, inc, use_pl)
-
   return prob 
 end
 
@@ -199,6 +230,24 @@ function calc_simulated_system_detection_probs(ps::PlanetarySystemSingleStar, pr
 
         for p in combo                # Accumulate the probability of detecting each planet individually
             sdp.pairwise[p,p] += prob_det_this_combo
+            # if sdp.pairwise[p,p] > 1.0
+            #     print(string("Error! Invalid prob for planet ",p,": ", sdp.pairwise[p,p], "\n\n"))
+            #     for ntr in 1:min(n,max_tranets_in_sys)
+            #         for combo in combinations(1:n,ntr)
+            #             fill!(planet_should_transit,zero(Cint))
+	    #             for i in 1:length(combo)
+      	    #                 planet_should_transit[combo[i]] = one(Cint)
+	    #             end
+            #             geo_factor = prob_combo_transits_obs_ave(ps_detectable,planet_should_transit, print_orbit = true)
+            #             print(string("Geo. factor of ",combo," = ",geo_factor, "\n"))
+            #             for p in combo  # Loop over each planet in this combination of detectable planets
+            #                 prob_det_this_combo *= prob_det_if_tr[idx_detectable[p]] 
+            #             end
+            #             print(string("Det. prob. of ",combo," = ",prob_det_this_combo, "\n\n"))
+            #         end
+            #     end
+            #     #quit()
+            # end
         end
 
         for pq in combinations(combo,2)                # Accumulate the probability of detecting each planet pair
@@ -340,6 +389,7 @@ end
 
 
 
+#=
 # Compute transit probabilities for a single observer from a target with known physical properties
 function calc_observed_system_detection_probs(targ::KeplerTarget, sim_param::SimParam)  
   n = num_planets(targ)
@@ -348,13 +398,14 @@ function calc_observed_system_detection_probs(targ::KeplerTarget, sim_param::Sim
   pl = 1
   for s in 1:length(targ.sys)
       for p in 1:length(targ.sys[s].planet)
-         pdet[pl] = calc_prob_detect_if_transit(targ, s, p, sim_param)
+         pdet[pl] = calc_prob_detect_if_transit_with_actual_b(targ, s, p, sim_param)
          ptr[pl]  = calc_transit_prob_single_planet_one_obs(targ, s, p)
          pl += 1
       end
   end
   ObservedSystemDetectionProbs( ptr, pdet )
 end
+=#
 
 # Estimate transit probabilities for a single observer from a target with known physical properties.  
 if false    # Do we actually want this for anything?
@@ -368,3 +419,4 @@ function calc_observed_system_detection_probs(kto::KeplerTargetObs, sim_param::S
   ObservedSystemDetectionProbs( ptr, pdet )
 end
 end
+
