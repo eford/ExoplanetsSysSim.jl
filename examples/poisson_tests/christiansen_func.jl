@@ -139,11 +139,12 @@ function draw_uniform_selfavoiding(n::Integer; lower_bound::Real=0.0, upper_boun
 end
 
 function generate_num_planets_christiansen(s::Star, sim_param::SimParam)
-  const max_tranets_in_sys::Int64 = get_int(sim_param,"max_tranets_in_sys")
+  const max_tranets_in_sys::Int64 = get_int(sim_param,"max_tranets_in_sys") # TODO SCI: Is 7 planets max per system OK, even when fitting across potentially 9 period bins?
+  const max_tranets_per_P::Int64 = 3  # Set maximum number of planets per period range as loose stability criteria and to prevent near-crossing orbits
   rate_tab::Array{Float64,2} = get_any(sim_param, "obs_par", Array{Float64,2})
   lambda = sum_kbn(rate_tab)
   #println("# lambda= ", lambda)
-  ExoplanetsSysSim.generate_num_planets_poisson(lambda,max_tranets_in_sys)
+  ExoplanetsSysSim.generate_num_planets_poisson(lambda,min(max_tranets_per_P*size(rate_tab, 2), max_tranets_in_sys))
 end
 
 function generate_period_and_sizes_christiansen(s::Star, sim_param::SimParam; num_pl::Integer = 1)

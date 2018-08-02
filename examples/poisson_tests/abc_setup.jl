@@ -93,7 +93,7 @@ module SysSimABC
   function setup_abc(num_dist::Integer = 0)
     EvalSysSimModel.setup()
     theta_true = EvalSysSimModel.get_param_vector()
-    param_prior = CompositeDist( Distributions.ContinuousDistribution[Distributions.Uniform(0., 5.) for x in 1:length(theta_true)] )
+    param_prior = CompositeDist( Distributions.ContinuousDistribution[Distributions.Uniform(0., 3.) for x in 1:length(theta_true)] )
     in_parallel = nworkers() > 1 ? true : false
 
     calc_distance_ltd(sum_stat_obs::ExoplanetsSysSim.CatalogSummaryStatistics,sum_stat_sim::ExoplanetsSysSim.CatalogSummaryStatistics) = EvalSysSimModel.calc_distance(sum_stat_obs,sum_stat_sim,num_dist)
@@ -109,7 +109,7 @@ module SysSimABC
     EvalSysSimModel.set_simparam_ss(sim_param_closure, ss_true)	
 
     theta_true = EvalSysSimModel.get_param_vector()
-    param_prior = CompositeDist( Distributions.ContinuousDistribution[Distributions.Uniform(0., 5.) for x in 1:length(theta_true)] )
+    param_prior = CompositeDist( Distributions.ContinuousDistribution[Distributions.Uniform(0., 3.) for x in 1:length(theta_true)] )
     in_parallel = nworkers() > 1 ? true : false
 
     calc_distance_ltd(sum_stat_obs::ExoplanetsSysSim.CatalogSummaryStatistics,sum_stat_sim::ExoplanetsSysSim.CatalogSummaryStatistics) = EvalSysSimModel.calc_distance(sum_stat_obs,sum_stat_sim,num_dist)
