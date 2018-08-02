@@ -68,13 +68,15 @@ function generate_kepler_target_from_table(sim_param::SimParam)
             end
             radius = draw_asymmetric_normal( star_table(star_id,:radius), star_table(star_id,:radius_err1), abs(star_table(star_id,:radius_err2)) )
             mass = draw_asymmetric_normal( star_table(star_id,:mass), star_table(star_id,:mass_err1), abs(star_table(star_id,:mass_err2)) )
-            dens = draw_asymmetric_normal( star_table(star_id,:dens), star_table(star_id,:dens_err1), abs(star_table(star_id,:dens_err2)) )
+            #dens = draw_asymmetric_normal( star_table(star_id,:dens), star_table(star_id,:dens_err1), abs(star_table(star_id,:dens_err2)) )
+            dens   = (mass*sun_mass_in_kg_IAU2010*1000.)/(4//3*pi*(radius*sun_radius_in_m_IAU2015*100.)^3)  # Self-consistent density (gm/cm^3)
             attmpt_num += 1
         end
   else
     radius = star_table(star_id,:radius)
     mass   = star_table(star_id,:mass)
-    dens   = star_table(star_id,:dens)
+    #dens   = star_table(star_id,:dens)
+    dens   = (mass*sun_mass_in_kg_IAU2010*1000.)/(4//3*pi*(radius*sun_radius_in_m_IAU2015*100.)^3)  # Self-consistent density (gm/cm^3)
   end
   star = SingleStar(radius,mass,1.0, star_id)     # TODO SCI: Allow for blends, binaries, etc.
   cdpp_arr = make_cdpp_array(star_id)
