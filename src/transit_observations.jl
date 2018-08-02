@@ -454,7 +454,8 @@ randtn() = rand(TruncatedNormal(0.0,1.0,-0.999,0.999))
 
 function transit_noise_model_no_noise(t::KeplerTarget, s::Integer, p::Integer, depth::Float64, duration::Float64, snr::Float64, num_tr::Real; b::Real = 0.0)   
   period = t.sys[s].orbit[p].P
-  t0 = rand(Uniform(0.0,period))    # WARNING: Not being calculated from orbit
+  #t0 = rand(Uniform(0.0,period))    # WARNING: Not being calculated from orbit
+  t0 = period*rand()    # WARNING: Not being calculated from orbit
   sigma_period = 0.0
   sigma_t0 = 0.0
   sigma_depth =  0.0
@@ -466,7 +467,8 @@ end
 
 function transit_noise_model_fixed_noise(t::KeplerTarget, s::Integer, p::Integer, depth::Float64, duration::Float64, snr::Float64, num_tr::Real; b::Real = 0.0) 
   period = t.sys[s].orbit[p].P
-  t0 = rand(Uniform(0.0,period))   # WARNING: Not being calculated from orbit
+  #t0 = rand(Uniform(0.0,period))   # WARNING: Not being calculated from orbit
+  t0 = period*rand()    # WARNING: Not being calculated from orbit
 
   sigma_period = 1e-6
   sigma_t0 = 1e-4
@@ -481,7 +483,8 @@ end
 
 function transit_noise_model_diagonal(t::KeplerTarget, s::Integer, p::Integer, depth::Float64, duration::Float64, snr::Float64, num_tr::Real; b::Real = calc_impact_parameter(t.sys[s],p) ) 
   period = t.sys[s].orbit[p].P
-  t0 = rand(Uniform(0.0,period))    # WARNING: Not being calculated from orbit
+  #t0 = rand(Uniform(0.0,period))    # WARNING: Not being calculated from orbit
+  t0 = period*rand()    # WARNING: Not being calculated from orbit
 
 	# Use variable names from Price & Rogers
 	one_minus_e2 = (1-t.sys[s].orbit[p].ecc)*(1+t.sys[s].orbit[p].ecc)
