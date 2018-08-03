@@ -79,16 +79,20 @@ function calc_if_near_resonance(P::Vector{Float64})
    return result
 end
 
-function generate_planet_periods_sizes_masses_in_cluster( star::StarAbstract, sim_param::SimParam; n::Int64 = 1 )  # TODO: IMPORTANT: Make this function work and test before using for science
+function generate_planet_periods_sizes_masses_eccs_in_cluster( star::StarAbstract, sim_param::SimParam; n::Int64 = 1 )  # TODO: IMPORTANT: Make this function work and test before using for science
    @assert n>=1
    const generate_planet_mass_from_radius = get_function(sim_param,"generate_planet_mass_from_radius")
    const generate_sizes = get_function(sim_param,"generate_sizes")
+   const generate_e_omega = get_function(sim_param,"generate_e_omega")
+   const sigma_ecc::Float64 = haskey(sim_param,"sigma_hk") ? get_real(sim_param,"sigma_hk") : 0.0
 
    if n==1
       R = generate_sizes(star,sim_param)[1]
       mass = map(r->generate_planet_mass_from_radius(r,sim_param),R)
       P = [1.0] # generate_periods_power_law(star,sim_param)
-      return P, R, mass
+      eccentricity::Float64,  omega_e::Float64 = generate_e_omega(sigma_ecc)::Tuple{Float64,Float64}
+      ecc, omega = [eccentricity], [omega_e]
+      return P, R, mass, ecc, omega
    end
 
    # If reach here, then at least 2 planets in cluster
@@ -108,6 +112,13 @@ function generate_planet_periods_sizes_masses_in_cluster( star::StarAbstract, si
    mass = map(r->generate_planet_mass_from_radius(r,sim_param),R)
    #println("# mass = ", mass)
 
+   local ecc, omega
+   ecc::Array{Float64,1} = Array{Float64}(n)
+   omega::Array{Float64,1} = Array{Float64}(n)
+   for i in 1:n
+        (ecc[i],  omega[i]) = generate_e_omega(sigma_ecc)::Tuple{Float64,Float64}
+   end
+
    const sigma_logperiod_per_pl_in_cluster = get_real(sim_param,"sigma_logperiod_per_pl_in_cluster")
    const min_period = get_real(sim_param,"min_period")
    const max_period = get_real(sim_param,"max_period")
@@ -124,7 +135,7 @@ function generate_planet_periods_sizes_masses_in_cluster( star::StarAbstract, si
    while !found_good_periods && attempts<max_attempts
       attempts += 1
       P = rand(Pdist,n)
-      if test_stability_circular(P,mass,star.mass,sim_param)
+      if test_stability(P, mass, star.mass, sim_param; ecc=ecc)
         found_good_periods = true
      end
    end # while trying to draw periods
@@ -133,9 +144,9 @@ function generate_planet_periods_sizes_masses_in_cluster( star::StarAbstract, si
 
    if !found_good_periods
       #println("# Warning: Did not find a good set of periods, sizes and masses for one cluster.")
-      return fill(NaN,n), R, mass  # Return NaNs for periods to indicate failed
+      return fill(NaN,n), R, mass, ecc, omega  # Return NaNs for periods to indicate failed
    end
-   return P, R, mass    # Note can also return earlier if only one planet in cluster or if fail to generate a good set of values
+   return P, R, mass, ecc, omega    # Note can also return earlier if only one planet in cluster or if fail to generate a good set of values
 end
 
 function generate_num_planets_in_cluster_poisson(s::Star, sim_param::SimParam)
@@ -168,7 +179,7 @@ function generate_planetary_system_clustered(star::StarAbstract, sim_param::SimP
   # Generate a set of periods, planet radii, and planet masses.
   attempt_system = 0
   max_attempts_system = 1 #Note: currently this should not matter; each system is always attempted just once
-  local num_pl, Plist, Rlist, masslist
+  local num_pl, Plist, Rlist, masslist, ecclist, omegalist
   valid_system = false
   while !valid_system && attempt_system < max_attempts_system
 
@@ -187,12 +198,14 @@ function generate_planetary_system_clustered(star::StarAbstract, sim_param::SimP
      Plist::Array{Float64,1} = Array{Float64}(num_pl)
      Rlist::Array{Float64,1} = Array{Float64}(num_pl)
      masslist::Array{Float64,1} = Array{Float64}(num_pl)
+     ecclist::Array{Float64,1} = Array{Float64}(num_pl)
+     omegalist::Array{Float64,1} = Array{Float64}(num_pl)
      @assert num_pl_in_cluster[1] >= 1
      pl_start = 1
      pl_stop = 0
      for c in 1:num_clusters
          pl_stop  += num_pl_in_cluster[c]
-         Plist_tmp::Array{Float64,1}, Rlist[pl_start:pl_stop], masslist[pl_start:pl_stop] = generate_planet_periods_sizes_masses_in_cluster(star, sim_param, n = num_pl_in_cluster[c])
+         Plist_tmp::Array{Float64,1}, Rlist[pl_start:pl_stop], masslist[pl_start:pl_stop], ecclist[pl_start:pl_stop], omegalist[pl_start:pl_stop] = generate_planet_periods_sizes_masses_eccs_in_cluster(star, sim_param, n = num_pl_in_cluster[c])
          valid_cluster = !any(isnan.(Plist_tmp)) #should this be looking for nans in Plist or Plist_tmp? Was Plist but I think it should be Plist_tmp!
          valid_period_scale = false
          attempt_period_scale = 0
@@ -217,7 +230,7 @@ function generate_planetary_system_clustered(star::StarAbstract, sim_param::SimP
                 end
              end
 
-             if test_stability_circular(Plist[1:pl_stop],masslist[1:pl_stop],star.mass,sim_param) && periods_in_range  # Note: Should we include eccentricities in this test?
+             if test_stability(Plist[1:pl_stop], masslist[1:pl_stop], star.mass, sim_param; ecc=ecclist[1:pl_stop]) && periods_in_range
                 valid_period_scale = true
              end
          end  # while !valid_period_scale...
@@ -238,16 +251,20 @@ function generate_planetary_system_clustered(star::StarAbstract, sim_param::SimP
         Plist = Plist[keep]
         Rlist = Rlist[keep]
         masslist = masslist[keep]
+        ecclist = ecclist[keep]
+        omegalist = omegalist[keep]
      end
-     valid_system = false #this was set to true but I think it should be false? But if this is set to false it gets stuck in an infinite loop!
+     valid_system = false #this was set to true but I think it should be false?
 
 #println("P: ", Plist)
 #println("R: ", Rlist)
 #println("M: ", masslist)
+#println("ecc: ", ecclist)
+#println("omega: ", omegalist)
 
      #Note: This would be for drawing each cluster separately and then accepting or rejecting the whole lot. By testing for stability before adding each cluster, this last test should be unnecessary.
      if length(Plist) > 0
-         if test_stability_circular(Plist,masslist,star.mass,sim_param)
+         if test_stability(Plist, masslist, star.mass, sim_param; ecc=ecclist)
             valid_system = true
          else
             println("Warning: re-attempting system because it fails stability test even though its clusters each pass the test.")
@@ -274,16 +291,15 @@ function generate_planetary_system_clustered(star::StarAbstract, sim_param::SimP
          println("P: ", Plist_sorted)
          println(Rlist[i_sort])
          println(masslist[i_sort])
+         println(ecclist[i_sort])
+         println(omegalist[i_sort])
       end
   end
   =#
-#println("P: ", Plist)
-#println("R: ", Rlist)
-#println("M: ", masslist)
 
   # Now assign orbits with given periods, sizes, and masses.
-  const generate_e_omega = get_function(sim_param,"generate_e_omega")
-  const sigma_ecc::Float64 = haskey(sim_param,"sigma_hk") ? get_real(sim_param,"sigma_hk") : 0.0
+###const generate_e_omega = get_function(sim_param,"generate_e_omega")
+###const sigma_ecc::Float64 = haskey(sim_param,"sigma_hk") ? get_real(sim_param,"sigma_hk") : 0.0
   const sigma_incl = deg2rad(get_real(sim_param,"sigma_incl"))
   const sigma_incl_near_mmr = deg2rad(get_real(sim_param,"sigma_incl_near_mmr"))
   const max_incl_sys = get_real(sim_param,"max_incl_sys")
@@ -294,17 +310,19 @@ function generate_planetary_system_clustered(star::StarAbstract, sim_param::SimP
     is_near_resonance = calc_if_near_resonance(Plist[idx])
     for i in 1:num_pl
       # if verbose   println("i=",i," idx=",idx," Plist=",Plist[idx] );     end
+      #=
       if haskey(sim_param,"sigma_hk_one") && haskey(sim_param,"sigma_hk_multi")
          sigma_ecc = num_pl == 1 ? get_real(sim_param,"sigma_hk_one") : get_real(sim_param,"sigma_hk_multi")
       end
-      (ecc,  omega) = generate_e_omega(sigma_ecc)::Tuple{Float64,Float64}  # WARNING: Not testing for stability after eccentricites drawn.
+      =#
+###(ecc,  omega) = generate_e_omega(sigma_ecc)::Tuple{Float64,Float64}  # WARNING: Not testing for stability after eccentricites drawn.
 
       sigma_incl_use = is_near_resonance[i] ? sigma_incl_near_mmr : sigma_incl
       incl_mut = sigma_incl_use*sqrt(randn()^2+randn()^2) # rand(Distributions.Rayleigh(sigma_incl))
       asc_node = 2pi*rand()
       mean_anom = 2pi*rand()
       incl =  incl_mut!=zero(incl_mut) ? acos( cos(incl_sys)*cos(incl_mut) + sin(incl_sys)*sin(incl_mut)*cos(asc_node) ) : incl_sys
-      orbit[i] = Orbit(Plist[idx[i]],ecc,incl,omega,asc_node,mean_anom)
+      orbit[i] = Orbit(Plist[idx[i]], ecclist[idx[i]], incl, omegalist[idx[i]], asc_node, mean_anom)
       pl[i] = Planet( Rlist[idx[i]],  masslist[idx[i]] )
     end # for i in 1:num_pl
 

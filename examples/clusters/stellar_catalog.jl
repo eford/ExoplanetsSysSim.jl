@@ -30,8 +30,8 @@ function setup_star_table_christiansen(filename::String; force_reread::Bool = fa
   df = ExoplanetsSysSim.StellarTable.df
   usable = ExoplanetsSysSim.StellarTable.usable
   if ismatch(r".jld$",filename)
-  try 
-    data = DataFrames.load(filename)
+  try
+    data = JLD.load(filename)
     df::DataFrame = data["stellar_catalog"]
     usable::Array{Int64,1} = data["stellar_catalog_usable"]
     ExoplanetsSysSim.StellarTable.set_star_table(df, usable)
@@ -51,8 +51,10 @@ function setup_star_table_christiansen(filename::String; force_reread::Bool = fa
   has_radius = .! (ismissing.(df[:radius]) .| ismissing.(df[:radius_err1]) .| ismissing.(df[:radius_err2]))
   has_dens = .! (ismissing.(df[:dens]) .| ismissing.(df[:dens_err1]) .| ismissing.(df[:dens_err2]))
   has_rest = .! (ismissing.(df[:rrmscdpp04p5]) .| ismissing.(df[:dataspan]) .| ismissing.(df[:dutycycle]))
+
+#=
   in_Q1Q12 = []
-#=for x in df[:st_quarters]
+  for x in df[:st_quarters]
     subx = string(x)
     subx = ("0"^(17-length(subx)))*subx
     indQ = search(subx, '1')
@@ -63,6 +65,9 @@ function setup_star_table_christiansen(filename::String; force_reread::Bool = fa
     end
   end
 =#
+
+#Comment out following block for 'is_FGK' if using stellar catalogs with cuts already made:
+#=
   is_FGK = []
   for x in 1:length(df[:teff])
     if ((df[x,:teff] > 4000.0) & (df[x,:teff] < 7000.0) & (df[x,:logg] > 4.0))
@@ -71,8 +76,11 @@ function setup_star_table_christiansen(filename::String; force_reread::Bool = fa
     else
       push!(is_FGK, false)
     end
-  end   
-  is_usable = has_radius .& is_FGK .& has_mass .& has_rest #.& in_Q1Q12 # .& has_dens
+  end
+=#
+
+  is_usable = has_radius .& has_mass .& has_rest #.& in_Q1Q12 #.& has_dens #.& is_FGK
+  println("Total number of stars in our stellar catalog: ", sum(is_usable))
   #if contains(filename,"q1_q12_christiansen.jld")
 #if contains(filename,"q1_q12_christiansen")   # TODO: Ask Danely what he's trying to do here.
 #is_usable = is_usable #& in_Q1Q12

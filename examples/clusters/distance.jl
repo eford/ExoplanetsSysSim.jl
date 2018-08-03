@@ -113,6 +113,32 @@ function ADstats{T<:Real, S<:Real}(x::AbstractVector{T}, y::AbstractVector{S})
     return AD_dist
 end
 
+function ADstats_mod{T<:Real, S<:Real}(x::AbstractVector{T}, y::AbstractVector{S})
+    #This function is the same as 'ADstats' except without the factor of 'nm/N' before the integral
+    n, m = length(x), length(y)
+    N = n + m
+    sort_idx = sortperm([x; y]) #array of indices that would sort the combined array
+    M_i_diffs = [ones(n); zeros(m)][sort_idx]
+    M_i_array = cumsum(M_i_diffs)[1:end-1] #array of M_i except for last element, i.e. from i=1 to i=N-1
+    i_array = 1:(N-1) #array of i from i=1 to i=N-1
+    AD_dist = (N/((n*m)^2.))*sum(((M_i_array*N - n*i_array).^2.)./(i_array.*(N - i_array))) #AD distance
+    return AD_dist
+end
+
+##### Function to compute the Cressie-Read Power Divergence (CRPD) statistic for the distributions of observed planet multiciplities:
+function CRPDstats{T<:Int, S<:Int}(En::AbstractVector{T}, On::AbstractVector{S})
+    #En and On must be arrays of the total numbers of systems with 1,2,3,... observed planets, in the simulated (i.e. expected) and the actual (i.e. observed Kepler) data, respectively
+    E_array = En./sum(En) #normalized numbers (fractions) of simulated systems with 1,2,3,... observed planets
+    O_array = On./sum(On) #normalized numbers (fractions) of actual Kepler systems with 1,2,3,... observed planets
+    rho = 0.
+    for (i,E_i) in enumerate(E_array)
+        if En[i] != 0
+            rho += O_array[i]*((O_array[i]/E_array[i])^(2./3.) - 1.)
+        end
+    end
+    rho = (9./5.)*rho
+    return rho
+end
 
 function calc_distance_ks_period(summary1::CatalogSummaryStatistics, summary2::CatalogSummaryStatistics, sim_param::SimParam ; verbose::Bool = false)
   samp1 = summary1.stat["P list"] 
