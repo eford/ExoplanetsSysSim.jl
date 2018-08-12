@@ -38,6 +38,7 @@ export  StellarTable
 export setup_star_table, star_table, num_usable_in_star_table, set_star_table
 export KeplerTarget
 export num_planets, generate_kepler_target_from_table, generate_kepler_target_simple
+export setup_win_func_data
 include("target.jl")
 export KeplerTargetObs
 include("transit_observations.jl")
