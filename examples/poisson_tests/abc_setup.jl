@@ -8,7 +8,8 @@ module EvalSysSimModel
   using ExoplanetsSysSim
   include(joinpath(Pkg.dir(),"ExoplanetsSysSim","examples","poisson_tests", "christiansen_func.jl"))
 
-  sim_param_closure = SimParam()
+  #sim_param_closure = SimParam()
+  sim_param_closure = setup_sim_param_christiansen()
   summary_stat_ref_closure =  CatalogSummaryStatistics()
 
     function is_valid(param_vector::Vector{Float64})
@@ -49,7 +50,8 @@ module EvalSysSimModel
     end
 
   function setup()
-    global sim_param_closure = setup_sim_param_christiansen()
+    #global sim_param_closure = setup_sim_param_christiansen()
+    global sim_param_closure 
     sim_param_closure = set_test_param(sim_param_closure)
 
     ### Use simulated planet candidate catalog data
@@ -57,6 +59,10 @@ module EvalSysSimModel
     #cat_obs = simulated_read_kepler_observations(sim_param_closure)
     ###
     
+    WindowFunction.setup(sim_param_closure)
+    println("# Finished reading in window function data")
+    # add_param_fixed(sim_param_closure,"win_func_data",ExoplanetsSysSim.WindowFunction.get_window_function_data() )  # TODO OPT DETAIL: Does this serve any purpose?
+
     ### Use real planet candidate catalog data
     df_star = setup_star_table_christiansen(sim_param_closure)
     println("# Finished reading in stellar data")
@@ -64,11 +70,6 @@ module EvalSysSimModel
     println("# Finished reading in KOI data")  
     cat_obs = setup_actual_planet_candidate_catalog(df_star, df_koi, usable_koi, sim_param_closure)
     ###
-
-    win_func_data = setup_win_func_data()
-    println("# Finished reading in window function data")
-    add_param_fixed(sim_param_closure,"win_func_data",win_func_data)
-
 
     global summary_stat_ref_closure = calc_summary_stats_obs_binned_rates(cat_obs,sim_param_closure, trueobs_cat = true)
   end

@@ -12,12 +12,10 @@ using JLD
 #  import Compat: UTF8String, ASCIIString
 #end
 
-export setup_star_table, star_table, num_usable_in_star_table, set_star_table
+export setup_star_table, star_table, num_usable_in_star_table, set_star_table, star_table_has_key
 
 df = DataFrame()
-usable = Array{Int64}(0)
-#data = Array{Float64}(0,0)
-#colid = Dict()
+#usable = Array{Int64}(0)
         
 function setup(sim_param::SimParam; force_reread::Bool = false)
   global df
@@ -32,15 +30,15 @@ function setup(sim_param::SimParam; force_reread::Bool = false)
   return df  
 end
 
-function setup(filename::String; force_reread::Bool = false)
-  global df, usable
+function setup(filename::String)
+  global df # , usable
   if ismatch(r".jld$",filename)
   try 
     data = load(filename)
     df = data["stellar_catalog"]
-    usable = data["stellar_catalog_usable"]
+    #usable = data["stellar_catalog_usable"]
     Core.typeassert(df,DataFrame)
-    Core.typeassert(usable,Array{Int64,1})
+    #Core.typeassert(usable,Array{Int64,1})
   catch
     error(string("# Failed to read stellar catalog >",filename,"< in jld format."))
   end
@@ -63,77 +61,61 @@ function setup(filename::String; force_reread::Bool = false)
 
   # See options at: http://exoplanetarchive.ipac.caltech.edu/docs/API_keplerstellar_columns.html
   # Now we read in all CDPP's, so can interpolate to transit duration
-  symbols_to_keep = [ :kepid, :mass, :mass_err1, :mass_err2, :radius, :radius_err1, :radius_err2, :dens, :dens_err1, :dens_err2, :rrmscdpp01p5, :rrmscdpp02p0, :rrmscdpp02p5, :rrmscdpp03p0, :rrmscdpp03p5, :rrmscdpp04p5, :rrmscdpp05p0, :rrmscdpp06p0, :rrmscdpp07p5, :rrmscdpp09p0, :rrmscdpp10p5, :rrmscdpp12p0, :rrmscdpp12p5, :rrmscdpp15p0, :cdppslplong, :cdppslpshrt, :dataspan, :dutycycle, :kepid ]
+  symbols_to_keep = [ :kepid, :mass, :mass_err1, :mass_err2, :radius, :radius_err1, :radius_err2, :dens, :dens_err1, :dens_err2, :rrmscdpp01p5, :rrmscdpp02p0, :rrmscdpp02p5, :rrmscdpp03p0, :rrmscdpp03p5, :rrmscdpp04p5, :rrmscdpp05p0, :rrmscdpp06p0, :rrmscdpp07p5, :rrmscdpp09p0, :rrmscdpp10p5, :rrmscdpp12p0, :rrmscdpp12p5, :rrmscdpp15p0, :cdppslplong, :cdppslpshrt, :dataspan, :dutycycle ]
 
   delete!(df, [~(x in symbols_to_keep) for x in names(df)])    # delete columns that we won't be using anyway
   is_usable = [ !any(ismissing.([ df[i,j] for j in 1:size(df,2) ])) for i in 1:size(df,1) ]
   usable = find(is_usable)
   df = df[usable, symbols_to_keep]
   end
+    df[:wf_id] = map(x->ExoplanetsSysSim.WindowFunction.get_window_function_id(x,use_default_for_unknown=false),df[:kepid])
+    obs_5q = df[:wf_id].!=-1
+    df = df[obs_5q,keys(df.colindex)]
+    StellarTable.set_star_table(df)
   return df
-  #global data = convert(Array{Float64,2}, df) # df[usable, symbols_to_keep] )
-  #global colid = Dict(zip(names(df),[1:length(names(df))]))
-  #return data
 end
 
 setup_star_table(sim_param::SimParam; force_reread::Bool = false) = setup(sim_param, force_reread=force_reread)
-setup_star_table(filename::String; force_reread::Bool = false) = setup(filename, force_reread=force_reread)
+setup_star_table(filename::String) = setup(filename)
 
-function num_usable()
-  global usable
-  @assert typeof(usable) == Array{Int64,1}
-  length(usable)
+function num_usable_in_star_table() 
+  global df
+  return size(df,1)
 end
-num_usable_in_star_table() = num_usable()
-
-function idx(i::Integer)
-  global usable
-  usable[i]
-end
-
-#function col( sym::Symbol )
-#  global colid
-#  colid[sym]
-#end
 
 function star_table(i::Integer, sym::Symbol)
   global df, usable
   return df[i,sym]
-  #return df[usable[i],sym]
 end
-
-#function star_table_data(i::Integer, sym::Symbol)
-#  global data
-#  return data[i,col(sym)]
-#end
 
 function star_table(i::Integer)
   global df, usable
   return df[i,:]
-  #return df[usable[i],:]
 end
 
 function star_table(i::Integer, sym::Vector{Symbol})
   global df, usable
   return df[i,sym]
-  #return df[usable[i],sym]
 end
 
 function star_table(i::Vector{Integer}, sym::Symbol)
   global df, usable
   return df[i,sym]
-  #return df[usable[i],sym]
 end
 
 function star_table(i::Vector{Integer}, sym::Vector{Symbol})
   global df, usable
   return df[i,sym]
-  #return df[usable[i],sym]
 end
 
 function set_star_table(df2::DataFrame)
   global df
   df = df2
+end
+
+function star_table_has_key(s::Symbol)
+  global df
+  haskey(df,s)
 end
 
 function set_star_table(df2::DataFrame, usable2::Array{Int64,1})
@@ -168,50 +150,5 @@ function generate_star_from_table(sim_param::SimParam)
   id = rand(1:StellarTable.num_usable_in_star_table())
   generate_star_from_table(sim_param, id)
 end
-
-
-# Gather and prepare the window function data
-
-# Object to hold window function data
-immutable win_func_data_holder
-  window_func_array::Array{Float64,3}
-  wf_periods_in_days::Array{Float64,1}
-  wf_durations_in_hrs::Array{Float64,1}
-  sorted_quarter_strings::Array{Int64,1}
-  allsortedkepids::Array{Int64,1}
-  window_function_id_arr::Array{Int64,1}
-end
-
-#win_func_data=win_func_data_holder()
-
-using JLD # needed here again for some reason
-
-function setup_win_func_data(win_func_filename::String = "DR25topwinfuncs.jld") 
-# Reads in the window function data collected from the Kepler Completeness Products
-# see Darin Ragozzine's get/cleanDR25winfuncs.jl
- wffilename = joinpath(Pkg.dir(),"ExoplanetsSysSim", "data", win_func_filename)
-
- if ismatch(r".jld$",wffilename)
-  try
-    wfdata = load(wffilename)
-    window_func_array = wfdata["window_func_array"]
-    wf_periods_in_days = wfdata["wf_periods_in_days"]
-    wf_durations_in_hrs = wfdata["wf_durations_in_hrs"]
-    sorted_quarter_strings = wfdata["sorted_quarter_strings"]
-    allsortedkepids = wfdata["allsortedkepids"]
-    window_function_id_arr = wfdata["window_function_id_arr"]
-
-    global win_func_data = win_func_data_holder(window_func_array,wf_periods_in_days,wf_durations_in_hrs,sorted_quarter_strings, 
-    allsortedkepids, window_function_id_arr)
-
-  catch
-    error(string("# Failed to read window function data > ", wffilename," < in jld format."))
-  end
-end
-
-return(win_func_data)
-
-end
-
 
 
