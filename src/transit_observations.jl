@@ -253,17 +253,6 @@ calc_transit_duration(t::KeplerTarget, s::Integer, p::Integer ) = calc_transit_d
 function calc_expected_num_transits(t::KeplerTarget, s::Integer, p::Integer, sim_param::SimParam)  
  period = t.sys[s].orbit[p].P
  exp_num_transits = t.duty_cycle * t.data_span/period
- #= 
- if exp_num_transits <=6 
- end
- # TODO SCI DETAIL: Calculate more accurat number of transits, perhaps using star and specific window function or perhaps specific times of data gaps more given module
-  DARIN: Could your window function files help here?
-  REPLY: We decided in our discussion that this was not useful, mostly because
-  the window function only has information between 2 and 3 transits. Also, since
-  window functions average over phase and phase might be important for TTVs, 
-  we didn't want to include that here. Finally, the One Sigma Depth functions
-  are effectively going to replace this expected_num_transits calculation anyway.
- =#
  return exp_num_transits
 end
 

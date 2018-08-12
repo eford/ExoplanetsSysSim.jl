@@ -105,7 +105,7 @@ module SysSimABC
     calc_distance_ltd(sum_stat_obs::ExoplanetsSysSim.CatalogSummaryStatistics,sum_stat_sim::ExoplanetsSysSim.CatalogSummaryStatistics) = EvalSysSimModel.calc_distance(sum_stat_obs,sum_stat_sim,num_dist)
 
     global abc_plan = ABC.abc_pmc_plan_type(EvalSysSimModel.gen_data,EvalSysSimModel.calc_summary_stats,calc_distance_ltd, param_prior, make_proposal_dist=ABC.make_proposal_dist_gaussian_diag_covar, is_valid=EvalSysSimModel.is_valid,
-                                     num_part=50, num_max_attempt=50, num_max_times=max_generations, epsilon_init=9.9e99, target_epsilon=1.0e-100, in_parallel=in_parallel, adaptive_quantiles = false, epsilon_reduction_factor=0.9, tau_factor=2.0);
+                                     num_part=20, num_max_attempt=20, num_max_times=max_generations, num_dist_per_obs=5, epsilon_init=9.9e99, target_epsilon=1.0e-100, in_parallel=in_parallel, adaptive_quantiles = false, epsilon_reduction_factor=0.9, tau_factor=2.0);
   end
 
   function run_abc_largegen(pop::ABC.abc_population_type, ss_true::ExoplanetsSysSim.CatalogSummaryStatistics, epshist_targ::Float64, npart::Integer = 1000, num_dist::Integer = 0)
