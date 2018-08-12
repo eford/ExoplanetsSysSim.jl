@@ -217,16 +217,17 @@ end
 function setup_christiansen(filename::String; force_reread::Bool = false)
   #global df, usable
   df = ExoplanetsSysSim.StellarTable.df
-  usable = ExoplanetsSysSim.StellarTable.usable
+  #usable = ExoplanetsSysSim.StellarTable.usable
   if ismatch(r".jld$",filename)
   try 
     data = load(filename)
     df::DataFrame = data["stellar_catalog"]
-    usable::Array{Int64,1} = data["stellar_catalog_usable"]
-    StellarTable.set_star_table(df, usable)
+    #usable::Array{Int64,1} = data["stellar_catalog_usable"]
+    StellarTable.set_star_table(df)
   catch
     error(string("# Failed to read stellar catalog >",filename,"< in jld format."))
   end
+
   else
   try 
     df = CSV.read(filename,allowmissing=:all)
@@ -240,11 +241,14 @@ function setup_christiansen(filename::String; force_reread::Bool = false)
   has_cdpp = .! (ismissing.(df[:rrmscdpp01p5]) .| ismissing.(df[:rrmscdpp02p0]) .| ismissing.(df[:rrmscdpp02p5]) .| ismissing.(df[:rrmscdpp03p0]) .| ismissing.(df[:rrmscdpp03p5]) .| ismissing.(df[:rrmscdpp04p5]) .| ismissing.(df[:rrmscdpp05p0]) .| ismissing.(df[:rrmscdpp06p0]) .| ismissing.(df[:rrmscdpp07p5]) .| ismissing.(df[:rrmscdpp09p0]) .| ismissing.(df[:rrmscdpp10p5]) .| ismissing.(df[:rrmscdpp12p0]) .| ismissing.(df[:rrmscdpp12p5]) .| ismissing.(df[:rrmscdpp15p0]))
   has_rest = .! (ismissing.(df[:dataspan]) .| ismissing.(df[:dutycycle]))
   in_Q1Q12 = []
+  obs_gt_5q = []
   for x in df[:st_quarters]
     subx = string(x)
+    num_q_obs = length(matchall(r"1", subx))
+    push!(obs_gt_5q, num_q_obs>5)
     subx = ("0"^(17-length(subx)))*subx
     indQ = search(subx, '1')
-    if ((indQ < 1) | (indQ > 12))
+    if ((indQ < 1) | (indQ > 12)) || num_q_obs<=5 
       push!(in_Q1Q12, false)
     else
       push!(in_Q1Q12, true)
@@ -258,7 +262,7 @@ function setup_christiansen(filename::String; force_reread::Bool = false)
       push!(is_FGK, false)
     end
   end
-  is_usable = has_radius .& is_FGK .& has_mass .& has_rest .& has_dens .& has_cdpp
+  is_usable = has_radius .& is_FGK .& has_mass .& has_rest .& has_dens .& has_cdpp .& obs_gt_5q
   if contains(filename,"q1_q16_stellar.csv")
     is_usable = is_usable .& in_Q1Q12
   end
@@ -272,12 +276,14 @@ function setup_christiansen(filename::String; force_reread::Bool = false)
       tmp_df[col] = collect(skipmissing(df[col]))
   end
   df = tmp_df
-  StellarTable.set_star_table(df, usable)
+  StellarTable.set_star_table(df)
   end
+    println("# Removing stars observed <5 quarters.")
+    df[:wf_id] = map(x->ExoplanetsSysSim.WindowFunction.get_window_function_id(x,use_default_for_unknown=false),df[:kepid])
+    obs_5q = df[:wf_id].!=-1
+    df = df[obs_5q,keys(df.colindex)]
+    StellarTable.set_star_table(df)
   return df
-  #global data = convert(Array{Float64,2}, df) # df[usable, symbols_to_keep] )
-  #global colid = Dict(zip(names(df),[1:length(names(df))]))
-  #return data
 end
 
 setup_star_table_christiansen(sim_param::SimParam; force_reread::Bool = false) = setup_christiansen(sim_param, force_reread=force_reread)
