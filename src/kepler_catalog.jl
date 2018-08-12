@@ -19,7 +19,7 @@ end
 type KeplerObsCatalog
   target::Array{KeplerTargetObs,1}
 end
-#KeplerObsCatalog() = KeplerObsCatalog([])
+KeplerObsCatalog() = KeplerObsCatalog(KeplerTargetObs[])
 
 function generate_kepler_physical_catalog(sim_param::SimParam)
    if haskey(sim_param,"stellar_catalog")
@@ -46,7 +46,7 @@ end
 function observe_kepler_targets(calc_target_obs::Function, input::KeplerPhysicalCatalog, sim_param::SimParam )
   #calc_target_obs = get_function(sim_param,"calc_target_obs_sky_ave")
   #calc_target_obs = get_function(sim_param,"calc_target_obs_single_obs")
-  output = KeplerObsCatalog([])
+  output = KeplerObsCatalog()
   if haskey(sim_param,"mem_kepler_target_obs")
      output.target = get(sim_param,"mem_kepler_target_obs",Array{KeplerTargetObs}(0) )
   end
@@ -128,7 +128,7 @@ function simulated_read_kepler_observations(sim_param::SimParam )
 
    cat_phys_cut = generate_obs_targets(KeplerPhysicalCatalog(target_list), sim_param)
    calc_target_obs = get_function(sim_param,"calc_target_obs_single_obs")
-   output = KeplerObsCatalog([])
+   output = KeplerObsCatalog()
    output.target = map(x::KeplerTarget->calc_target_obs(x,sim_param)::KeplerTargetObs, cat_phys_cut.target)
    return output
 end
@@ -217,7 +217,7 @@ function setup_actual_planet_candidate_catalog(df_star::DataFrame, df_koi::DataF
         tot_plan = count(x->x, koi_subset)
     end
     
-    output = KeplerObsCatalog([])
+    output = KeplerObsCatalog()
     df_obs = join(df_star, df_koi, on = :kepid)
     #df_obs = sort!(df_obs, cols=(:kepid))
     df_obs = sort!(df_obs, (:kepid))

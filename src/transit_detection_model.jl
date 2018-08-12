@@ -5,11 +5,11 @@
 # That follows the procedure outlined in Burke et al.(2015).
 # However we don't currently interpolate the CDDP or mesthreshold to the relevant duration
 
-function real_log_choose(m::Real, n::Real)
+function real_log_choose(m::Float64, n::Float64)::Float64
   lgamma(m+1)-lgamma(n+1)-lgamma(m-n+1.0)
 end
   
-function real_binom(k::Real, BigM::Real, f::Real)
+function real_binom(k::Float64, BigM::Float64, f::Float64)::Float64
     F1 = real_log_choose(BigM,k)
     F2 = k*log(f)
     F3 = (BigM-k)*log(1.0-f)
@@ -17,7 +17,7 @@ function real_binom(k::Real, BigM::Real, f::Real)
     return x
 end
   
-function kepler_window_function(num_transits_no_gaps::Real, duty_cycle::Real; min_transits::Real = 3.0)  # TODO: SCI DARIN:  This is where we'd use your window function data
+function kepler_window_function(num_transits_no_gaps::Float64, duty_cycle::Float64; min_transits::Float64 = 3.0)::Float64  # TODO: SCI DARIN:  This is where we'd use your window function data
   if num_transits_no_gaps < min_transits
      return 0.0
   else
@@ -26,16 +26,16 @@ function kepler_window_function(num_transits_no_gaps::Real, duty_cycle::Real; mi
 end
     
 # See Christiansen et al. (2015)  This assumes a linear limbdarkening coefficient of 0.6
-function frac_depth_to_tps_depth(frac_depth::Real)
+function frac_depth_to_tps_depth(frac_depth::Float64)
     const alp = 1.0874
     const bet = 1.0187
     const REALDEPTH2TPSSQUARE = 1.0  # WARNING: Waiting for this to be confirmed
     k = sqrt(frac_depth)
     tps_depth = min( (alp-bet*k) * frac_depth* REALDEPTH2TPSSQUARE, 1.0)   # NOTE: I added the max based on common sense
-    return tps_depth
+    return tps_depth::Float64
 end
 
-function detection_efficiency_theory(mes::Real; min_pdet_nonzero::Float64 = 0.0)
+function detection_efficiency_theory(mes::Float64; min_pdet_nonzero::Float64 = 0.0)
    const muoffset =  0.0
    const sig =  1.0
    const mesthresh = 7.1
@@ -48,7 +48,7 @@ function detection_efficiency_theory(mes::Real; min_pdet_nonzero::Float64 = 0.0)
    end
 end
 
-function detection_efficiency_fressin2013(mes::Real)
+function detection_efficiency_fressin2013(mes::Float64)
    const mesmin =  6.0
    const mesmax =  16.0
    if mes <= mesmin
@@ -61,7 +61,7 @@ function detection_efficiency_fressin2013(mes::Real)
 end
 
 
-function detection_efficiency_christiansen2015(mes::Real; mes_threshold::Real = 7.1, min_pdet_nonzero::Float64 = 0.0)
+function detection_efficiency_christiansen2015(mes::Float64; mes_threshold::Float64 = 7.1, min_pdet_nonzero::Float64 = 0.0)
    const a =  4.65  # from code for detection_efficiency(...) at https://github.com/christopherburke/KeplerPORTs/blob/master/KeplerPORTs_utils.py
    const b =  0.98
    #const a =  4.35 # from arxiv abstract. Informal testing showed it didn't matter
@@ -72,11 +72,17 @@ function detection_efficiency_christiansen2015(mes::Real; mes_threshold::Real = 
    return pdet
 end
 
-function detection_efficiency_dr25_simple(mes::Real; min_pdet_nonzero::Float64 = 0.0)
-   const a =  30.87  # from pg 16 of https://exoplanetarchive.ipac.caltech.edu/docs/KSCI-19110-001.pdf
-   const b =  0.271
+#global const detection_efficiency_dr25_simple_a =  30.87  # from pg 16 of https://exoplanetarchive.ipac.caltech.edu/docs/KSCI-19110-001.pdf
+#global const detection_efficiency_dr25_simple_b =  0.271
+#global const detection_efficiency_dr25_simple_dist = Gamma(detection_efficiency_dr25_simple_a,detection_efficiency_dr25_simple_b)
+function detection_efficiency_dr25_simple(mes::Float64; min_pdet_nonzero::Float64 = 0.0)::Float64
+   const a = 30.87  # from pg 16 of https://exoplanetarchive.ipac.caltech.edu/docs/KSCI-19110-001.pdf
+   const b = 0.271
    const c = 0.940
-   pdet = c*cdf(Gamma(a,b), mes)
+   const dist = Gamma(a,b)
+   #pdet = c*cdf(Gamma(a,b), mes)
+   pdet::Float64 = c*cdf(dist, mes)::Float64
+   #pdet::Float64 = c*cdf(detection_efficiency_dr25_simple_dist, mes)::Float64
    pdet = pdet >= min_pdet_nonzero ? pdet : 0.0
    return pdet
 end
@@ -88,7 +94,7 @@ detection_efficiency_model = detection_efficiency_dr25_simple
 # Resume code original to SysSim
 
 
-function interpolate_cdpp_to_duration(t::KeplerTarget, duration::Real)
+function interpolate_cdpp_to_duration(t::KeplerTarget, duration::Float64)
    duration_in_hours = duration *24.0
    dur_idx = searchsortedlast(cdpp_durations,duration_in_hours)   # cdpp_durations is defined in constants.jl
    if dur_idx <= 0 
@@ -103,7 +109,7 @@ function interpolate_cdpp_to_duration(t::KeplerTarget, duration::Real)
 end
 
 
-function calc_snr_if_transit(t::KeplerTarget, depth::Real, duration::Real, cdpp::Real, sim_param::SimParam; num_transit::Real = 1)
+function calc_snr_if_transit(t::KeplerTarget, depth::Float64, duration::Float64, cdpp::Float64, sim_param::SimParam; num_transit::Float64 = 1)
    depth_tps = frac_depth_to_tps_depth(depth)                  # WARNING: Hardcoded this conversion 
    snr = depth_tps*sqrt(num_transit*duration*LC_rate)/cdpp     # WARNING: Assumes measurement uncertainties are uncorrelated & CDPP based on LC
 end
@@ -116,14 +122,14 @@ function calc_snr_if_transit_central(t::KeplerTarget, s::Integer, p::Integer, si
   calc_snr_if_transit(t,depth,duration_central,cdpp, sim_param,num_transit=num_transit)
 end
 
-function calc_prob_detect_if_transit(t::KeplerTarget, snr::Real, sim_param::SimParam; num_transit::Real = 1)
+function calc_prob_detect_if_transit(t::KeplerTarget, snr::Float64, sim_param::SimParam; num_transit::Float64 = 1)
   const min_transits = 3.0                                                    # WARNING: Hard coded 3 transit minimum
   const min_pdet_nonzero = 1.0e-4                                                # TODO OPT: Consider raising threshold to prevent a plethora of planets that are very unlikely to be detected due to using 0.0 or other small value here
   wf = kepler_window_function(num_transit, t.duty_cycle, min_transits=min_transits)   # TODO SCI DETAIL: Replace statistical model with checking actual transit times for long period planets
   return wf*detection_efficiency_model(snr, min_pdet_nonzero=min_pdet_nonzero)	
 end
 
-function calc_prob_detect_if_transit(t::KeplerTarget, depth::Real, duration::Real, cdpp::Real, sim_param::SimParam; num_transit::Real = 1)
+function calc_prob_detect_if_transit(t::KeplerTarget, depth::Float64, duration::Float64, cdpp::Float64, sim_param::SimParam; num_transit::Float64 = 1)
   snr = calc_snr_if_transit(t,depth,duration,cdpp, sim_param, num_transit=num_transit)
   return calc_prob_detect_if_transit(t, snr, sim_param, num_transit=num_transit)
 end
@@ -146,7 +152,7 @@ function calc_prob_detect_if_transit_with_actual_b(t::KeplerTarget, s::Integer, 
 end
 
 # Compute probability of detection if we average over impact parameters b~U[0,1)
-function calc_ave_prob_detect_if_transit_from_snr(t::KeplerTarget, snr_central::Real, duration_central::Real, size_ratio::Real, cdpp_central::Real, sim_param::SimParam; num_transit::Real = 1)
+function calc_ave_prob_detect_if_transit_from_snr(t::KeplerTarget, snr_central::Float64, duration_central::Float64, size_ratio::Float64, cdpp_central::Float64, sim_param::SimParam; num_transit::Float64 = 1)
   const min_transits = 3.0                                                    # WARNING: Hard coded 3 transit minimum
   const min_pdet_nonzero = 1.0e-4
   wf = kepler_window_function(num_transit, t.duty_cycle, min_transits=min_transits)   
@@ -175,7 +181,7 @@ function calc_ave_prob_detect_if_transit_from_snr(t::KeplerTarget, snr_central::
   weight[num_impact_param] *= 0.5         # Upper endpoint of second integral
   @assert isapprox(sum(weight),1.0)
 
-  function integrand(b::Real) 
+  function integrand(b::Float64)::Float64
      depth_factor = calc_depth_correction_for_grazing_transit(b,size_ratio)
      duration_factor = calc_transit_duration_factor_for_impact_parameter_b(b,size_ratio) 
      cdpp = interpolate_cdpp_to_duration(t,duration_central*duration_factor)
@@ -190,7 +196,7 @@ function calc_ave_prob_detect_if_transit_from_snr(t::KeplerTarget, snr_central::
 end
 
 
-function calc_ave_prob_detect_if_transit(t::KeplerTarget, depth::Real, duration_central::Real, size_ratio::Real, sim_param::SimParam; num_transit::Real = 1)
+function calc_ave_prob_detect_if_transit(t::KeplerTarget, depth::Float64, duration_central::Float64, size_ratio::Float64, sim_param::SimParam; num_transit::Float64 = 1)
   cdpp_central = interpolate_cdpp_to_duration(t, duration_central)
   snr_central = calc_snr_if_transit(t,depth,duration_central,cdpp_central, sim_param, num_transit=num_transit)
   return calc_ave_prob_detect_if_transit_from_snr(t, snr_central, duration_central, size_ratio, cdpp_central, sim_param, num_transit=num_transit)

@@ -413,7 +413,7 @@ function calc_distance_vector_binned(summary1::CatalogSummaryStatistics, summary
         ### Bernoulli distance
         #= 
         num_pl_match_p_and_r = length(bin_match_list[n])
-        num_draws = floor(Int64, num_pl_match_p_and_r * (summary1.stat["num targets"]/summary2.stat["num targets"]))
+        num_draws = max(1,floor(Int64, num_pl_match_p_and_r * (summary1.stat["num targets"]/summary2.stat["num targets"])))
         #for i in 1:num_pl_match_p_and_r
         for i in 1:num_draws
            pl_id = bin_match_list[n][1+i%num_pl_match_p_and_r]
