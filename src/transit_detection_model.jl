@@ -27,18 +27,18 @@ end
     
 # See Christiansen et al. (2015)  This assumes a linear limbdarkening coefficient of 0.6
 function frac_depth_to_tps_depth(frac_depth::Real)
-    const alp = 1.0874
-    const bet = 1.0187
-    const REALDEPTH2TPSSQUARE = 1.0  # WARNING: Waiting for this to be confirmed
+    alp = 1.0874
+    bet = 1.0187
+    REALDEPTH2TPSSQUARE = 1.0  # WARNING: Waiting for this to be confirmed
     k = sqrt(frac_depth)
     tps_depth = min( (alp-bet*k) * frac_depth* REALDEPTH2TPSSQUARE, 1.0)   # NOTE: I added the max based on common sense
     return tps_depth
 end
 
 function detection_efficiency_theory(mes::Real; min_pdet_nonzero::Float64 = 0.0)
-   const muoffset =  0.0
-   const sig =  1.0
-   const mesthresh = 7.1
+   muoffset =  0.0
+   sig =  1.0
+   mesthresh = 7.1
    if mes > (9.0 - mesthresh - muoffset)
       return 1.0
    else
@@ -49,8 +49,8 @@ function detection_efficiency_theory(mes::Real; min_pdet_nonzero::Float64 = 0.0)
 end
 
 function detection_efficiency_fressin2013(mes::Real)
-   const mesmin =  6.0
-   const mesmax =  16.0
+    mesmin =  6.0
+    mesmax =  16.0
    if mes <= mesmin
       return 0.0
    elseif mes >= mesmax
@@ -62,10 +62,10 @@ end
 
 
 function detection_efficiency_christiansen2015(mes::Real; mes_threshold::Real = 7.1, min_pdet_nonzero::Float64 = 0.0)
-   const a =  4.65  # from code for detection_efficiency(...) at https://github.com/christopherburke/KeplerPORTs/blob/master/KeplerPORTs_utils.py
-   const b =  0.98
-   #const a =  4.35 # from arxiv abstract. TODO DETAIL: Figure out which is better.  Informal testing showed it didn't matter
-   #const b =  1.05
+    a =  4.65  # from code for detection_efficiency(...) at https://github.com/christopherburke/KeplerPORTs/blob/master/KeplerPORTs_utils.py
+    b =  0.98
+   # a =  4.35 # from arxiv abstract. TODO DETAIL: Figure out which is better.  Informal testing showed it didn't matter
+   # b =  1.05
    usemes = max(0.0,mes - 7.1 - (mes_threshold - 7.1))
    pdet = cdf(Gamma(a,b), usemes)
    pdet = pdet >= min_pdet_nonzero ? pdet : 0.0
@@ -73,9 +73,9 @@ function detection_efficiency_christiansen2015(mes::Real; mes_threshold::Real = 
 end
 
 function detection_efficiency_dr25_simple(mes::Real; min_pdet_nonzero::Float64 = 0.0)
-   const a =  30.87  # from pg 16 of https://exoplanetarchive.ipac.caltech.edu/docs/KSCI-19110-001.pdf
-   const b =  0.271
-   const c = 0.940
+    a =  30.87  # from pg 16 of https://exoplanetarchive.ipac.caltech.edu/docs/KSCI-19110-001.pdf
+    b =  0.271
+    c = 0.940
    pdet = c*cdf(Gamma(a,b), mes)
    pdet = pdet >= min_pdet_nonzero ? pdet : 0.0
    return pdet
@@ -99,9 +99,9 @@ function calc_snr_if_transit(t::KeplerTarget, s::Integer, p::Integer, sim_param:
 end
 
 function calc_prob_detect_if_transit(t::KeplerTarget, snr::Real, sim_param::SimParam; num_transit::Real = 1)
-  const min_transits = 3.0                                                    # WARNING: Hard coded 3 transit minimum
-  const mes_threshold = 7.1                                                   # WARNING: Assuming 7.1 for all stars, durations
-  const min_pdet_nonzero = 0.0                                                # TODO OPT: Figure out how to prevent a plethora of planets that are very unlikely to be detected due to using 0.0
+   min_transits = 3.0                                                    # WARNING: Hard coded 3 transit minimum
+   mes_threshold = 7.1                                                   # WARNING: Assuming 7.1 for all stars, durations
+   min_pdet_nonzero = 0.0                                                # TODO OPT: Figure out how to prevent a plethora of planets that are very unlikely to be detected due to using 0.0
   wf = kepler_window_function(num_transit, t.duty_cycle, min_transits=min_transits)   # TODO SCI DETAIL: Replace statistical model with checking actual transit times for long period planets
   return wf*detection_efficiency_model(snr, min_pdet_nonzero=min_pdet_nonzero)	
 end
@@ -120,9 +120,9 @@ end
 
 # Compute probability of detection if we average over impact parameters b~U[0,1)
 function calc_ave_prob_detect_if_transit(t::KeplerTarget, snr_central::Real, sim_param::SimParam; num_transit::Real = 1)
-  const min_transits = 3.0                                                    # WARNING: Hard coded 3 transit minimum
-  const mes_threshold = 7.1                                                   # WARNING: Assuming 7.1 for all stars, durations
-  const min_pdet_nonzero = 0.0                                                # TODO OPT: Figure out how to prevent a plethora of planets that are very unlikely to be detected due to using 0.0
+   min_transits = 3.0                                                    # WARNING: Hard coded 3 transit minimum
+   mes_threshold = 7.1                                                   # WARNING: Assuming 7.1 for all stars, durations
+   min_pdet_nonzero = 0.0                                                # TODO OPT: Figure out how to prevent a plethora of planets that are very unlikely to be detected due to using 0.0
   wf = kepler_window_function(num_transit, t.duty_cycle, min_transits=min_transits)   
   num_impact_param = 5
   ave_detection_efficiency = 0.5*detection_efficiency_model(snr_central, min_pdet_nonzero=min_pdet_nonzero)	  

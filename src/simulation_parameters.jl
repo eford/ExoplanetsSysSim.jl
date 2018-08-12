@@ -5,16 +5,16 @@ const global version_id_str = "0.2.2"
 const global version_id_pair = ("version",version_id_str)
 const global julia_version_pair = ("version_julia",string(VERSION))
 
-type SimParam
+mutable struct SimParam
   param::Dict{String,Any}
   active::Dict{String,Bool}
 end
 copy(p::SimParam) = SimParam(copy(p.param),copy(p.active))
 
-@doc """
-### SimParam(p::Dict{String,Any})
+"""
+    SimParam(p::Dict{String,Any})
 Creates a SimParam object from the dictionary p, with all parameter defaulting to inactive.
-""" ->
+"""
 function SimParam(p::Dict{String,Any})   # By default all parameters are set as inactive (i.e., not allowed to be optimized)
   a = Dict{String,Bool}()
   for k in keys(p)
@@ -23,71 +23,71 @@ function SimParam(p::Dict{String,Any})   # By default all parameters are set as 
   return SimParam(p,a)
 end
 
-@doc """
-### SimParam()
+"""
+    SimParam()
 Creates a nearly empty SimParam object, with just the version id and potentially other information about the code, system, runtime, etc.
-""" ->
+""" 
 SimParam() = SimParam( Dict{String,Any}([version_id_pair,julia_version_pair,("hostname",gethostname()), ("date",chomp(@compat readstring(`date`))),("time",time())]) )
 
-@doc """
-### add_param_fixed(sim::SimParam, key::String,val::Any)
+ """
+    add_param_fixed(sim::SimParam, key::String,val::Any)
 Adds (or overwrites) key with value val to the SimParam object, sim, and sets the parameter set to inactive.
-""" ->
+"""
 function add_param_fixed(sim::SimParam, key::String,val::Any)
   sim.param[key] = val
   sim.active[key] = false
 end
 
-@doc """
+ """
 ### add_param_active(sim::SimParam, key::String,val::Any)
 Adds (or overwrites) key with value val to the SimParam object, sim, and sets the parameter set to active.
-""" ->
+"""
 function add_param_active(sim::SimParam, key::String,val::Any)
   sim.param[key] = val
   sim.active[key] = true
 end
 
-@doc """
+ """
 ### update_param(sim::SimParam, key::String,val::Any)
 Overwrites key with value val to the SimParam object, sim
-""" ->
+"""
 function update_param(sim::SimParam, key::String,val::Any)
   @assert haskey(sim.param,key)
   sim.param[key] = val
 end
 
-@doc """
+"""
 ### set_active(sim::SimParam, key::String)
 Sets the key parameter to be active in sim.
-""" ->
+"""
 function set_active(sim::SimParam,key::String)
   @assert haskey(sim.param,key)
   sim.active[key] = true
 end
 
-@doc """
+"""
 ### set_active(sim::SimParam, keys::Vector{String})
 Sets each of the key parameters to be active in sim.
-""" ->
+"""
 function set_active(sim::SimParam,keys::Vector{String})
   for k in keys
     set_active(sim,k)
   end
 end
 
-@doc """
+"""
 ### set_inactive(sim::SimParam, key::String)
 Sets the key parameter to be inactive in sim.
-""" ->
+""" 
 function set_inactive(sim::SimParam,key::String)
   @assert haskey(sim.param,key)
   sim.active[key] = false
 end
 
-@doc """
+"""
 ### set_inactive(sim::SimParam, keys::Vector{String})
 Sets each of the key parameters to be inactive in sim.
-""" ->
+""" 
 function set_inactive(sim::SimParam,keys::Vector{String})
   for k in keys
     set_inactive(sim,k)
@@ -100,7 +100,7 @@ function is_active(sim::SimParam,key::String)
 end
 
 import Base.get
-function get{T}(sim::SimParam, key::String, default_val::T) 
+function get(sim::SimParam, key::String, default_val::T)  where T
   val::T = get(sim.param,key,default_val)::T
   return val
 end

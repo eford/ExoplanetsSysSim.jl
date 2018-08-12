@@ -11,12 +11,12 @@ using JLD
 #  import Compat: UTF8String, ASCIIString
 #end
 
-type KeplerPhysicalCatalog
+mutable struct KeplerPhysicalCatalog
   target::Array{KeplerTarget,1}
 end
 #KeplerPhysicalCatalog() = KeplerPhysicalCatalog([])
 
-type KeplerObsCatalog
+mutable struct KeplerObsCatalog
   target::Array{KeplerTargetObs,1}
 end
 #KeplerObsCatalog() = KeplerObsCatalog([])

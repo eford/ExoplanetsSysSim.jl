@@ -5,7 +5,7 @@
 
 @compat abstract type StarAbstract end               # Check does using StarAbstract cause a significant performance hit
 
-immutable Star <: StarAbstract                
+struct Star <: StarAbstract                
   radius::Float64
   mass::Float64
   flux::Float64                      # relevant once have multiple stars in one target
@@ -15,13 +15,13 @@ end
 #typealias SingleStar Star
 SingleStar = Star
 
-immutable BinaryStar <: StarAbstract
+struct BinaryStar <: StarAbstract
   primary::Star
   secondary::Star
   orbit::Orbit
 end
 
-immutable MultipleStar <: StarAbstract                      # Will we want to handle triple, quad systems?
+struct MultipleStar <: StarAbstract                      # Will we want to handle triple, quad systems?
   component::Vector{StarAbstract}
   orbit::Vector{Orbit}
 end

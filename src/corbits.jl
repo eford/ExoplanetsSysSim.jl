@@ -2,9 +2,11 @@
 ## (c) 2015 Eric B. Ford
 
 if VERSION >= v"0.4.0-"
-   global const LIB_CORBITS = Libdl.find_library(["libcorbits.so"],[".",joinpath(Pkg.dir(),"ExoplanetsSysSim/"),joinpath(Pkg.dir(),"CORBITS/"),"/usr/local/lib"])  # WARNING: Assumes can find libcorbits.so
+   using Pkg
+   using Libdl
+   global const LIB_CORBITS = Libdl.find_library(["libcorbits.so"],[".",joinpath(Pkg.devdir(),"ExoplanetsSysSim/"),joinpath(Pkg.devdir(),"CORBITS/"),"/usr/local/lib"])  # WARNING: Assumes can find libcorbits.so
 else
-   global const LIB_CORBITS = find_library(["libcorbits.so"],[".",joinpath(Pkg.dir(),"ExoplanetsSysSim/"),joinpath(Pkg.dir(),"CORBITS/"),"/usr/local/lib"])  # WARNING: Assumes can find libcorbits.so
+   global const LIB_CORBITS = find_library(["libcorbits.so"],[".",joinpath(Pkg.devdir(),"ExoplanetsSysSim/"),joinpath(Pkg.devdir(),"CORBITS/"),"/usr/local/lib"])  # WARNING: Assumes can find libcorbits.so
 end
 
 #if !isdefined(is_corbits_initialized)

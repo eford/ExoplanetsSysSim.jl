@@ -1,10 +1,19 @@
 ## ExoplanetsSysSim/src/setup.jl
 ## (c) 2015 Eric B. Ford
 
+
+if VERSION >=v"0.7.0-"
+   using Pkg
+end
+
+#=
+# Is this still needed, now that we've moved to github?
+# If so, this would need to be updated for Julia v0.7.0
 # Since bitbucket messed up capitalization of package name
 if ! isdir( joinpath(Pkg.dir(),"ExoplanetsSysSim") )
      symlink( joinpath(Pkg.dir(),"exoplanetssyssim"), joinpath(Pkg.dir(),"ExoplanetsSysSim") )
 end
+=#
 
 startdir = pwd()
 # Code to be run once to install unregistered package dependencies

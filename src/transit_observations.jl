@@ -81,7 +81,7 @@ include("transit_prob_geometric.jl")
 
 const has_sc_bit_array_size = 7*8        # WARNING: Must be big enough given value of num_quarters (assumed to be <=17)
 
-type KeplerTargetObs                        # QUERY:  Do we want to make this type depend on whether the catalog is based on simulated or real data?
+mutable struct KeplerTargetObs                        # QUERY:  Do we want to make this type depend on whether the catalog is based on simulated or real data?
   obs::Vector{TransitPlanetObs}
   sigma::Vector{TransitPlanetObs}           # Simplistic approach to uncertainties for now.  QUERY: Should estimated uncertainties be part of Observations type?
   # phys_id::Vector{Tuple{Int32,Int32}}     # So we can lookup the system's properties # Commented out since Not used
@@ -98,10 +98,10 @@ KeplerTargetObs(n::Integer) = KeplerTargetObs( fill(TransitPlanetObs(),n), fill(
 num_planets(t::KeplerTargetObs) = length(t.obs)
 
 function calc_target_obs_sky_ave(t::KeplerTarget, sim_param::SimParam)
-  const max_tranets_in_sys = get_int(sim_param,"max_tranets_in_sys")
-  const transit_noise_model = get_function(sim_param,"transit_noise_model")
-  const min_detect_prob_to_be_included = 0.0  # get_real(sim_param,"min_detect_prob_to_be_included")
-  const num_observer_samples = 1 # get_int(sim_param,"num_viewing_geometry_samples")
+   max_tranets_in_sys = get_int(sim_param,"max_tranets_in_sys")
+   transit_noise_model = get_function(sim_param,"transit_noise_model")
+   min_detect_prob_to_be_included = 0.0  # get_real(sim_param,"min_detect_prob_to_be_included")
+   num_observer_samples = 1 # get_int(sim_param,"num_viewing_geometry_samples")
 
   np = num_planets(t)
   obs = Array{TransitPlanetObs}(np)
@@ -126,7 +126,7 @@ function calc_target_obs_sky_ave(t::KeplerTarget, sim_param::SimParam)
 	pdet_ave = calc_ave_prob_detect_if_transit(t, snr_central, sim_param, num_transit=ntr)
 	add_to_catalog = pdet_ave > min_detect_prob_to_be_included  # Include all planets with sufficient detection probability
 	if add_to_catalog
-	   const hard_max_num_b_tries = 100
+	    hard_max_num_b_tries = 100
 	   max_num_b_tries = min_detect_prob_to_be_included == 0. ? hard_max_num_b_tries : min(hard_max_num_b_tries,convert(Int64,1/min_detect_prob_to_be_included))
            pdet_this_b = 0.0
            for j in 1:max_num_b_tries
@@ -167,9 +167,9 @@ end
 
 
 function calc_target_obs_single_obs(t::KeplerTarget, sim_param::SimParam)
-  #const max_tranets_in_sys = get_int(sim_param,"max_tranets_in_sys")
-  const transit_noise_model = get_function(sim_param,"transit_noise_model")
-  const min_detect_prob_to_be_included = 0.0  # get_real(sim_param,"min_detect_prob_to_be_included")
+  # max_tranets_in_sys = get_int(sim_param,"max_tranets_in_sys")
+   transit_noise_model = get_function(sim_param,"transit_noise_model")
+   min_detect_prob_to_be_included = 0.0  # get_real(sim_param,"min_detect_prob_to_be_included")
 
   np = num_planets(t)
   obs = Array{TransitPlanetObs}(np)
@@ -224,7 +224,7 @@ end
 function test_transit_observations(sim_param::SimParam; verbose::Bool=false)  # TODO TEST: Add more tests
   #transit_param = TransitParameter( EphemerisLinear(10.0, 0.0), TransitShape(0.01, 3.0/24.0, 0.5) )
   generate_kepler_target = get_function(sim_param,"generate_kepler_target")
-  const max_it = 100000
+   max_it = 100000
   local obs
   for i in 1:max_it
     target = generate_kepler_target(sim_param)::KeplerTarget

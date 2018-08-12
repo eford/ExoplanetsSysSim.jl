@@ -3,7 +3,7 @@
 
 #export Orbit
 
-immutable Orbit     
+struct Orbit     
   P::Float64             # days             # QUERY:  Should we store P or a here?
   ecc::Float64
   incl::Float64          # radians

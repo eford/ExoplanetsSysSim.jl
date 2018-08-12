@@ -31,9 +31,9 @@ function draw_asymmetric_normal(mu::Real, sig_plus::Real, sig_minus::Real)
 end
 
 function generate_kepler_target_from_table(sim_param::SimParam)  
-  #const  generate_star = get_function(sim_param,"generate_star")
-  const  generate_planetary_system = get_function(sim_param,"generate_planetary_system")
-  const use_star_table_sigmas = false
+  #  generate_star = get_function(sim_param,"generate_star")
+    generate_planetary_system = get_function(sim_param,"generate_planetary_system")
+   use_star_table_sigmas = false
 
   max_star_id = StellarTable.num_usable_in_star_table()
 
@@ -71,12 +71,12 @@ function generate_kepler_target_from_table(sim_param::SimParam)
 end
 
 function generate_kepler_target_simple(sim_param::SimParam)   
-  const  generate_star = get_function(sim_param,"generate_star")
-  const  generate_planetary_system = get_function(sim_param,"generate_planetary_system")
-  const star::StarAbstract = generate_star(sim_param)
+   generate_star = get_function(sim_param,"generate_star")
+   generate_planetary_system = get_function(sim_param,"generate_planetary_system")
+   star::StarAbstract = generate_star(sim_param)
 
-  const mean_log_cdpp = 4.9759601617565465   # mean frmo star table
-  const stddev_log_cdpp = 0.6704860437536709 # std dev from star table
+   mean_log_cdpp = 4.9759601617565465   # mean frmo star table
+   stddev_log_cdpp = 0.6704860437536709 # std dev from star table
   rrmscdpp_5hr = exp(mean_log_cdpp+stddev_log_cdpp*randn())
   cdpp = 1.0e-6 * rrmscdpp_5hr * sqrt(5.0/24.0 / LC_duration )
   contam = 0.0 # rand(LogNormal(1.0e-3,1.0))   # TODO SCI: Come up with better description of Kepler targets, maybe draw from real contaminations

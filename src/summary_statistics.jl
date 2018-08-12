@@ -1,7 +1,7 @@
 # ExoplanetsSysSim/src/summary_statistics.jl
 ## (c) 2015 Eric B. Ford
 
-type CatalogSummaryStatistics
+mutable struct CatalogSummaryStatistics
   stat::Dict{String,Any}          # For storing summary statistics
   cache::Dict{String,Any}         # For caching data that's not a summary statistic
 end

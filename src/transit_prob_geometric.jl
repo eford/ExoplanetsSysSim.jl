@@ -83,7 +83,7 @@ end
 @compat abstract type OneObserver <: SystemDetectionProbsTrait end
 # Derived types will allow us to specialize depending on whether using sky-averaged values, values for actual geometry (both of which require the physical catalog), or estimates based on observed data
 
-type SimulatedSystemDetectionProbs{T<:SystemDetectionProbsTrait} <: SystemDetectionProbsAbstract         # To be used for simulated systems where we can calculat everything
+mutable struct SimulatedSystemDetectionProbs{T<:SystemDetectionProbsTrait} <: SystemDetectionProbsAbstract         # To be used for simulated systems where we can calculat everything
   # Inputs to CORBITS
   detect_planet_if_transits::Vector{Float64}       # Probability of detecting each planet, averaged over all observers for each planet individually, assumes b~U[0,1);  To be used in pass 1
 
@@ -266,8 +266,8 @@ end
 # ASSUMING: Planetary systems for same target are uncorrelated
 # Compute sky-averaged transit probabilities from a target with known physical properties
 function calc_simulated_system_detection_probs(t::KeplerTarget, sim_param::SimParam ) # WARNING: Complicated and untested
-  const max_tranets_in_sys = get_int(param,"max_tranets_in_sys",10)
-  const min_detect_prob_to_be_included = get(param,"max_tranets_in_sys", 0.0)
+  max_tranets_in_sys = get_int(param,"max_tranets_in_sys",10)
+  min_detect_prob_to_be_included = get(param,"max_tranets_in_sys", 0.0)
   s1 = findfirst(num_planets,t.sys)
   if num_planets(t) == num_planets(t.sys[s1])
     # Target has only one system with planets
@@ -309,7 +309,7 @@ end
 end
 
 
-type ObservedSystemDetectionProbs <: SystemDetectionProbsAbstract          # TODO OPT:  For observed systems (or simulations of observed systems) were we can't know everything.  Is this even used?  Or should we just compute these on the fly, rather than storing them? Do we even want to keep this?
+mutable struct ObservedSystemDetectionProbs <: SystemDetectionProbsAbstract          # TODO OPT:  For observed systems (or simulations of observed systems) were we can't know everything.  Is this even used?  Or should we just compute these on the fly, rather than storing them? Do we even want to keep this?
   planet_transits::Vector{Float64}                         # Probability that each planet transits individually for one observer based on actual i, e, and omega 
   detect_planet_if_transits::Vector{Float64}               # Probability of detecting each planet given that it transits. Assumes one observer based on actual i, e and omega
   # snr::Vector{Float64}                      # Dimensionless SNR of detection for each planet QUERY: Should we store this here?
