@@ -17,14 +17,26 @@ function real_binom(k::Float64, BigM::Float64, f::Float64)::Float64
     return x
 end
   
-function kepler_window_function(num_transits_no_gaps::Float64, duty_cycle::Float64; min_transits::Float64 = 3.0)::Float64  # TODO: SCI DARIN:  This is where we'd use your window function data
-  if num_transits_no_gaps < min_transits
+function kepler_window_function_binomial_model(exp_num_transits_no_gaps::Float64, duty_cycle::Float64; min_transits::Float64 = 3.0)::Float64 
+  if exp_num_transits_no_gaps < min_transits
      return 0.0
   else
-     return max(1.0 - real_binom(min_transits,num_transits_no_gaps,duty_cycle), 0.0)
+     return max(1.0 - real_binom(min_transits,exp_num_transits_no_gaps,duty_cycle), 0.0)
   end
 end
     
+function kepler_window_function_binomial_model(t::KeplerTarget, exp_num_transits_no_gaps::Float64, period::Float64, duration::Float64; min_transits::Float64 = 3.0)::Float64 
+   kepler_window_function_binomial_model(exp_num_transits_no_gaps, t.duty_cycle, min_transits=min_transits)
+end
+
+
+function kepler_window_function_dr25_model(t::KeplerTarget, exp_num_transits_no_gaps::Float64, period::Float64, duration::Float64)::Float64 
+   # TODO: SCI DARIN:  This is where we'd use your window function data
+   WindowFunction.eval_window_function(t.window_function_id, Duration=duration, Period=period)
+end
+
+kepler_window_function = kepler_window_function_binomial_model
+
 # See Christiansen et al. (2015)  This assumes a linear limbdarkening coefficient of 0.6
 function frac_depth_to_tps_depth(frac_depth::Float64)
     const alp = 1.0874
@@ -94,7 +106,7 @@ detection_efficiency_model = detection_efficiency_dr25_simple
 # Resume code original to SysSim
 
 
-function interpolate_cdpp_to_duration(t::KeplerTarget, duration::Float64)
+function interpolate_cdpp_to_duration(t::KeplerTarget, duration::Float64)::Float64
    duration_in_hours = duration *24.0
    dur_idx = searchsortedlast(cdpp_durations,duration_in_hours)   # cdpp_durations is defined in constants.jl
    if dur_idx <= 0 
@@ -122,40 +134,43 @@ function calc_snr_if_transit_central(t::KeplerTarget, s::Integer, p::Integer, si
   calc_snr_if_transit(t,depth,duration_central,cdpp, sim_param,num_transit=num_transit)
 end
 
-function calc_prob_detect_if_transit(t::KeplerTarget, snr::Float64, sim_param::SimParam; num_transit::Float64 = 1)
-  const min_transits = 3.0                                                    # WARNING: Hard coded 3 transit minimum
+function calc_prob_detect_if_transit(t::KeplerTarget, snr::Float64, period::Float64, duration::Float64, sim_param::SimParam; num_transit::Float64 = 1)
   const min_pdet_nonzero = 1.0e-4                                                # TODO OPT: Consider raising threshold to prevent a plethora of planets that are very unlikely to be detected due to using 0.0 or other small value here
-  wf = kepler_window_function(num_transit, t.duty_cycle, min_transits=min_transits)   # TODO SCI DETAIL: Replace statistical model with checking actual transit times for long period planets
+  #wf = kepler_window_function(num_transit, t.duty_cycle, min_transits=min_transits)   # TODO SCI DETAIL: Replace statistical model with checking actual transit times for long period planets
+  wf = kepler_window_function(t, num_transit, period, duration)                     
   return wf*detection_efficiency_model(snr, min_pdet_nonzero=min_pdet_nonzero)	
 end
 
-function calc_prob_detect_if_transit(t::KeplerTarget, depth::Float64, duration::Float64, cdpp::Float64, sim_param::SimParam; num_transit::Float64 = 1)
+function calc_prob_detect_if_transit(t::KeplerTarget, depth::Float64, period::Float64, duration::Float64, cdpp::Float64, sim_param::SimParam; num_transit::Float64 = 1)
   snr = calc_snr_if_transit(t,depth,duration,cdpp, sim_param, num_transit=num_transit)
-  return calc_prob_detect_if_transit(t, snr, sim_param, num_transit=num_transit)
+  return calc_prob_detect_if_transit(t, snr, period, duration, sim_param, num_transit=num_transit)
 end
 
 function calc_prob_detect_if_transit_central(t::KeplerTarget, s::Integer, p::Integer, sim_param::SimParam)
+  period = t.sys[s].orbit[p].P
   depth = calc_transit_depth(t,s,p)
   duration_central = calc_transit_duration_central(t,s,p)
   cdpp = interpolate_cdpp_to_duration(t, duration_central)
   ntr = calc_expected_num_transits(t,s,p,sim_param)
-  calc_prob_detect_if_transit(t,depth,duration_central,cdpp, sim_param, num_transit=ntr)
+  calc_prob_detect_if_transit(t,depth,period,duration_central,cdpp, sim_param, num_transit=ntr)
 end
 
 function calc_prob_detect_if_transit_with_actual_b(t::KeplerTarget, s::Integer, p::Integer, sim_param::SimParam)
+  period = t.sys[s].orbit[p].P
   size_ratio = t.sys[s].planet[p].radius/t.sys[s].star.radius
   depth = calc_transit_depth(t,s,p)
   duration = calc_transit_duration(t,s,p)
   cdpp = interpolate_cdpp_to_duration(t, duration)
   ntr = calc_expected_num_transits(t,s,p,sim_param)
-  calc_prob_detect_if_transit(t,depth,duration,cdpp, sim_param, num_transit=ntr)
+  calc_prob_detect_if_transit(t,depth,period,duration,cdpp, sim_param, num_transit=ntr)
 end
 
 # Compute probability of detection if we average over impact parameters b~U[0,1)
-function calc_ave_prob_detect_if_transit_from_snr(t::KeplerTarget, snr_central::Float64, duration_central::Float64, size_ratio::Float64, cdpp_central::Float64, sim_param::SimParam; num_transit::Float64 = 1)
+function calc_ave_prob_detect_if_transit_from_snr(t::KeplerTarget, snr_central::Float64, period::Float64, duration_central::Float64, size_ratio::Float64, cdpp_central::Float64, sim_param::SimParam; num_transit::Float64 = 1)
   const min_transits = 3.0                                                    # WARNING: Hard coded 3 transit minimum
   const min_pdet_nonzero = 1.0e-4
-  wf = kepler_window_function(num_transit, t.duty_cycle, min_transits=min_transits)   
+  #wf = kepler_window_function(num_transit, t.duty_cycle, min_transits=min_transits)   
+  wf = kepler_window_function(t, num_transit, period, duration_central)                    
   
   detection_efficiency_central = detection_efficiency_model(snr_central, min_pdet_nonzero=min_pdet_nonzero) 
   if wf*detection_efficiency_central <= min_pdet_nonzero
@@ -196,17 +211,18 @@ function calc_ave_prob_detect_if_transit_from_snr(t::KeplerTarget, snr_central::
 end
 
 
-function calc_ave_prob_detect_if_transit(t::KeplerTarget, depth::Float64, duration_central::Float64, size_ratio::Float64, sim_param::SimParam; num_transit::Float64 = 1)
+function calc_ave_prob_detect_if_transit(t::KeplerTarget, depth::Float64, period::Float64, duration_central::Float64, size_ratio::Float64, sim_param::SimParam; num_transit::Float64 = 1)
   cdpp_central = interpolate_cdpp_to_duration(t, duration_central)
   snr_central = calc_snr_if_transit(t,depth,duration_central,cdpp_central, sim_param, num_transit=num_transit)
-  return calc_ave_prob_detect_if_transit_from_snr(t, snr_central, duration_central, size_ratio, cdpp_central, sim_param, num_transit=num_transit)
+  return calc_ave_prob_detect_if_transit_from_snr(t, snr_central, period, duration_central, size_ratio, cdpp_central, sim_param, num_transit=num_transit)
 end
 
 function calc_ave_prob_detect_if_transit(t::KeplerTarget, s::Integer, p::Integer, sim_param::SimParam)
   size_ratio = t.sys[s].planet[p].radius/t.sys[s].star.radius
   depth = calc_transit_depth(t,s,p)
+  period = t.sys[s].orbit[p].P
   duration_central = calc_transit_duration_central(t,s,p)
   ntr = calc_expected_num_transits(t,s,p,sim_param)
-  calc_ave_prob_detect_if_transit(t,depth,duration_central, size_ratio, sim_param, num_transit=ntr)
+  calc_ave_prob_detect_if_transit(t,depth,period,duration_central, size_ratio, sim_param, num_transit=ntr)
 end
 

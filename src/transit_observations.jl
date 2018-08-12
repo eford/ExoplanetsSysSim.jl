@@ -309,20 +309,20 @@ function calc_target_obs_sky_ave(t::KeplerTarget, sim_param::SimParam)
          println("# s=",s, " p=",p," num_sys= ",length(t.sys), " num_pl= ",num_planets(sys) )
       end
         ntr = calc_expected_num_transits(t, s, p, sim_param)
-        # period = sys.orbit[p].P
+        period = sys.orbit[p].P
         # t0 = rand(Uniform(0.0,period))   # WARNING: Not being calculated from orbit
         size_ratio = t.sys[s].planet[p].radius/t.sys[s].star.radius
         depth = calc_transit_depth(t,s,p)
         duration_central = calc_transit_duration_central(t,s,p)
         cdpp_central = interpolate_cdpp_to_duration(t, duration_central)
 	snr_central = calc_snr_if_transit(t, depth, duration_central, cdpp_central, sim_param, num_transit=ntr)
-        pdet_ave = calc_ave_prob_detect_if_transit_from_snr(t, snr_central, duration_central, size_ratio, cdpp_central, sim_param, num_transit=ntr) 
+        pdet_ave = calc_ave_prob_detect_if_transit_from_snr(t, snr_central, period, duration_central, size_ratio, cdpp_central, sim_param, num_transit=ntr) 
  
 	add_to_catalog = pdet_ave > min_detect_prob_to_be_included  # Include all planets with sufficient detection probability
 
 
 	if add_to_catalog 
-           pdet_central = calc_prob_detect_if_transit(t, snr_central, sim_param, num_transit=ntr)
+           pdet_central = calc_prob_detect_if_transit(t, snr_central, period, duration_central, sim_param, num_transit=ntr)
            threshold_pdet_ratio = rand()
 	   const hard_max_num_b_tries = 100
 	   max_num_b_tries = min_detect_prob_to_be_included == 0. ? hard_max_num_b_tries : min(hard_max_num_b_tries,convert(Int64,1/min_detect_prob_to_be_included))
@@ -335,7 +335,7 @@ function calc_target_obs_sky_ave(t::KeplerTarget, sim_param::SimParam)
 	      duration = duration_central * transit_duration_factor   # WARNING:  Technically, this duration may be slightly reduced for grazing cases to account for reduction in SNR due to planet not being completely inscribed by star at mid-transit.  But this will be a smaller effect than limb-darkening for grazing transits.  Also, makes a variant of the small angle approximation
               cdpp = interpolate_cdpp_to_duration(t, duration)
 	      snr = snr_central * (cdpp_central/cdpp) * sqrt(transit_duration_factor) 
-              pdet_this_b = calc_prob_detect_if_transit(t, snr, sim_param, num_transit=ntr)
+              pdet_this_b = calc_prob_detect_if_transit(t, snr, period, duration, sim_param, num_transit=ntr)
 
               if pdet_this_b >= threshold_pdet_ratio * pdet_central
                   #println("# Adding pdet_this_b = ", pdet_this_b, " pdet_c = ", pdet_central, " snr= ",snr, " cdpp= ",cdpp, " duration= ",duration, " b=",b, " u01= ", threshold_pdet_ratio)
@@ -394,7 +394,7 @@ function calc_target_obs_single_obs(t::KeplerTarget, sim_param::SimParam)
 	   continue
 	end
         ntr = calc_expected_num_transits(t, s, p, sim_param)
-        # period = sys.orbit[p].P
+        period = sys.orbit[p].P
         # t0 = rand(Uniform(0.0,period))   # WARNING: Not being calculated from orbit
         depth = calc_transit_depth(t,s,p)
         cdpp = interpolate_cdpp_to_duration(t, duration)
@@ -405,7 +405,7 @@ function calc_target_obs_single_obs(t::KeplerTarget, sim_param::SimParam)
         depth *= snr_correction
         snr = calc_snr_if_transit(t, depth, duration, cdpp, sim_param, num_transit=ntr)
 
-        pdet[p] = calc_prob_detect_if_transit(t, depth, duration, cdpp, sim_param, num_transit=ntr)
+        pdet[p] = calc_prob_detect_if_transit(t, depth, period, duration, cdpp, sim_param, num_transit=ntr)
         #pdet[p] = calc_prob_detect_if_transit(t, snr, sim_param, num_transit=ntr)
 
 	if pdet[p] > min_detect_prob_to_be_included   
