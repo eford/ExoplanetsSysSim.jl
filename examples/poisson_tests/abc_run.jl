@@ -11,13 +11,34 @@ using StatsBase
 
 out2txt = false # Write occurrence rates & densities to text files
 expandpart = false # Expand final generation for robust posteriors
+profile_code = false
+
+#srand(42)
 
 println("Setting up simulation...")
-@time abc_plan = setup_abc()
-println("")
 println("Running simulation...")
-@time output = run_abc(abc_plan)
-println("")
+if profile_code
+   println("Setting up simulation...")
+   @time abc_plan = setup_abc(0,max_generations=1)
+   println("Running simulation...")
+   @time output = run_abc(abc_plan)
+   println("Setting up simulation...")
+   @time abc_plan = setup_abc(0,max_generations=5)
+   println("Running simulation...")
+   Profile.init(n = 10^7, delay = 0.01)
+   Profile.clear_malloc_data()
+   @profile output = run_abc(abc_plan)
+   open("profile.txt.corbits.reallocated", "w") do s
+      Profile.print(IOContext(s, :displaysize => (24, 500)))
+   end
+else
+   println("Setting up simulation...")
+   @time abc_plan = setup_abc(0,max_generations=10)
+   println("")
+   println("Running simulation...")
+   @time output = run_abc(abc_plan)
+end
+   println("")
 
 if expandpart
     println("Expanding to large generation...")

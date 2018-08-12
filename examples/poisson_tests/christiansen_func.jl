@@ -410,21 +410,6 @@ function calc_distance_vector_binned(summary1::CatalogSummaryStatistics, summary
         #np_bin[n] = distance_poisson_draw(np2[n]/summary2.stat["num targets"]*summary1.stat["num targets"], convert(Int64, np1[n]))
         np_bin[n] = distance_sum_of_bernoulli_draws(floor(Int64,np1[n]),summary1.stat["num targets"], summary2.stat["weight_list"], summary2.stat["num targets"], bin_match_list[n])
 
-        ### Bernoulli distance
-        #= 
-        num_pl_match_p_and_r = length(bin_match_list[n])
-        num_draws = max(1,floor(Int64, num_pl_match_p_and_r * (summary1.stat["num targets"]/summary2.stat["num targets"])))
-        #for i in 1:num_pl_match_p_and_r
-        for i in 1:num_draws
-           pl_id = bin_match_list[n][1+i%num_pl_match_p_and_r]
-           prob_detect = min(summary2.stat["weight_list"][pl_id],1.0)
-           np2[n] += rand(Bernoulli(prob_detect))
-        end
-        #np_bin[n] = dist_L2_abs(np1[n]/summary1.stat["num targets"], np2[n]/summary2.stat["num targets"])
-        np_bin[n] = dist_L2_abs(np1[n]/summary1.stat["num targets"], np2[n]/summary1.stat["num targets"])
-        =#
-        ###
-
       #println("True # [Bin ", n,"] = ",np1[n],", Expected # [Bin ", n,"] = ",np2[n])
     end
       #d[1] = maximum(np_bin)
