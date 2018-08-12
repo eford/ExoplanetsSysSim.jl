@@ -63,7 +63,7 @@ function setup(filename::String; force_reread::Bool = false)
 
   # See options at: http://exoplanetarchive.ipac.caltech.edu/docs/API_keplerstellar_columns.html
   # Now we read in all CDPP's, so can interpolate to transit duration
-  symbols_to_keep = [ :kepid, :mass, :mass_err1, :mass_err2, :radius, :radius_err1, :radius_err2, :dens, :dens_err1, :dens_err2, :rrmscdpp01p5, :rrmscdpp02p0, :rrmscdpp02p5, :rrmscdpp03p0, :rrmscdpp03p5, :rrmscdpp04p5, :rrmscdpp05p0, :rrmscdpp06p0, :rrmscdpp07p5, :rrmscdpp09p0, :rrmscdpp10p5, :rrmscdpp12p0, :rrmscdpp12p5, :rrmscdpp15p0, :cdppslplong, :cdppslpshrt, :dataspan, :dutycycle ]
+  symbols_to_keep = [ :kepid, :mass, :mass_err1, :mass_err2, :radius, :radius_err1, :radius_err2, :dens, :dens_err1, :dens_err2, :rrmscdpp01p5, :rrmscdpp02p0, :rrmscdpp02p5, :rrmscdpp03p0, :rrmscdpp03p5, :rrmscdpp04p5, :rrmscdpp05p0, :rrmscdpp06p0, :rrmscdpp07p5, :rrmscdpp09p0, :rrmscdpp10p5, :rrmscdpp12p0, :rrmscdpp12p5, :rrmscdpp15p0, :cdppslplong, :cdppslpshrt, :dataspan, :dutycycle, :kepid ]
 
   delete!(df, [~(x in symbols_to_keep) for x in names(df)])    # delete columns that we won't be using anyway
   is_usable = [ !any(ismissing.([ df[i,j] for j in 1:size(df,2) ])) for i in 1:size(df,1) ]
@@ -168,4 +168,50 @@ function generate_star_from_table(sim_param::SimParam)
   id = rand(1:StellarTable.num_usable_in_star_table())
   generate_star_from_table(sim_param, id)
 end
+
+
+# Gather and prepare the window function data
+
+# Object to hold window function data
+immutable win_func_data_holder
+  window_func_array::Array{Float64,3}
+  wf_periods_in_days::Array{Float64,1}
+  wf_durations_in_hrs::Array{Float64,1}
+  sorted_quarter_strings::Array{Int64,1}
+  allsortedkepids::Array{Int64,1}
+  window_function_id_arr::Array{Int64,1}
+end
+
+#win_func_data=win_func_data_holder()
+
+using JLD # needed here again for some reason
+
+function setup_win_func_data(win_func_filename::String = "DR25topwinfuncs.jld") 
+# Reads in the window function data collected from the Kepler Completeness Products
+# see Darin Ragozzine's get/cleanDR25winfuncs.jl
+ wffilename = joinpath(Pkg.dir(),"ExoplanetsSysSim", "data", win_func_filename)
+
+ if ismatch(r".jld$",wffilename)
+  try
+    wfdata = load(wffilename)
+    window_func_array = wfdata["window_func_array"]
+    wf_periods_in_days = wfdata["wf_periods_in_days"]
+    wf_durations_in_hrs = wfdata["wf_durations_in_hrs"]
+    sorted_quarter_strings = wfdata["sorted_quarter_strings"]
+    allsortedkepids = wfdata["allsortedkepids"]
+    window_function_id_arr = wfdata["window_function_id_arr"]
+
+    global win_func_data = win_func_data_holder(window_func_array,wf_periods_in_days,wf_durations_in_hrs,sorted_quarter_strings, 
+    allsortedkepids, window_function_id_arr)
+
+  catch
+    error(string("# Failed to read window function data > ", wffilename," < in jld format."))
+  end
+end
+
+return(win_func_data)
+
+end
+
+
 

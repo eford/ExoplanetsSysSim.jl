@@ -65,6 +65,11 @@ module EvalSysSimModel
     cat_obs = setup_actual_planet_candidate_catalog(df_star, df_koi, usable_koi, sim_param_closure)
     ###
 
+    win_func_data = setup_win_func_data()
+    println("# Finished reading in window function data")
+    add_param_fixed(sim_param_closure,"win_func_data",win_func_data)
+
+
     global summary_stat_ref_closure = calc_summary_stats_obs_binned_rates(cat_obs,sim_param_closure, trueobs_cat = true)
   end
 
@@ -117,7 +122,7 @@ module SysSimABC
     global abc_plan = ABC.abc_pmc_plan_type(EvalSysSimModel.gen_data,EvalSysSimModel.calc_summary_stats,calc_distance_ltd, param_prior, is_valid=EvalSysSimModel.is_valid,
                                      num_part=npart, num_max_attempt=50, num_max_times=1, epsilon_init=9.9e99, target_epsilon=1.0e-100, in_parallel=in_parallel);
 
-    println("# run_abc_largegen: ",EvalSysSimModel.sim_param_closure)
+    #println("# run_abc_largegen: ",EvalSysSimModel.sim_param_closure)
     sampler_largegen = abc_plan.make_proposal_dist(pop, abc_plan.tau_factor)
     theta_largegen = Array{Float64}(size(pop.theta, 1), npart)
     weight_largegen = Array{Float64}(npart)
@@ -133,7 +138,7 @@ module SysSimABC
 
   function run_abc(abc_plan::ABC.abc_pmc_plan_type)
     #global sim_param_closure
-    println("# run_abc: ",EvalSysSimModel.sim_param_closure)
+#    println("# run_abc: ",EvalSysSimModel.sim_param_closure)
     ss_true = EvalSysSimModel.get_ss_obs()
     #println("True catalog SS: ", ss_true)
     pop_out = ABC.run_abc(abc_plan,ss_true;verbose=true)
@@ -143,7 +148,7 @@ module SysSimABC
     #global sim_param_closure
     dist_threshold = maximum(pop.dist)
     EvalSysSimModel.add_param_fixed(EvalSysSimModel.sim_param_closure,"minimum ABC dist skip pass 2",dist_threshold)
-    println("# run_abc: ",EvalSysSimModel.sim_param_closure)
+    #println("# run_abc: ",EvalSysSimModel.sim_param_closure)
     ss_true = EvalSysSimModel.get_ss_obs()
     pop_out = ABC.run_abc(abc_plan,ss_true,pop;verbose=true)
   end
