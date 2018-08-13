@@ -52,7 +52,8 @@ macro make_evaluate_model(param,cat_phys,cat_obs,sum_stat,sum_stat_ref)
       calc_scalar_distance(evaluate_model_pass_two(param))
     end
 
-    if module_name(current_module()) != :Main
+    #if module_name(current_module()) != :Main
+    if !isequal(@__MODULE__,Module(:Main))
       export evaluate_model, evaluate_model_pass_one, evaluate_model_pass_two, evaluate_model_scalar_ret, evaluate_model_pass_one_scalar_ret, evaluate_model_pass_two_scalar_ret
     end
 

@@ -38,7 +38,7 @@ mass(s::MultipleStar) = sum( mass, s.component)::Float64
 function generate_stars(sim_param::SimParam)
    generate_star = get_function(sim_param,"generate_star")
    num_target_stars = get_int(sim_param,"num_targets_sim_pass_one")
-   star_list = Array{StarAbstract}(num_target_stars)
+   star_list = Array{StarAbstract}(undef,num_target_stars)
    for i in 1:num_target_stars
      s =  generate_star(sim_param)
      star_list[i] = s

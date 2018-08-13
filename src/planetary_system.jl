@@ -20,7 +20,7 @@ if !@isdefined  PlanetarySystemAbstract
   PlanetarySystemSingleStar = PlanetarySystem{SingleStar}
 
 end
-PlanetarySystem(s::StarT) where StarT<:StarAbstract = PlanetarySystem(s,Array{Planet}(0),Array{Orbit}(0))  # Constructor for a Planetary System with no planets
+PlanetarySystem(s::StarT) where StarT<:StarAbstract = PlanetarySystem(s,Array{Planet}(undef,0),Array{Orbit}(undef,0))  # Constructor for a Planetary System with no planets
 
 PlanetarySystem(s::StarT, p::Planet, o::Orbit) where StarT<:StarAbstract = PlanetarySystem(s,[p],[o])  # Constructor for a single Planet System
 
@@ -222,7 +222,7 @@ function generate_e_omega_rayleigh(sigma_hk::Float64)
     k = sigma_hk*randn()
   end
   ecc = sqrt(h*h+k*k)
-  w = atan2(k,h)
+  w = atan(k,h)
   return ecc, w
 end
 
@@ -280,8 +280,8 @@ function generate_planetary_system_uncorrelated_incl(star::StarAbstract, sim_par
   if( num_pl==0 )
     return PlanetarySystem(star)::PlanetarySystem
   else
-     pl = Array{Planet}(num_pl)
-     orbit = Array{Orbit}(num_pl)
+     pl = Array{Planet}(undef,num_pl)
+     orbit = Array{Orbit}(undef,num_pl)
      (Plist::Vector{Float64}, Rlist::Vector{Float64}) = generate_period_and_sizes(star, sim_param, num_pl=num_pl)
      idx = sortperm(Plist)                   # TODO OPT: Check to see if sorting is significant time sink.  If so, it might could be deferred
 
@@ -321,8 +321,8 @@ function generate_planetary_system_simple(star::StarAbstract, sim_param::SimPara
   if( num_pl==0 )
     return PlanetarySystem(star)
   else
-     pl = Array{Planet}(num_pl)
-     orbit = Array{Orbit}(num_pl)
+     pl = Array{Planet}(undef,num_pl)
+     orbit = Array{Orbit}(undef,num_pl)
      (Plist::Vector{Float64}, Rlist::Vector{Float64}) = generate_period_and_sizes(star, sim_param, num_pl=num_pl)
      idx = sortperm(Plist)                   # TODO OPT: Check to see if sorting is significant time sink.  If so, it might could be deferred
      incl_sys = acos(rand())

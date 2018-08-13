@@ -1,6 +1,6 @@
 julia 0.6
-Libdl
-Pkg
+#Libdl
+#Pkg
 Combinatorics
 Compat
 CSV

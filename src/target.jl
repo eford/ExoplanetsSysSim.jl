@@ -3,7 +3,7 @@
 
 #using Distributions
 
-immutable KeplerTarget
+struct KeplerTarget
   #sys::PlanetarySystem   # Make array for planetary systems aroud multiple stars in one target?
   sys::Vector{PlanetarySystemAbstract}
   cdpp::Array{Float64,2} # fractional, not ppm; 2D to allow for multiple time scales, months, quarters or seasons/spacecraft rotation angles

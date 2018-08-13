@@ -7,6 +7,7 @@ using DataArrays
 using DataFrames
 using CSV
 using JLD
+using Pkg
 
 #if VERSION >= v"0.5-"
 #  import Compat: UTF8String, ASCIIString
@@ -25,7 +26,7 @@ function setup(sim_param::SimParam; force_reread::Bool = false)
      return df
      #return data
   end
-  stellar_catalog_filename = convert(String,joinpath(Pkg.dir("ExoplanetsSysSim"), "data", convert(String,get(sim_param,"stellar_catalog","q1_q17_dr24_stellar.csv")) ) )
+  stellar_catalog_filename = convert(String,joinpath(dirname(pathof(ExoplanetsSysSim)), "..","data", convert(String,get(sim_param,"stellar_catalog","q1_q17_dr24_stellar.csv")) ) )
   df = setup(stellar_catalog_filename)
   add_param_fixed(sim_param,"read_stellar_catalog",true)
   add_param_fixed(sim_param,"num_kepler_targets",num_usable_in_star_table())
@@ -34,7 +35,7 @@ end
 
 function setup(filename::String; force_reread::Bool = false)
   global df, usable
-  if ismatch(r".jld$",filename)
+  if occursin(r".jld$",filename)
   try 
     data = load(filename)
     df = data["stellar_catalog"]

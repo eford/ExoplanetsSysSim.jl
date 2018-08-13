@@ -27,7 +27,7 @@ end
     SimParam()
 Creates a nearly empty SimParam object, with just the version id and potentially other information about the code, system, runtime, etc.
 """ 
-SimParam() = SimParam( Dict{String,Any}([version_id_pair,julia_version_pair,("hostname",gethostname()), ("date",chomp(@compat readstring(`date`))),("time",time())]) )
+SimParam() = SimParam( Dict{String,Any}([version_id_pair,julia_version_pair,("hostname",gethostname()), ("date",chomp(read(`date`,String))),("time",time())]) )
 
  """
     add_param_fixed(sim::SimParam, key::String,val::Any)
@@ -229,7 +229,7 @@ function preallocate_memory!(sim_param::SimParam)
   add_param_fixed(sim_param,"mem_kepler_target_obs", Array{KeplerTargetObs}(num_kepler_targets) )
 end
 
-function setup_sim_param_demo(args::Vector{String} = Array{String}(0) )   # allow this to take a list of parameter (e.g., from command line)
+function setup_sim_param_demo(args::Vector{String} = Array{String}(undef,0) )   # allow this to take a list of parameter (e.g., from command line)
   sim_param = SimParam()
   add_param_fixed(sim_param,"max_tranets_in_sys",7)
   add_param_fixed(sim_param,"num_targets_sim_pass_one",190000)                      # Note this is used for the number of stars in the simulations, not necessarily related to number of Kepler targets

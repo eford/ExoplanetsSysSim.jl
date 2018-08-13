@@ -3,7 +3,10 @@
 module ExoplanetsSysSim
 
 # Packages to be used                 # Note: Tried to keep to a minimum in core package to help with maintainability
-import Compat: UTF8String, ASCIIString, @compat, readstring, is_windows
+import Compat: @compat, readstring, is_windows
+if VERSION < v"0.7"
+  import Compat: UTF8String, ASCIIString
+end
 if VERSION >= v"0.5-"
   using Combinatorics
 end

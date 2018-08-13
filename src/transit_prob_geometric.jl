@@ -119,24 +119,24 @@ OneObserverSystemDetectionProbs(n::Integer; num_samples::Integer = 1) = Simulate
 OneObserverSystemDetectionProbsEmpty() = SimulatedSystemDetectionProbs(OneObserver,0)
 
 # Functions common to various types of SystemDetectionProbs
-num_planets{T<:SystemDetectionProbsTrait}(prob::SimulatedSystemDetectionProbs{T}) = length(prob.detect_planet_if_transits)
-function prob_detect_if_transits{T<:SystemDetectionProbsTrait}(prob::SimulatedSystemDetectionProbs{T}, pl_id::Integer) 
+num_planets(prob::SimulatedSystemDetectionProbs{T}) where T<:SystemDetectionProbsTrait = length(prob.detect_planet_if_transits)
+function prob_detect_if_transits(prob::SimulatedSystemDetectionProbs{T}, pl_id::Integer) where T<:SystemDetectionProbsTrait
   @assert 1<=pl_id<=length(prob.detect_planet_if_transits)
   prob.detect_planet_if_transits[pl_id]
 end
-function prob_detect{T<:SystemDetectionProbsTrait}(prob::SimulatedSystemDetectionProbs{T}, pl_id::Integer) 
+function prob_detect(prob::SimulatedSystemDetectionProbs{T}, pl_id::Integer)  where T<:SystemDetectionProbsTrait
   if ! (1<=pl_id<=size(prob.pairwise,1) )
     println("#ERROR:  pl_id =", pl_id, " prob.pairwise= ", prob.pairwise)
   end
   @assert 1<=pl_id<=size(prob.pairwise,1)
   return prob.pairwise[pl_id,pl_id]
 end
-function prob_detect_both_planets{T<:SystemDetectionProbsTrait}(prob::SimulatedSystemDetectionProbs{T}, pl_id::Integer, ql_id::Integer)
+function prob_detect_both_planets(prob::SimulatedSystemDetectionProbs{T}, pl_id::Integer, ql_id::Integer) where T<:SystemDetectionProbsTrait
   @assert 1<=pl_id<=size(prob.pairwise,1)
   @assert 1<=ql_id<=size(prob.pairwise,1)
   prob.pairwise[pl_id,ql_id]
 end
-prob_detect_n_planets{T<:SystemDetectionProbsTrait}(prob::SimulatedSystemDetectionProbs{T}, n::Integer) = 1<=n<=length(prob.n_planets) ? prob.n_planets[n] : 0.0
+prob_detect_n_planets(prob::SimulatedSystemDetectionProbs{T}, n::Integer) where T<:SystemDetectionProbsTrait = 1<=n<=length(prob.n_planets) ? prob.n_planets[n] : 0.0
 
 # Compute sky-averaged transit probabilities from a planetary system with known physical properties, assuming a single host star
 function calc_simulated_system_detection_probs(ps::PlanetarySystemSingleStar, prob_det_if_tr::Vector{Float64}; num_samples::Integer = 1, max_tranets_in_sys::Integer = 10, min_detect_prob_to_be_included::Float64 = 0.0, observer_trait::Type=SkyAveraged)
@@ -211,7 +211,7 @@ function calc_simulated_system_detection_probs(ps::PlanetarySystemSingleStar, pr
 end
 
 if false # WARNING: Complicated and untested
-function combine_system_detection_probs{T}(prob::Vector{SimulatedSystemDetectionProbs{T}}, s1::Integer, s2::Integer) # WARNING: Complicated and untested
+function combine_system_detection_probs(prob::Vector{SimulatedSystemDetectionProbs{T}}, s1::Integer, s2::Integer) where T # WARNING: Complicated and untested
     npl_s1 = min(num_planets(prob[s1]), max_tranets_in_sys)
     npl_s2 = min(num_planets(prob[s2]), max_tranets_in_sys)
     num_planets_across_systems = npl_s1 + npl_s2
@@ -249,7 +249,7 @@ function combine_system_detection_probs{T}(prob::Vector{SimulatedSystemDetection
     return prob_merged
 end 
 
-function select_subset{T<:SystemDetectionProbsTrait}(prob::SimulatedSystemDetectionProbs{T}, idx::Vector{Int64}) # WARNING: Complicated and untested
+function select_subset(prob::SimulatedSystemDetectionProbs{T}, idx::Vector{Int64}) # WARNING: Complicated and untested where {T<:SystemDetectionProbsTrait}
     n = length(idx)
     subset = SimulatedSystemDetectionProbs{T}(n)
     subset.detect_planet_if_transits = prob.detect_planet_if_transits[idx]

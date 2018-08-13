@@ -55,7 +55,7 @@ function calc_summary_stats_sim_pass_one_demo(cat_obs::KeplerObsCatalog, cat_phy
   depth_list = zeros(num_tranets)
   weight_list = zeros(num_tranets)
 
-  n = 1   # tranet id
+  tr_id = 1   # tranet id
   for i in idx_tranets     # For each target with at least one tranet
      targ = cat_obs.target[i] 
      for j in 1:min(length(targ.obs),max_tranets_in_sys)   # For each tranet around that target (but truncated if too many tranets in one system)
@@ -65,7 +65,7 @@ function calc_summary_stats_sim_pass_one_demo(cat_obs::KeplerObsCatalog, cat_phy
          # (s,p) = targ.phys_id[j]
          # ptr = calc_transit_prob_single(cat_phys.target[i],s,p)   # WARNING: Could access physical catalog, rather than observed catalog, but obviously that's dangerous for observations.
 	 weight_list[n] = prob_detect(cat_obs.target[i].prob_detect,j)
-         n = n+1
+         tr_id += 1 
       end
    end
   ssd["P list"] = period_list                                     # We can store whole lists, e.g., if we want to compute K-S distances

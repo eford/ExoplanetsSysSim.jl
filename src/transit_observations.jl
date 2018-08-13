@@ -5,7 +5,7 @@
 #include("constants.jl")
 
 #  Starting Section of Observables that are actually used
-immutable TransitPlanetObs
+struct TransitPlanetObs
   # ephem::ephemeris_type     # For now hardcode P and t0, see transit_observation_unused.jl to reinstate
   period::Float64             # days
   t0::Float64                 # days
@@ -15,7 +15,7 @@ immutable TransitPlanetObs
 end
 TransitPlanetObs() = TransitPlanetObs(0.0,0.0,0.0,0.0)
 
-immutable StarObs
+struct StarObs
   radius::Float64      # in Rsol
   mass::Float64        # in Msol
 end
