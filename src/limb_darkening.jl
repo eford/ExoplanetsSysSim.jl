@@ -10,7 +10,7 @@ struct LimbDarkeningParamLinear <: LimbDarkeningParamAbstract
   LimbDarkeningParamLinear(_u1::Real ) = (!( (-2.0<=_u1<=2.0) )) ? error(string("Invalid quadratic limb darkening parameters: ",_u1," & ", _u2)) : new((_u1,))
 end
 
-function limb_darkening_at_midpoint(radius_ratio::Float64, ld::LimbDarkeningParamLinear)
+function depth_at_midpoint(radius_ratio::Float64, ld::LimbDarkeningParamLinear)
     c0 = 1-sum(ld.coeff)  
     omega = c0/4+ld.coeff[1]/6
     ksq = 1-radius_ratio^2
@@ -19,14 +19,13 @@ function limb_darkening_at_midpoint(radius_ratio::Float64, ld::LimbDarkeningPara
     return 1- (tmp0+tmp2)/omega
 end
 
-
 struct LimbDarkeningParamQuadratic <: LimbDarkeningParamAbstract
   coeff::Tuple{Float64,Float64}
   # TODO SCI DETAIL: Repalce with sensible limits on LD params
   LimbDarkeningParamQuadratic(_u1::Real, _u2::Real ) = (!( (-2.0<=_u1<=2.0) && (-2.0<=_u2<=2.0) )) ? error(string("Invalid quadratic limb darkening parameters: ",_u1," & ", _u2)) : new((_u1,_u2))
 end
 
-function limb_darkening_at_midpoint(radius_ratio::Float64, ld::LimbDarkeningParamQuadratic)
+function depth_at_midpoint(radius_ratio::Float64, ld::LimbDarkeningParamQuadratic)
     c0 = 1-sum(ld.coeff) 
     omega = c0/4+(ld.coeff[1]+2*ld.coeff[2])/6-ld.coeff[2]/8 
     ksq = 1-radius_ratio^2
@@ -42,8 +41,7 @@ struct LimbDarkeningParam4thOrder <: LimbDarkeningParamAbstract
   LimbDarkeningParam4thOrder(_c1::Real, _c2::Real, _c3::Real, _c4::Real ) = (!( (-2.0<=_c1<=2.0) && (-2.0<=_c2<=2.0)  && (-2.0<=_c3<=2.0) && (-2.0<=_c4<=2.0) )) ? error(string("Invalid limb darkening parameters: ",_c1," , ", _c2, ", ",_c3," , ",_c4)) : new((_c1,_c2,_c3,_c4))
 end
 
-
-function limb_darkening_at_midpoint(radius_ratio::Float64, ld::LimbDarkeningParam4thOrder)
+function depth_at_midpoint(radius_ratio::Float64, ld::LimbDarkeningParam4thOrder)
     c0 = 1-sum(ld.coeff)  
     omega = c0/4+sum(ld.coeff./(5:8))
     ksq = 1-radius_ratio^2
