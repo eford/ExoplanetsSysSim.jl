@@ -2,6 +2,7 @@
 ## (c) 2018 Eric B. Ford
 
 abstract type LimbDarkeningParamAbstract end
+# Note this file is currently not used by SysSim.
 
 struct LimbDarkeningParamLinear <: LimbDarkeningParamAbstract
   coeff::Tuple{Float64}
