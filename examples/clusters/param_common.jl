@@ -21,22 +21,22 @@ function setup_sim_param_model(args::Vector{String} = Array{String}(0) )   # all
 
   add_param_fixed(sim_param,"generate_num_clusters",generate_num_clusters_poisson) 
   add_param_fixed(sim_param,"generate_num_planets_in_cluster",generate_num_planets_in_cluster_poisson)
-  add_param_fixed(sim_param,"log_rate_clusters",log(3.0))
+  add_param_active(sim_param,"log_rate_clusters",log(3.0))
   add_param_fixed(sim_param,"max_clusters_in_sys",10)
-  add_param_fixed(sim_param,"log_rate_planets_per_cluster",log(3.0))
+  add_param_active(sim_param,"log_rate_planets_per_cluster",log(3.0))
   add_param_fixed(sim_param,"max_planets_in_cluster",10)
 
   # generate_num_planets_in_cluster currently calls: generate_periods_power_law
   add_param_fixed(sim_param,"generate_sizes",ExoplanetsSysSim.generate_sizes_broken_power_law) # To choose the way we draw planetary radii; if "generate_sizes_power_law", then takes "power_law_r"; if "generate_sizes_broken_power_law", then takes "power_law_r1", "power_law_r2", and "break_radius"
-  add_param_fixed(sim_param,"power_law_P",0.5)
+  add_param_active(sim_param,"power_law_P",0.5)
   add_param_fixed(sim_param,"power_law_r",-2.5)
-  add_param_fixed(sim_param,"power_law_r1",-2.0)
-  add_param_fixed(sim_param,"power_law_r2",-4.0)
+  add_param_active(sim_param,"power_law_r1",-2.0)
+  add_param_active(sim_param,"power_law_r2",-4.0)
   add_param_fixed(sim_param,"min_period",3.0)
   add_param_fixed(sim_param,"max_period",300.0)
   add_param_fixed(sim_param,"min_radius",0.5*ExoplanetsSysSim.earth_radius)
   add_param_fixed(sim_param,"max_radius",10.*ExoplanetsSysSim.earth_radius)
-  add_param_fixed(sim_param,"break_radius",3.0*ExoplanetsSysSim.earth_radius)
+  add_param_active(sim_param,"break_radius",3.0*ExoplanetsSysSim.earth_radius)
 
   # generate_num_planets_in_cluster currently use these for the Inclination distribution
   add_param_fixed(sim_param,"sigma_incl",1.5) # degrees; 0 = coplanar w/ generate_kepler_target_simple; ignored by generate_planetary_system_uncorrelated_incl
@@ -52,7 +52,7 @@ function setup_sim_param_model(args::Vector{String} = Array{String}(0) )   # all
 
   # generate_num_planets_in_cluster currently use these for the Stability tests
   add_param_fixed(sim_param,"num_mutual_hill_radii",8.0) #10.0
-  add_param_fixed(sim_param,"generate_planet_mass_from_radius",ExoplanetsSysSim.generate_planet_mass_from_radius_powerlaw)
+  add_param_fixed(sim_param,"generate_planet_mass_from_radius",generate_planet_mass_from_radius_Ning2018) # "ExoplanetsSysSim.generate_planet_mass_from_radius_powerlaw" or "generate_planet_mass_from_radius_Ning2018"
   add_param_fixed(sim_param,"mr_power_index",2.0)
   add_param_fixed(sim_param,"mr_const",1.0)
   add_param_fixed(sim_param,"mr_max_mass",1e3*ExoplanetsSysSim.earth_mass)
@@ -95,18 +95,29 @@ function write_model_params(f, sim_param::SimParam)
     println(f, "# power_law_P: ", get_real(sim_param,"power_law_P"))
     println(f, "# min_period: ", get_real(sim_param,"min_period"))
     println(f, "# max_period: ", get_real(sim_param,"max_period"))
-#println(f, "# power_law_r: ", get_real(sim_param,"power_law_r"))
-    println(f, "# power_law_r1: ", get_real(sim_param,"power_law_r1"))
-    println(f, "# power_law_r2: ", get_real(sim_param,"power_law_r2"))
+
+    if string(get_function(sim_param,"generate_sizes")) == "ExoplanetsSysSim.generate_sizes_power_law"
+        println(f, "# power_law_r: ", get_real(sim_param,"power_law_r"))
+    elseif string(get_function(sim_param,"generate_sizes")) == "ExoplanetsSysSim.generate_sizes_broken_power_law"
+        println(f, "# power_law_r1: ", get_real(sim_param,"power_law_r1"))
+        println(f, "# power_law_r2: ", get_real(sim_param,"power_law_r2"))
+        println(f, "# break_radius (R_earth): ", get_real(sim_param,"break_radius")/ExoplanetsSysSim.earth_radius)
+    end
+
     println(f, "# min_radius (R_earth): ", get_real(sim_param,"min_radius")/ExoplanetsSysSim.earth_radius)
     println(f, "# max_radius (R_earth): ", get_real(sim_param,"max_radius")/ExoplanetsSysSim.earth_radius)
-    println(f, "# break_radius (R_earth): ", get_real(sim_param,"break_radius")/ExoplanetsSysSim.earth_radius)
     println(f, "# sigma_incl: ", get_real(sim_param,"sigma_incl"))
     println(f, "# sigma_incl_near_mmr: ", get_real(sim_param,"sigma_incl_near_mmr"))
     println(f, "# sigma_hk: ", get_real(sim_param,"sigma_hk"))
     println(f, "# num_mutual_hill_radii: ", get_real(sim_param,"num_mutual_hill_radii"))
-    println(f, "# mr_power_index: ", get_real(sim_param,"mr_power_index"))
-    println(f, "# mr_max_mass (M_earth): ", get_real(sim_param,"mr_max_mass")/ExoplanetsSysSim.earth_mass)
+
+    if string(get_function(sim_param,"generate_planet_mass_from_radius")) == "ExoplanetsSysSim.generate_planet_mass_from_radius_powerlaw"
+        println(f, "# mr_power_index: ", get_real(sim_param,"mr_power_index"))
+        println(f, "# mr_max_mass (M_earth): ", get_real(sim_param,"mr_max_mass")/ExoplanetsSysSim.earth_mass)
+    elseif string(get_function(sim_param,"generate_planet_mass_from_radius")) == "generate_planet_mass_from_radius_Ning2018"
+        println(f, "# mr_model: Ning2018")
+    end
+
     println(f, "# sigma_log_radius_in_cluster: ", get_real(sim_param,"sigma_log_radius_in_cluster"))
     println(f, "# sigma_logperiod_per_pl_in_cluster: ", get_real(sim_param,"sigma_logperiod_per_pl_in_cluster"))
     println(f, "#")
