@@ -37,32 +37,6 @@ function make_cdpp_array(star_id::Integer)
   cdpp_arr = (1.0e-6*sqrt(1./24.0/LC_duration)) .* Float64[star_table(star_id, :rrmscdpp01p5)*sqrt(1.5), star_table(star_id, :rrmscdpp02p0)*sqrt(2.), star_table(star_id,:rrmscdpp02p5)*sqrt(2.5), star_table(star_id,:rrmscdpp03p0)*sqrt(3.), star_table(star_id,:rrmscdpp03p5)*sqrt(3.5), star_table(star_id,:rrmscdpp04p5)*sqrt(4.5), star_table(star_id,:rrmscdpp05p0)*sqrt(5.), star_table(star_id,:rrmscdpp06p0)*sqrt(6.), star_table(star_id,:rrmscdpp07p5)*sqrt(7.5), star_table(star_id,:rrmscdpp09p0)*sqrt(9.), star_table(star_id,:rrmscdpp10p5)*sqrt(10.5), star_table(star_id,:rrmscdpp12p0)*sqrt(12.), star_table(star_id,:rrmscdpp12p5)*sqrt(12.5), star_table(star_id,:rrmscdpp15p0)*sqrt(15.)]
 end
  
-#=
-function set_window_function_id(kepid::Int64)
-  # takes the quarter string from the stellar catalog and determines the window function id
-  # from DR25topwinfuncs.jld made by Darin Ragozzine's cleanDR25winfuncs.jl script. 
-
-  wf_id = WindowFunction.get_window_function().window_function_id_arr[findfirst(win_func_data.allsortedkepids,kepid)] # all Kepler kepids are in allsortedkepids
-
-  no_win_func_available=-1
-#  default_window_function_id=maximum(win_func_data.window_function_id_arr)
-  default_window_function_id=101 # hardcoding this in
-
-  if wf_id == no_win_func_available
-    # if a target is observed for less than 4 quarters, then it won't have a corresponding
-    # window function in this list, so throw a warning and use the last window_function_id
-    # which corresponds to an "averaged" window function
-    warn("Window function data is not avaialble for kepid $kepid, using default.")
-    wf_id = default_window_function_id
-  end
-  # TODO SCI IMPORTANT? This does not include TPS timeouts or MESthresholds (see DR25 Completeness Products)
-
-  return(wf_id) 
-
-end
-=#
-
-
 function generate_kepler_target_from_table(sim_param::SimParam)  
   #const  generate_star = get_function(sim_param,"generate_star")
   const  generate_planetary_system = get_function(sim_param,"generate_planetary_system")

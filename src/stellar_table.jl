@@ -50,15 +50,6 @@ function setup(filename::String)
     error(string("# Failed to read stellar catalog >",filename,"< in ascii format."))
   end
 
-  #=  Hoping we can soon get rid of this mess with map below.  There's probably a more efficient way.
-  has_mass = .!(ismissing.(df[:mass]) .| ismissing.(df[:mass_err1]) .| ismissing.(df[:mass_err2]))
-  has_radius = .!(ismissing.(df[:radius]) .| ismissing.(df[:radius_err1]) .| ismissing.(df[:radius_err2]))
-  has_dens = .!(ismissing.(df[:dens]) .| ismissing.(df[:dens_err1]) .| ismissing.(df[:dens_err2]))
-  has_cdpp = .!(ismissing.(df[:rrmscdpp04p5]) .| ismissing.(df[:rrmscdpp01p5]) .| ismissing.(df[:rrmscdpp15p0])) # TODO: WARNING: Doesn't include all CDPPs
-  has_rest = .!(ismissing.(df[:rrmscdpp04p5]) .| ismissing.(df[:dataspan]) .| ismissing.(df[:dutycycle]))
-  is_usable = .&(has_mass, has_radius, has_dens, has_cdpp, has_rest)
-  =# 
-
   # See options at: http://exoplanetarchive.ipac.caltech.edu/docs/API_keplerstellar_columns.html
   # Now we read in all CDPP's, so can interpolate to transit duration
   symbols_to_keep = [ :kepid, :mass, :mass_err1, :mass_err2, :radius, :radius_err1, :radius_err2, :dens, :dens_err1, :dens_err2, :rrmscdpp01p5, :rrmscdpp02p0, :rrmscdpp02p5, :rrmscdpp03p0, :rrmscdpp03p5, :rrmscdpp04p5, :rrmscdpp05p0, :rrmscdpp06p0, :rrmscdpp07p5, :rrmscdpp09p0, :rrmscdpp10p5, :rrmscdpp12p0, :rrmscdpp12p5, :rrmscdpp15p0, :cdppslplong, :cdppslpshrt, :dataspan, :dutycycle, limbdark_coeff1, limbdark_coeff2, limbdark_coeff3, limbdark_coeff4 ]

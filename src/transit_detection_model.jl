@@ -31,11 +31,11 @@ end
 
 
 function kepler_window_function_dr25_model(t::KeplerTarget, exp_num_transits_no_gaps::Float64, period::Float64, duration::Float64)::Float64 
-   # TODO: SCI DARIN:  This is where we'd use your window function data
-   WindowFunction.eval_window_function(t.window_function_id, Duration=duration, Period=period)
+   ExoplanetsSysSim.WindowFunction.eval_window_function(t.window_function_id, Duration=duration, Period=period)
 end
 
-kepler_window_function = kepler_window_function_binomial_model
+#kepler_window_function = kepler_window_function_binomial_model
+kepler_window_function = kepler_window_function_dr25_model
 
 # See Christiansen et al. (2015)  This assumes a linear limbdarkening coefficient of 0.6
 function frac_depth_to_tps_depth(frac_depth::Float64)
@@ -153,7 +153,6 @@ end
 
 function calc_prob_detect_if_transit(t::KeplerTarget, snr::Float64, period::Float64, duration::Float64, sim_param::SimParam; num_transit::Float64 = 1)
   const min_pdet_nonzero = 1.0e-4                                                # TODO OPT: Consider raising threshold to prevent a plethora of planets that are very unlikely to be detected due to using 0.0 or other small value here
-  #wf = kepler_window_function(num_transit, t.duty_cycle, min_transits=min_transits)   # TODO SCI DETAIL: Replace statistical model with checking actual transit times for long period planets
   wf = kepler_window_function(t, num_transit, period, duration)                     
   return wf*detection_efficiency_model(snr, min_pdet_nonzero=min_pdet_nonzero)	
 end
@@ -184,9 +183,7 @@ end
 
 # Compute probability of detection if we average over impact parameters b~U[0,1)
 function calc_ave_prob_detect_if_transit_from_snr(t::KeplerTarget, snr_central::Float64, period::Float64, duration_central::Float64, size_ratio::Float64, cdpp_central::Float64, sim_param::SimParam; num_transit::Float64 = 1)
-  const min_transits = 3.0                                                    # WARNING: Hard coded 3 transit minimum
   const min_pdet_nonzero = 1.0e-4
-  #wf = kepler_window_function(num_transit, t.duty_cycle, min_transits=min_transits)   
   wf = kepler_window_function(t, num_transit, period, duration_central)                    
   
   detection_efficiency_central = detection_efficiency_model(snr_central, min_pdet_nonzero=min_pdet_nonzero) 
@@ -221,8 +218,7 @@ function calc_ave_prob_detect_if_transit_from_snr(t::KeplerTarget, snr_central::
      detection_efficiency_model(snr_central*snr_factor, min_pdet_nonzero=min_pdet_nonzero)
   end 
 
-  ave_detection_efficiency = sum(weight .* map(integrand,b)::Vector{Float64} )    # WARNING:  Doesn't account for cdpp chaning for shorter duration transits 
-  #ave_detection_efficiency = sum(weight .* map(b->detection_efficiency_model(snr_central*sqrt(calc_effective_transit_duration_factor_for_impact_parameter_b(b,size_ratio)), min_pdet_nonzero=min_pdet_nonzero),b)::Vector{Float64} )    # WARNING:  Doesn't account for cdpp chaning for shorter duration transits 
+  ave_detection_efficiency = sum(weight .* map(integrand,b)::Vector{Float64} )    
 
   return wf*ave_detection_efficiency
 end

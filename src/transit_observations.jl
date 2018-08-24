@@ -29,7 +29,7 @@ duration(obs::TransitPlanetObs) = obs.duration
 semimajor_axis(P::Float64, M::Float64) = (grav_const/(4pi^2)*M*P*P)^(1/3)
 
 function semimajor_axis(ps::PlanetarySystemAbstract, id::Integer)
-  M = mass(ps.star) + ps.planet[id].mass   # TODO SCI DETAIL: Replace with Jacobi mass?  Probably not important unless start including TTVs at some point
+  M = mass(ps.star) + ps.planet[id].mass   # TODO SCI DETAIL: Replace with Jacobi mass?  Not important unless start including TTVs, even then unlikely to matter
   @assert(M>0.0)
   @assert(ps.orbit[id].P>0.0)
   return semimajor_axis(ps.orbit[id].P,M)
@@ -255,17 +255,6 @@ calc_transit_duration(t::KeplerTarget, s::Integer, p::Integer ) = calc_transit_d
 function calc_expected_num_transits(t::KeplerTarget, s::Integer, p::Integer, sim_param::SimParam)  
  period = t.sys[s].orbit[p].P
  exp_num_transits = t.duty_cycle * t.data_span/period
- #= 
- if exp_num_transits <=6 
- end
- # TODO SCI DETAIL: Calculate more accurat number of transits, perhaps using star and specific window function or perhaps specific times of data gaps more given module
-  DARIN: Could your window function files help here?
-  REPLY: We decided in our discussion that this was not useful, mostly because
-  the window function only has information between 2 and 3 transits. Also, since
-  window functions average over phase and phase might be important for TTVs, 
-  we didn't want to include that here. Finally, the One Sigma Depth functions
-  are effectively going to replace this expected_num_transits calculation anyway.
- =#
  return exp_num_transits
 end
 
@@ -284,7 +273,7 @@ type KeplerTargetObs                        # QUERY:  Do we want to make this ty
   #has_sc::Vector{Bool}                      # TODO OPT: Make Immutable Vector or BitArray to reduce memory use?  
   has_sc::BitArray{1}                        # WARNING: Changed from Array{Bool}.  Alternatively, we could try StaticArray{Bool} so fixed size?  Do we even need to keep this?
 
-  star::StarObs                             # TODO SCI DETAIL: Add more members to StarObs, so can used observed rather than actual star properties
+  star::StarObs                             
 end
 #KeplerTargetObs(n::Integer) = KeplerTargetObs( fill(TransitPlanetObs(),n), fill(TransitPlanetObs(),n), fill(tuple(0,0),n),  ObservedSystemDetectionProbsEmpty(),  fill(false,num_quarters), StarObs(0.0,0.0) )
 KeplerTargetObs(n::Integer) = KeplerTargetObs( fill(TransitPlanetObs(),n), fill(TransitPlanetObs(),n), ObservedSystemDetectionProbsEmpty(),  falses(has_sc_bit_array_size), StarObs(0.0,0.0,0) )
