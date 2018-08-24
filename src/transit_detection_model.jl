@@ -139,7 +139,7 @@ end
 
 
 function calc_snr_if_transit(t::KeplerTarget, depth::Float64, duration::Float64, cdpp::Float64, sim_param::SimParam; num_transit::Float64 = 1)
-   depth_tps = frac_depth_to_tps_depth(depth)                  # WARNING: Hardcoded this conversion 
+   depth_tps = frac_depth_to_tps_depth(depth)                  # TODO SCI:  WARNING: Hardcoded this conversion.  Remove once depth calculated using limb darkening model
    snr = depth_tps*sqrt(num_transit*duration*LC_rate)/cdpp     # WARNING: Assumes measurement uncertainties are uncorrelated & CDPP based on LC
 end
 

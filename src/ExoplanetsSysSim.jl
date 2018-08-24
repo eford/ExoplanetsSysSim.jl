@@ -32,6 +32,7 @@ include("star.jl")
 export flux, mass
 export generate_stars
 export PlanetarySystemAbstract, PlanetarySystemSingleStar, PlanetarySystem
+include("limb_darkening.jl")
 include("planetary_system.jl")
 include("corbits.jl")
 export prob_of_transits_approx

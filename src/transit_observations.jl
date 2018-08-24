@@ -36,7 +36,9 @@ function semimajor_axis(ps::PlanetarySystemAbstract, id::Integer)
 end
 
 function calc_transit_depth(t::KeplerTarget, s::Integer, p::Integer)  # WARNING: IMPORTANT: Assumes non-grazing transit & no limb darkening
-  depth = (t.sys[s].planet[p].radius/t.sys[s].star.radius)^2 # TODO SCI DETAIL: Include limb darkening?
+  radius_ratio = t.sys[s].planet[p].radius/t.sys[s].star.radius
+  depth = radius_ratio^2 # TODO SCI DETAIL: Include limb darkening?
+  # depth = depth_at_midpoint(radius_ratio, t.sys[s].star.ld)   # TODO Add limb darkening here .  When limb darkening is implemented, then we should update calc_snr_if_transit in transit_detection_model to not convert transit depth to tps deth.
   depth *=  flux(t.sys[s].star)/flux(t)                      # Flux ratio accounts for dillution
 end
 

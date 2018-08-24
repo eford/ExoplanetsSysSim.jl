@@ -61,7 +61,7 @@ function setup(filename::String)
 
   # See options at: http://exoplanetarchive.ipac.caltech.edu/docs/API_keplerstellar_columns.html
   # Now we read in all CDPP's, so can interpolate to transit duration
-  symbols_to_keep = [ :kepid, :mass, :mass_err1, :mass_err2, :radius, :radius_err1, :radius_err2, :dens, :dens_err1, :dens_err2, :rrmscdpp01p5, :rrmscdpp02p0, :rrmscdpp02p5, :rrmscdpp03p0, :rrmscdpp03p5, :rrmscdpp04p5, :rrmscdpp05p0, :rrmscdpp06p0, :rrmscdpp07p5, :rrmscdpp09p0, :rrmscdpp10p5, :rrmscdpp12p0, :rrmscdpp12p5, :rrmscdpp15p0, :cdppslplong, :cdppslpshrt, :dataspan, :dutycycle ]
+  symbols_to_keep = [ :kepid, :mass, :mass_err1, :mass_err2, :radius, :radius_err1, :radius_err2, :dens, :dens_err1, :dens_err2, :rrmscdpp01p5, :rrmscdpp02p0, :rrmscdpp02p5, :rrmscdpp03p0, :rrmscdpp03p5, :rrmscdpp04p5, :rrmscdpp05p0, :rrmscdpp06p0, :rrmscdpp07p5, :rrmscdpp09p0, :rrmscdpp10p5, :rrmscdpp12p0, :rrmscdpp12p5, :rrmscdpp15p0, :cdppslplong, :cdppslpshrt, :dataspan, :dutycycle, limbdark_coeff1, limbdark_coeff2, limbdark_coeff3, limbdark_coeff4 ]
 
   delete!(df, [~(x in symbols_to_keep) for x in names(df)])    # delete columns that we won't be using anyway
   is_usable = [ !any(ismissing.([ df[i,j] for j in 1:size(df,2) ])) for i in 1:size(df,1) ]
@@ -142,7 +142,8 @@ function generate_star_from_table(sim_param::SimParam, id::Integer)  # WARNING: 
   while f<0.0
     f = 1.0+0.1*randn()
   end
-  # ld = LimbDarkeningParamQuadratic(0.5,0.5)
+  # ld = LimbDarkeningParam4thOrder(StellarTable.star_table(id,:limbdark_coeff1), StellarTable.star_table(id,:limbdark_coeff2), StellarTable.star_table(id,:limbdark_coeff3), StellarTable.star_table(id,:limbdark_coeff4) ) # TODO Add limb darkening
+  # return SingleStar(r,m,f,id,ld)
   return SingleStar(r,m,f,id)
 end
 
