@@ -37,7 +37,7 @@ end
 ### SimParam()
 Creates a nearly empty SimParam object, with just the version id and potentially other information about the code, system, runtime, etc.
 """ ->
-SimParam() = SimParam( Dict{String,Any}([version_id_pair,julia_version_pair,("hostname",gethostname()), ("username",ENV["USER"]), ("date",chomp(@compat readstring(`date`))),("time",time()),("ExoplanetsSysSim directory",Pkg.dir("ExoplanetsSysSim")),("ExoplanetsSysSim branch",LibGit2.headname(LibGit2.GitRepo(Pkg.dir("ExoplanetsSysSim")))),("ExoplanetsSysSim head_oid",LibGit2.head_oid(LibGit2.GitRepo(Pkg.dir("ExoplanetsSysSim"))))]) ) 
+SimParam() = SimParam( Dict{String,Any}([version_id_pair,julia_version_pair,("hostname",gethostname()), ("time",time()),("ExoplanetsSysSim directory",Pkg.dir("ExoplanetsSysSim")),("ExoplanetsSysSim branch",LibGit2.headname(LibGit2.GitRepo(Pkg.dir("ExoplanetsSysSim")))),("ExoplanetsSysSim head_oid",LibGit2.head_oid(LibGit2.GitRepo(Pkg.dir("ExoplanetsSysSim"))))]) ) 
 
 @doc """
 ### add_param_fixed(sim::SimParam, key::String,val::Any)
