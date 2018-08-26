@@ -164,14 +164,11 @@ function setup_christiansen(sim_param::SimParam; force_reread::Bool = false)
 end
 
 function setup_christiansen(filename::String; force_reread::Bool = false)
-  #global df, usable
   #df = ExoplanetsSysSim.StellarTable.df
-  #usable = ExoplanetsSysSim.StellarTable.usable
   if ismatch(r".jld$",filename)
   try 
     data = load(filename)
     df::DataFrame = data["stellar_catalog"]
-    #usable::Array{Int64,1} = data["stellar_catalog_usable"]
   catch
     error(string("# Failed to read stellar catalog >",filename,"< in jld format."))
   end

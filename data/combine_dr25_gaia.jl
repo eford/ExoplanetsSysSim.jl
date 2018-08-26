@@ -81,4 +81,4 @@ for col in names(df)
 end
 df = tmp_df
 
-save(stellar_catalog_file_out,"stellar_catalog", df, "stellar_catalog_usable", collect(1:length(df[:kepid])))
+save(stellar_catalog_file_out,"stellar_catalog", df)

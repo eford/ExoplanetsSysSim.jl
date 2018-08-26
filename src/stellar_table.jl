@@ -15,7 +15,6 @@ using JLD
 export setup_star_table, star_table, num_usable_in_star_table, set_star_table, star_table_has_key
 
 df = DataFrame()
-#usable = Array{Int64}(0)
         
 function setup(sim_param::SimParam; force_reread::Bool = false)
   global df
@@ -36,9 +35,7 @@ function setup(filename::String)
   try 
     data = load(filename)
     df = data["stellar_catalog"]
-    #usable = data["stellar_catalog_usable"]
     Core.typeassert(df,DataFrame)
-    #Core.typeassert(usable,Array{Int64,1})
   catch
     error(string("# Failed to read stellar catalog >",filename,"< in jld format."))
   end
@@ -75,27 +72,27 @@ function num_usable_in_star_table()
 end
 
 function star_table(i::Integer, sym::Symbol)
-  global df, usable
+  global df
   return df[i,sym]
 end
 
 function star_table(i::Integer)
-  global df, usable
+  global df
   return df[i,:]
 end
 
 function star_table(i::Integer, sym::Vector{Symbol})
-  global df, usable
+  global df
   return df[i,sym]
 end
 
 function star_table(i::Vector{Integer}, sym::Symbol)
-  global df, usable
+  global df
   return df[i,sym]
 end
 
 function star_table(i::Vector{Integer}, sym::Vector{Symbol})
-  global df, usable
+  global df
   return df[i,sym]
 end
 
@@ -107,12 +104,6 @@ end
 function star_table_has_key(s::Symbol)
   global df
   haskey(df,s)
-end
-
-function set_star_table(df2::DataFrame, usable2::Array{Int64,1})
-  global df, usable
-  df = df2
-  usable = usable2
 end
 
 end # module StellarTable
