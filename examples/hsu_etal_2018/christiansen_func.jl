@@ -223,11 +223,11 @@ function setup_christiansen(filename::String; force_reread::Bool = false)
   df = tmp_df
   StellarTable.set_star_table(df)
   end
-    println("# Removing stars observed <5 quarters (not done in original Hsu et al paper).")
-    df[:wf_id] = map(x->ExoplanetsSysSim.WindowFunction.get_window_function_id(x,use_default_for_unknown=false),df[:kepid])
-    obs_5q = df[:wf_id].!=-1
-    df = df[obs_5q,keys(df.colindex)]
-    StellarTable.set_star_table(df)
+#    println("# Removing stars observed <5 quarters (not done in original Hsu et al paper).")
+#    df[:wf_id] = map(x->ExoplanetsSysSim.WindowFunction.get_window_function_id(x,use_default_for_unknown=false),df[:kepid])
+#    obs_5q = df[:wf_id].!=-1
+#    df = df[obs_5q,keys(df.colindex)]
+#    StellarTable.set_star_table(df)
   return df
 end
 
