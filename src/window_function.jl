@@ -74,8 +74,8 @@ function setup(filename::String)
   return win_func_data
 end
 
-setup_window_function(sim_param::SimParam) = setup(sim_param, force_reread=force_reread)
-setup_window_function(filename::String) = setup(filename, force_reread=force_reread)
+setup_window_function(sim_param::SimParam; force_reread::Bool = false) = setup(sim_param, force_reread=force_reread)
+setup_window_function(filename::String; force_reread::Bool = false) = setup(filename, force_reread=force_reread)
 
 function get_window_function_data()::window_function_data
    #global win_func_data
