@@ -40,10 +40,12 @@ end
 function generate_kepler_target_from_table(sim_param::SimParam)  
   #const  generate_star = get_function(sim_param,"generate_star")
   const  generate_planetary_system = get_function(sim_param,"generate_planetary_system")
-  const use_star_table_sigmas = false
+  const use_star_table_sigmas = true
   const max_draws_star_properties = 20
-  const max_star_radius = 5.0
-  const max_star_mass = 100.0
+  const min_star_radius = 0.5
+  const min_star_mass = 0.5  
+  const max_star_radius = 2.0
+  const max_star_mass = 2.0
   const max_star_density = 1000.0
   max_star_id = StellarTable.num_usable_in_star_table()
 
@@ -56,13 +58,21 @@ function generate_kepler_target_from_table(sim_param::SimParam)
   radius = 0.0  
     if use_star_table_sigmas
         attmpt_num = 0
-        while (!(0.0<radius<max_star_radius)) || (!(0.0<mass<max_star_mass)) || (!(0.0<dens<max_star_density))
+        while (!(min_star_radius<radius<max_star_radius))# || (!(min_star_mass<mass<max_star_mass)) || (!(0.0<dens<max_star_density))
             if attmpt_num >= max_draws_star_properties 
                 star_id = rand(1:max_star_id)
                 attmpt_num = 0
             end
             radius = draw_asymmetric_normal( star_table(star_id,:radius), star_table(star_id,:radius_err1), abs(star_table(star_id,:radius_err2)) )
-            mass = draw_asymmetric_normal( star_table(star_id,:mass), star_table(star_id,:mass_err1), abs(star_table(star_id,:mass_err2)) )
+            #mass = draw_asymmetric_normal( star_table(star_id,:mass), star_table(star_id,:mass_err1), abs(star_table(star_id,:mass_err2)) )
+
+            # ZAMS mass-radius relation taken from 15.1.1 of Allen's Astrophysical Quantities (2002)
+            if radius > 1.227
+                mass = 10^((log10(radius)-0.011)/0.64)
+            else
+                mass = 10^((log10(radius)+0.02)/0.917)
+            end
+
             #dens = draw_asymmetric_normal( star_table(star_id,:dens), star_table(star_id,:dens_err1), abs(star_table(star_id,:dens_err2)) )
             dens   = (mass*sun_mass_in_kg_IAU2010*1000.)/(4//3*pi*(radius*sun_radius_in_m_IAU2015*100.)^3)  # Self-consistent density (gm/cm^3)
             attmpt_num += 1
