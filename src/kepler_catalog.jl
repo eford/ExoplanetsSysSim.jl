@@ -5,7 +5,8 @@
 using DataFrames
 #using DataArrays
 using CSV
-using JLD
+#using JLD
+using JLD2
 
 #if VERSION >= v"0.5-"
 #  import Compat: UTF8String, ASCIIString
@@ -138,7 +139,7 @@ end
 function read_koi_catalog(filename::String, force_reread::Bool = false)
     local df, usable
     
-    if ismatch(r".jld$",filename) && !force_reread
+    if ismatch(r".jld2$",filename) && !force_reread
         try 
             data = load(filename)
             df = data["koi_catalog"]
@@ -146,7 +147,7 @@ function read_koi_catalog(filename::String, force_reread::Bool = false)
             Core.typeassert(df,DataFrame)
             Core.typeassert(usable,Array{Int64,1})
         catch
-            error(string("# Failed to read koi catalog >",filename,"< in jld format."))
+            error(string("# Failed to read koi catalog >",filename,"< in jld2 format."))
         end
     else
         try

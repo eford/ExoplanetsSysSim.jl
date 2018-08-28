@@ -6,7 +6,8 @@ using ExoplanetsSysSim
 #using DataArrays
 using DataFrames
 using CSV
-using JLD
+#using JLD
+using JLD2
 
 #if VERSION >= v"0.5-"
 #  import Compat: UTF8String, ASCIIString
@@ -31,14 +32,14 @@ end
 
 function setup(filename::String; force_reread::Bool = false)
   global df, usable
-  if occursin(r".jld$",filename)
+  if occursin(r".jld2$",filename)
   #if ismatch(r".jld$",filename)
   try 
     data = load(filename)
     df = data["stellar_catalog"]
     Core.typeassert(df,DataFrame)
   catch
-    error(string("# Failed to read stellar catalog >",filename,"< in jld format."))
+    error(string("# Failed to read stellar catalog >",filename,"< in jld2 format."))
   end
   else
   try 

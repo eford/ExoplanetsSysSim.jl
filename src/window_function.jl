@@ -9,12 +9,12 @@ export setup_window_function, get_window_function_data, get_window_function_id, 
 #using DataArrays
 using DataFrames
 #using CSV
-using JLD
+using JLD2
 using ExoplanetsSysSim.SimulationParameters
 
 
 # Object to hold window function data
-immutable window_function_data
+struct window_function_data
   window_func_array::Array{Float64,3}      # Value of window function (window_function_id, duration_id, period_id).  Maybe rename to wf_value or data?
   wf_durations_in_hrs::Array{Float64,1}    # Boundaries for duration bins in window_func_array.  Maybe rename to durations?
   wf_periods_in_days::Array{Float64,1}     # Boundaries for periods bins in window_func_array.  Maybe rename to periods?
@@ -37,7 +37,7 @@ function setup(sim_param::SimParam; force_reread::Bool = false)
   if haskey(sim_param,"read_window_function") && !force_reread
      return win_func_data
   end
-  window_function_filename = convert(String,joinpath(Pkg.dir("ExoplanetsSysSim"), "data", convert(String,get(sim_param,"window_function","DR25topwinfuncs.jld")) ) )
+  window_function_filename = convert(String,joinpath(dirname(pathof(ExoplanetsSysSim)), "data", convert(String,get(sim_param,"window_function","DR25topwinfuncs.jld2")) ) )
   setup(window_function_filename)
   add_param_fixed(sim_param,"read_window_function",true)
   @assert( size(win_func_data.window_func_array,2) == length(win_func_data.wf_durations_in_hrs) )
@@ -53,7 +53,7 @@ function setup(filename::String)
 # Reads in the window function data collected from the Kepler Completeness Products
 # see Darin Ragozzine's get/cleanDR25winfuncs.jl
 
-  if ismatch(r".jld$",filename)
+  if ismatch(r".jld2$",filename)
     try
       wfdata = load(filename)
       window_func_array = wfdata["window_func_array"]
@@ -67,7 +67,7 @@ function setup(filename::String)
                                                 allsortedkepids, window_function_id_arr, maximum(window_function_id_arr) )
 
     catch
-      error(string("# Failed to read window function data > ", filename," < in jld format."))
+      error(string("# Failed to read window function data > ", filename," < in jld2 format."))
     end
   end
  
@@ -84,7 +84,7 @@ end
 
 function get_window_function_id(kepid::Int64; use_default_for_unknown::Bool = true)::Int64
   # takes the quarter string from the stellar catalog and determines the window function id
-  # from DR25topwinfuncs.jld made by Darin Ragozzine's cleanDR25winfuncs.jl script.
+  # from DR25topwinfuncs.jld2 made by Darin Ragozzine's cleanDR25winfuncs.jl script.
   const no_win_func_available::Int64 = -1        # hardcoding this in, should match convention in window function input file
 
   wf_id = win_func_data.window_function_id_arr[searchsortedfirst(win_func_data.allsortedkepids,kepid)] # all Kepler kepids are in allsortedkepids
