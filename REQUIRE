@@ -4,13 +4,14 @@ julia 0.7
 Combinatorics
 Compat
 CSV
-DataArrays
+#DataArrays
 DataFrames
 Distributions
 DistributedArrays
 HDF5
 HypothesisTests
 JLD
+SpecialFunctions
 StatsFuns
 #IterativeEigensolvers
 PDMats

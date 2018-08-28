@@ -4,6 +4,7 @@
 # Several functions below based on https://github.com/christopherburke/KeplerPORTs/blob/master/KeplerPORTs_utils.py
 # That follows the procedure outlined in Burke et al.(2015).
 # However we don't currently interpolate the CDDP or mesthreshold to the relevant duration
+import SpecialFunctions.lgamma
 
 function real_log_choose(m::Real, n::Real)
   lgamma(m+1)-lgamma(n+1)-lgamma(m-n+1.0)

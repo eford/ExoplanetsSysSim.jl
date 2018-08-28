@@ -2,8 +2,8 @@
 ## (c) 2015 Eric B. Ford
 
 #using ExoplanetsSysSim
-#using DataFrames
-using DataArrays
+using DataFrames
+#using DataArrays
 using CSV
 using JLD
 

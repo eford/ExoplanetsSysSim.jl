@@ -107,7 +107,7 @@ end
 
 ## planetary_system
 function generate_num_planets_christiansen(s::Star, sim_param::SimParam)
-  const max_tranets_in_sys::Int64 = get_int(sim_param,"max_tranets_in_sys")
+  max_tranets_in_sys::Int64 = get_int(sim_param,"max_tranets_in_sys")
   rate_tab::Array{Float64,2} = get_any(sim_param, "obs_par", Array{Float64,2})
   lambda = sum_kbn(rate_tab)
   #println("# lambda= ", lambda)
@@ -560,7 +560,7 @@ function cnt_np_bin(cat_obs::KeplerObsCatalog, param::SimParam, verbose::Bool = 
 	            pl_arr = Array{Planet}( 1)
 	            orbit_arr = Array{Orbit}( 1)
                     incl = acos(Base.rand()*star.radius*ExoplanetsSysSim.rsol_in_au/ExoplanetsSysSim.semimajor_axis(pper, star.mass))
-	            orbit_arr[1] = Orbit(pper, 0., incl, 0., 0., Base.rand()*2.*pi)
+	            orbit_arr[1] = Orbit(pper, 0., incl, 0., 0., Base.rand()*2.0*pi)
 	            pl_arr[1] = Planet(prad, 1.0e-6)
 	            kep_targ = KeplerTarget([PlanetarySystem(star, pl_arr, orbit_arr)], fill(cdpp,ExoplanetsSysSim.num_cdpp_timescales,ExoplanetsSysSim.num_quarters),contam,data_span,duty_cycle)
                     
@@ -615,7 +615,7 @@ function stellar_ess(param::SimParam, verbose::Bool = true)
 	  pl_arr = Array{Planet}(1)
 	  orbit_arr = Array{Orbit}(1)
           incl = acos(Base.rand()*star.radius*ExoplanetsSysSim.rsol_in_au/ExoplanetsSysSim.semimajor_axis(pper, star.mass))
-	  orbit_arr[1] = Orbit(pper, 0., incl, 0., 0., Base.rand()*2.*pi)
+	  orbit_arr[1] = Orbit(pper, 0., incl, 0., 0., Base.rand()*2.0*pi)
 	  pl_arr[1] = Planet(prad, 1.0e-6)
 	  kep_targ = KeplerTarget([PlanetarySystem(star, pl_arr, orbit_arr)], fill(cdpp,ExoplanetsSysSim.num_cdpp_timescales,ExoplanetsSysSim.num_quarters),contam,data_span,duty_cycle)
 
