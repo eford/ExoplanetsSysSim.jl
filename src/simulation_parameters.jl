@@ -1,7 +1,17 @@
 ## ExoplanetsSysSim.jl
 ## (c) 2015 Eric B. Ford
 
-const global version_id_str = "0.2.2"
+module SimulationParameters
+
+import Compat: @compat, readstring
+
+export SimParam, add_param_fixed, add_param_active, update_param, set_active, set_inactive, is_active
+export get_any, get_real, get_int, get_function
+export make_vector_of_active_param_keys, make_vector_of_sim_param, get_range_for_sim_param, update_sim_param_from_vector!
+export setup_sim_param_demo, test_sim_param_constructors
+#export preallocate_memory!
+
+const global version_id_str = "0.3.1"
 const global version_id_pair = ("version",version_id_str)
 const global julia_version_pair = ("version_julia",string(VERSION))
 
@@ -26,8 +36,7 @@ end
 """
     SimParam()
 Creates a nearly empty SimParam object, with just the version id and potentially other information about the code, system, runtime, etc.
-""" 
-SimParam() = SimParam( Dict{String,Any}([version_id_pair,julia_version_pair,("hostname",gethostname()), ("date",chomp(read(`date`,String))),("time",time())]) )
+SimParam() = SimParam( Dict{String,Any}([version_id_pair,julia_version_pair,("hostname",gethostname()), ("time",time()),("ExoplanetsSysSim directory",Pkg.dir("ExoplanetsSysSim")),("ExoplanetsSysSim branch",LibGit2.headname(LibGit2.GitRepo(Pkg.dir("ExoplanetsSysSim")))),("ExoplanetsSysSim head_oid",LibGit2.head_oid(LibGit2.GitRepo(Pkg.dir("ExoplanetsSysSim"))))]) ) 
 
  """
     add_param_fixed(sim::SimParam, key::String,val::Any)
@@ -126,6 +135,7 @@ end
 function noop() 
 end
 
+
 function get_function(sim::SimParam, key::String)
   val::Function = Base.get(sim.param,key,noop)::Function
   #val = Base.get(sim.param,key,null)
@@ -210,12 +220,6 @@ function update_sim_param_from_vector!(param::Vector{Float64}, sim::SimParam)
         # println("# Replacing >",sim.param[sorted_keys[k]],"< with >",reshape(param[i:i+param_len-1], size(sim.param[sorted_keys[k]])),"<")
         sim.param[sorted_keys[k]] = reshape(param[i:i+param_len-1], size(sim.param[sorted_keys[k]]))
         i = i+param_len
-#=
-      elseif eltype( sorted_keys[i]) <: Real  # TODO:  Figure out when this should be true and add documentation (or fix if bug)
-        # println("# Replacing >",sorted_keys[k],"< with >",param[i:i+param_len-1],"<")
-        sim.param[sorted_keys[k]] = param[i:i+param_len-1]
-        i = i+param_len
-=#
       end
     else
       println("# Don't know what to do with empty simulation parameter: ",sorted_keys[k])
@@ -288,6 +292,8 @@ function test_sim_param_constructors()
   update_sim_param_from_vector!(sp_vec,sim_param)
   newval = get_real(sim_param,"log_eta_pl")
   isapprox(oldval,newval,atol=0.001)
+end
+
 end
 
 #test_sim_param_constructors()

@@ -21,9 +21,11 @@ end
 include("constants.jl")
 #require(joinpath(Pkg.dir("ExoplanetsSysSim"), "src", "constants.jl"))       
 export SimParam
-include("simulation_parameters.jl")
+export SimulationParameters
 export add_param_fixed, add_param_active, set_active, set_inactive, is_active, update_param, get, get_real, get_int, get_function, get_any, haskey, make_vector_of_sim_param, update_sim_param_from_vector!, make_vector_of_active_param_keys, get_range_for_sim_param
 export setup_sim_param_demo
+include("simulation_parameters.jl")
+using ExoplanetsSysSim.SimulationParameters
 export Orbit
 include("orbit.jl")
 export Planet
@@ -33,20 +35,22 @@ include("star.jl")
 export flux, mass
 export generate_stars
 export PlanetarySystemAbstract, PlanetarySystemSingleStar, PlanetarySystem
+include("limb_darkening.jl")
 include("planetary_system.jl")
 include("corbits.jl")
 export prob_of_transits_approx
+include("window_function.jl")
+export WindowFunction
+export setup_window_function, get_window_function_data, get_window_function_id, eval_window_function
 include("stellar_table.jl")
 export  StellarTable
-export setup_star_table, star_table, num_usable_in_star_table, set_star_table
+export setup_star_table, star_table, num_usable_in_star_table, set_star_table, star_table_has_key
 export KeplerTarget
 export num_planets, generate_kepler_target_from_table, generate_kepler_target_simple
 include("target.jl")
 export KeplerTargetObs
 include("transit_observations.jl")
 export semimajor_axis
-#export  KoiTable
-#include("koi_table.jl")                       # TODO: Need to implement first
 #export setup_koi_table, koi_table, num_koi
 export KeplerPhysicalCatalog, KeplerObsCatalog
 include("kepler_catalog.jl")
@@ -55,7 +59,7 @@ export CatalogSummaryStatistics
 include("summary_statistics.jl")
 export calc_summary_stats_obs_demo, calc_summary_stats_sim_pass_one_demo, calc_summary_stats_sim_pass_two_demo
 include("abc_distance.jl")
-export dist_L1_fractional, dist_L1_abs, dist_L2_fractional, dist_L2_abs, calc_scalar_distance, combine_scalar_distances, distance_poisson_likelihood, distance_poisson_draw
+export dist_L1_fractional, dist_L1_abs, dist_L2_fractional, dist_L2_abs, calc_scalar_distance, combine_scalar_distances, distance_poisson_likelihood, distance_poisson_draw, distance_sum_of_bernoulli_draws
 export calc_distance_vector_demo
 export TestEvalModel
 include("eval_model.jl")   # Also includes macros to help write eval model using different variables for closures
