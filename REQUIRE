@@ -1,6 +1,7 @@
 julia 0.7
 
 Compat
+LibGit2
 
 CORBITS
 

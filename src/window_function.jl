@@ -26,7 +26,7 @@ end
 
 
 function window_function_data()
-  window_function_data( Array{Float64,3}(0,0,0), Array{Float64,1}(0),Array{Float64,1}(0), Array{Int64,1}(0),Array{Int64,1}(0),Array{Int64,1}(0), 0 )
+  window_function_data( Array{Float64,3}(undef,0,0,0), Array{Float64,1}(undef,0),Array{Float64,1}(undef,0), Array{Int64,1}(undef,0),Array{Int64,1}(undef,0),Array{Int64,1}(undef,0), 0 )
 end
 
 
@@ -85,7 +85,7 @@ end
 function get_window_function_id(kepid::Int64; use_default_for_unknown::Bool = true)::Int64
   # takes the quarter string from the stellar catalog and determines the window function id
   # from DR25topwinfuncs.jld2 made by Darin Ragozzine's cleanDR25winfuncs.jl script.
-  const no_win_func_available::Int64 = -1        # hardcoding this in, should match convention in window function input file
+  no_win_func_available::Int64 = -1        # hardcoding this in, should match convention in window function input file
 
   wf_id = win_func_data.window_function_id_arr[searchsortedfirst(win_func_data.allsortedkepids,kepid)] # all Kepler kepids are in allsortedkepids
 
@@ -118,7 +118,7 @@ end
 function calc_duration_idx(D::Float64)::Int64 
   # NOTE IMPORTANT: Currently assumes we left wf data in hours, so deal with that conversion here
   @assert(D>zero(D))
-  const hours_in_day = 24 
+  hours_in_day = 24 
   idx = searchsortedlast(win_func_data.wf_durations_in_hrs,D*hours_in_day)
   if idx == 0
      return 1

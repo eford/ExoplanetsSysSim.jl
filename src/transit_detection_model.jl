@@ -89,8 +89,7 @@ function detection_efficiency_dr25_simple(mes::Float64; min_pdet_nonzero::Float6
    a = 30.87  # from pg 16 of https://exoplanetarchive.ipac.caltech.edu/docs/KSCI-19110-001.pdf
    b = 0.271
    c = 0.940
-   @inlinie dist = Gamma(a,b)
-   pdet = c*cdf(Gamma(a,b), mes)::Float64
+   dist = Gamma(a,b)
    pdet::Float64 = c*cdf(dist, mes)::Float64
    pdet = pdet >= min_pdet_nonzero ? pdet : 0.0
    return pdet
@@ -99,11 +98,11 @@ end
 # From Mulders et al. 2018 (arXiv 1805.08211)
 # WARNING: Assumes inputs are in R_sol and days
 function vetting_efficiency_dr25_mulders(R_p::Real, P::Real)
-    const c = 0.63
-    const a_R = 0.19
-    const P_break = 53.
-    const a_P = -0.07
-    const b_P = -0.39
+    c = 0.63
+    a_R = 0.19
+    P_break = 53.
+    a_P = -0.07
+    b_P = -0.39
     pvet = c*(R_p/earth_radius)^a_R
     if P < P_break
         pvet *= (P/P_break)^a_P
@@ -149,7 +148,7 @@ function calc_snr_if_transit_central(t::KeplerTarget, s::Integer, p::Integer, si
 end
 
 function calc_prob_detect_if_transit(t::KeplerTarget, snr::Float64, period::Float64, duration::Float64, sim_param::SimParam; num_transit::Float64 = 1)
-  const min_pdet_nonzero = 1.0e-4                                                # TODO OPT: Consider raising threshold to prevent a plethora of planets that are very unlikely to be detected due to using 0.0 or other small value here
+  min_pdet_nonzero = 1.0e-4                                                # TODO OPT: Consider raising threshold to prevent a plethora of planets that are very unlikely to be detected due to using 0.0 or other small value here
   wf = kepler_window_function(t, num_transit, period, duration)                     
   return wf*detection_efficiency_model(snr, min_pdet_nonzero=min_pdet_nonzero)	
 end
@@ -180,7 +179,7 @@ end
 
 # Compute probability of detection if we average over impact parameters b~U[0,1)
 function calc_ave_prob_detect_if_transit_from_snr(t::KeplerTarget, snr_central::Float64, period::Float64, duration_central::Float64, size_ratio::Float64, cdpp_central::Float64, sim_param::SimParam; num_transit::Float64 = 1)
-  const min_pdet_nonzero = 1.0e-4
+  min_pdet_nonzero = 1.0e-4
   wf = kepler_window_function(t, num_transit, period, duration_central)                    
   
   detection_efficiency_central = detection_efficiency_model(snr_central, min_pdet_nonzero=min_pdet_nonzero) 
@@ -189,12 +188,12 @@ function calc_ave_prob_detect_if_transit_from_snr(t::KeplerTarget, snr_central::
   end 
 
   # Breaking integral into two sections [0,1-b_boundary) and [1-b_boundary,1], so need at least 5 points to evaluate integral via trapezoid rule
-  const num_impact_param_low_b =  7                            # Number of points to evaluate integral over [0,1-b_boundary) via trapezoid rule
-  const num_impact_param_high_b = 5 # (size_ratio<=0.05) ? 5 : 11  # Number of points to evaluate integral over [1-b_boudnary,1) via trapezoid rule.  If using 2*size_ratio for bondary for small planets, then keep this odd, so one point lands on 1-size_ratio.
+  num_impact_param_low_b =  7                            # Number of points to evaluate integral over [0,1-b_boundary) via trapezoid rule
+  num_impact_param_high_b = 5 # (size_ratio<=0.05) ? 5 : 11  # Number of points to evaluate integral over [1-b_boudnary,1) via trapezoid rule.  If using 2*size_ratio for bondary for small planets, then keep this odd, so one point lands on 1-size_ratio.
   @assert(num_impact_param_low_b >= 5)
   @assert(num_impact_param_high_b >= 3)
-  const num_impact_param = num_impact_param_low_b+num_impact_param_high_b-1 # One point is shared
-  const b_boundary = (size_ratio <= 0.15) ? 2*size_ratio : min(max(0.3,size_ratio),0.5)
+  num_impact_param = num_impact_param_low_b+num_impact_param_high_b-1 # One point is shared
+  b_boundary = (size_ratio <= 0.15) ? 2*size_ratio : min(max(0.3,size_ratio),0.5)
   b = Array{Float64}(num_impact_param)
   weight = Array{Float64}(num_impact_param)
   b[1:num_impact_param_low_b] = linspace(0.0,1-b_boundary,num_impact_param_low_b)

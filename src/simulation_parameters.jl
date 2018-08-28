@@ -4,6 +4,8 @@
 module SimulationParameters
 
 import Compat: @compat, readstring
+import Pkg, LibGit2
+import ExoplanetsSysSim
 
 export SimParam, add_param_fixed, add_param_active, update_param, set_active, set_inactive, is_active
 export get_any, get_real, get_int, get_function
@@ -37,7 +39,18 @@ end
     SimParam()
 Creates a nearly empty SimParam object, with just the version id and potentially other information about the code, system, runtime, etc.
 """
-SimParam() = SimParam( Dict{String,Any}([version_id_pair,julia_version_pair,("hostname",gethostname()), ("time",time()),("ExoplanetsSysSim directory",Pkg.dir("ExoplanetsSysSim")),("ExoplanetsSysSim branch",LibGit2.headname(LibGit2.GitRepo(Pkg.dir("ExoplanetsSysSim")))),("ExoplanetsSysSim head_oid",LibGit2.head_oid(LibGit2.GitRepo(Pkg.dir("ExoplanetsSysSim"))))]) ) 
+function SimParam() 
+  d = Dict{String,Any}([version_id_pair,julia_version_pair,("hostname",gethostname()), ("time",time())])
+  try 
+    d["ExoplanetsSysSim version"] = Pkg.installed()["ExoplanetsSysSim"]
+    #d["ExoplanetsSysSim directory"] = dirname(pathof(ExoplanetsSysSim))
+    #d["ExoplanetsSysSim branch"] = LibGit2.headname(LibGit2.GitRepo(dirname(pathof(ExoplanetsSysSim))))
+    #d["ExoplanetsSysSim head_oid"] = LibGit2.head_oid(LibGit2.GitRepo(dirname(pathof(ExoplanetsSysSim))))
+  catch
+    warn("# Couldn't add full information about version of SysSim to SimParam.")
+  end
+  SimParam(d)
+end
 
 """
     add_param_fixed(sim::SimParam, key::String,val::Any)

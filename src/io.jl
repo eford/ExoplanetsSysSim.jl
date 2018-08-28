@@ -40,15 +40,15 @@ function save_sim_results(filename::String, p::SimParam; distances::Vector{Float
   end
 end
 
-function write_sim_distances(file::JLD.JLDFile, d::Vector{Float64} )
+function write_sim_distances(file::JLD2.JLDFile, d::Vector{Float64} )
   JLD2.write(file,"distances",d)
 end
 
-function write_sim_summary_stats(file::JLD.JLDFile, ss::CatalogSummaryStatistics )
+function write_sim_summary_stats(file::JLD2.JLDFile, ss::CatalogSummaryStatistics )
   JLD2.write(file,"summary_stats",ss.stat)
 end
 
-function write_sim_param(file::JLD.JLDFile, p::SimParam)
+function write_sim_param(file::JLD2.JLDFile, p::SimParam)
  sim_param_bool = Dict{String,Bool}()
  sim_param_int = Dict{String,Integer}()
  sim_param_real = Dict{String,Real}()

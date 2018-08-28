@@ -314,7 +314,7 @@ function calc_target_obs_sky_ave(t::KeplerTarget, sim_param::SimParam)
 	if add_to_catalog 
            pdet_central = calc_prob_detect_if_transit(t, snr_central, period, duration_central, sim_param, num_transit=ntr)
            threshold_pdet_ratio = rand()
-	   const hard_max_num_b_tries = 100
+	   hard_max_num_b_tries = 100
 	   max_num_b_tries = min_detect_prob_to_be_included == 0. ? hard_max_num_b_tries : min(hard_max_num_b_tries,convert(Int64,1/min_detect_prob_to_be_included))
            # We compute measurement noise based on a single value of b.  We draw from a uniform distribution for b and then using rejection sampling to reduce probability of higher impact parameters
            pdet_this_b = 0.0
