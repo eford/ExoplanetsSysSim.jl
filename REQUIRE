@@ -1,20 +1,26 @@
 julia 0.7
-#Libdl
-#Pkg
-Combinatorics
+
 Compat
-CSV
+
+CORBITS
+
 #DataArrays
 DataFrames
-Distributions
-DistributedArrays
-HDF5
-HypothesisTests
-JLD
-SpecialFunctions
+FileIO
+CSV
+#HDF5
+#JLD
+JLD2
+
 StatsFuns
-#IterativeEigensolvers
+Combinatorics
+Distributions
+HypothesisTests
 PDMats
+SpecialFunctions
+#IterativeEigensolvers
+
+#DistributedArrays
 
 # Packages that are used by some examples, but not needed by SysSim itself
 # Optim           # Only needed for optim.jl example, not main package

@@ -9,7 +9,7 @@ struct Star <: StarAbstract
   radius::Float64
   mass::Float64
   flux::Float64                      # relevant once have multiple stars in one target
-  # ld::LimbDarkeningParamAbstract         # TODO SCI DETAIL: add limb darkening param?
+  ld::LimbDarkeningParamAbstract         # TODO SCI DETAIL: add limb darkening param?
   id::Int64                          # id for looking up properties in stellar catalog
 end
 #typealias SingleStar Star

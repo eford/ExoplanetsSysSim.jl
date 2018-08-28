@@ -3,7 +3,7 @@
 #include("orbit.jl")
 #include("planet.jl")
 
-if !@isdefined  PlanetarySystemAbstract  
+if !@isdefined PlanetarySystemAbstract
   @compat abstract type PlanetarySystemAbstract end
 
   struct PlanetarySystem{StarT<:StarAbstract} <: PlanetarySystemAbstract
@@ -312,15 +312,15 @@ end
 
 function generate_planetary_system_uncorrelated_incl(star::StarAbstract, sim_param::SimParam; verbose::Bool = false)
   # load functions to use for drawing parameters
-    generate_planet_mass_from_radius = get_function(sim_param,"generate_planet_mass_from_radius")
-    generate_num_planets = get_function(sim_param,"generate_num_planets")
-    generate_period_and_sizes = get_function(sim_param,"generate_period_and_sizes")
-    generate_e_omega = get_function(sim_param,"generate_e_omega")
+   generate_planet_mass_from_radius = get_function(sim_param,"generate_planet_mass_from_radius")
+   generate_num_planets = get_function(sim_param,"generate_num_planets")
+   generate_period_and_sizes = get_function(sim_param,"generate_period_and_sizes")
+   generate_e_omega = get_function(sim_param,"generate_e_omega")
 
-  #   generate_star = get_function(sim_param,"generate_star")
-  #  star::StarAbstract = generate_star(sim_param)
-   num_pl::Int64 = generate_num_planets(star, sim_param)::Int64
-   sigma_ecc::Float64 = haskey(sim_param,"sigma_hk") ? get_real(sim_param,"sigma_hk") : 0.0
+  #  generate_star = get_function(sim_param,"generate_star")
+  # star::StarAbstract = generate_star(sim_param)
+  num_pl::Int64 = generate_num_planets(star, sim_param)::Int64
+  sigma_ecc::Float64 = haskey(sim_param,"sigma_hk") ? get_real(sim_param,"sigma_hk") : 0.0
 
   if( num_pl==0 )
     return PlanetarySystem(star)::PlanetarySystem

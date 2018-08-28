@@ -36,9 +36,10 @@ end
 """
     SimParam()
 Creates a nearly empty SimParam object, with just the version id and potentially other information about the code, system, runtime, etc.
+"""
 SimParam() = SimParam( Dict{String,Any}([version_id_pair,julia_version_pair,("hostname",gethostname()), ("time",time()),("ExoplanetsSysSim directory",Pkg.dir("ExoplanetsSysSim")),("ExoplanetsSysSim branch",LibGit2.headname(LibGit2.GitRepo(Pkg.dir("ExoplanetsSysSim")))),("ExoplanetsSysSim head_oid",LibGit2.head_oid(LibGit2.GitRepo(Pkg.dir("ExoplanetsSysSim"))))]) ) 
 
- """
+"""
     add_param_fixed(sim::SimParam, key::String,val::Any)
 Adds (or overwrites) key with value val to the SimParam object, sim, and sets the parameter set to inactive.
 """
@@ -47,7 +48,7 @@ function add_param_fixed(sim::SimParam, key::String,val::Any)
   sim.active[key] = false
 end
 
- """
+"""
 ### add_param_active(sim::SimParam, key::String,val::Any)
 Adds (or overwrites) key with value val to the SimParam object, sim, and sets the parameter set to active.
 """
@@ -56,7 +57,7 @@ function add_param_active(sim::SimParam, key::String,val::Any)
   sim.active[key] = true
 end
 
- """
+"""
 ### update_param(sim::SimParam, key::String,val::Any)
 Overwrites key with value val to the SimParam object, sim
 """
@@ -109,7 +110,7 @@ function is_active(sim::SimParam,key::String)
 end
 
 import Base.get
-function get(sim::SimParam, key::String, default_val::T)  where T
+function get(sim::SimParam, key::String, default_val::T) where T
   val::T = get(sim.param,key,default_val)::T
   return val
 end
