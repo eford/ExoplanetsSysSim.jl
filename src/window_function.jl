@@ -9,8 +9,9 @@ export setup_window_function, get_window_function_data, get_window_function_id, 
 #using DataArrays
 using DataFrames
 #using CSV
-using JLD2
-using ExoplanetsSysSim.SimulationParameters
+using JLD2, FileIO
+using ExoplanetsSysSim
+import ExoplanetsSysSim.SimulationParameters
 
 
 # Object to hold window function data
@@ -37,7 +38,7 @@ function setup(sim_param::SimParam; force_reread::Bool = false)
   if haskey(sim_param,"read_window_function") && !force_reread
      return win_func_data
   end
-  window_function_filename = convert(String,joinpath(dirname(pathof(ExoplanetsSysSim)), "data", convert(String,get(sim_param,"window_function","DR25topwinfuncs.jld2")) ) )
+  window_function_filename = convert(String,joinpath(dirname(pathof(ExoplanetsSysSim)), "..","data", convert(String,get(sim_param,"window_function","DR25topwinfuncs.jld2")) ) )
   setup(window_function_filename)
   add_param_fixed(sim_param,"read_window_function",true)
   @assert( size(win_func_data.window_func_array,2) == length(win_func_data.wf_durations_in_hrs) )
@@ -53,7 +54,7 @@ function setup(filename::String)
 # Reads in the window function data collected from the Kepler Completeness Products
 # see Darin Ragozzine's get/cleanDR25winfuncs.jl
 
-  if ismatch(r".jld2$",filename)
+  if occursin(r".jld2$",filename)
     try
       wfdata = load(filename)
       window_func_array = wfdata["window_func_array"]

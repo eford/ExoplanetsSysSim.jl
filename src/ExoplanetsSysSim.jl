@@ -17,6 +17,8 @@ if VERSION < VersionNumber(0,3,20)
   using Docile
 end
 
+using CORBITS
+
 # Includes & associated  exports for types, then generic functions, then demo functions
 include("constants.jl")
 #require(joinpath(Pkg.dir("ExoplanetsSysSim"), "src", "constants.jl"))       
@@ -37,8 +39,8 @@ export flux, mass
 export generate_stars
 export PlanetarySystemAbstract, PlanetarySystemSingleStar, PlanetarySystem
 include("planetary_system.jl")
-include("corbits.jl")
-export prob_of_transits_approx
+#include("corbits.jl")
+#export prob_of_transits_approx
 include("window_function.jl")
 export WindowFunction
 export setup_window_function, get_window_function_data, get_window_function_id, eval_window_function

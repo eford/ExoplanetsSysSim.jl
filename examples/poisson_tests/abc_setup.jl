@@ -6,7 +6,7 @@ module EvalSysSimModel
   export setup, get_param_vector, get_ss_obs #, evaluate_model
   export gen_data, calc_summary_stats, calc_distance, is_valid
   using ExoplanetsSysSim
-  include(joinpath(Pkg.dir(),"ExoplanetsSysSim","examples","poisson_tests", "christiansen_func.jl"))
+  include(joinpath(dirname(pathof(ExoplanetsSysSim)),"..","examples","poisson_tests", "christiansen_func.jl"))
 
   #sim_param_closure = SimParam()
   sim_param_closure = setup_sim_param_christiansen()
@@ -15,8 +15,8 @@ module EvalSysSimModel
     function is_valid(param_vector::Vector{Float64})
       global sim_param_closure
       update_sim_param_from_vector!(param_vector,sim_param_closure)
-      const rate_tab::Array{Float64,2} = get_any(sim_param_closure, "obs_par", Array{Float64,2})
-      const lambda = sum_kbn(rate_tab)
+      rate_tab::Array{Float64,2} = get_any(sim_param_closure, "obs_par", Array{Float64,2})
+      lambda = sum_kbn(rate_tab)
       if lambda > 10. || any(x -> x < 0., rate_tab)
          return false
       end
@@ -84,17 +84,21 @@ module EvalSysSimModel
 
 end  # module EvalSysSimModel
 
-include(joinpath(Pkg.dir("ABC"),"src/composite.jl"))
+#include(joinpath(Pkg.dir("ABC"),"src/composite.jl"))
 
 module SysSimABC
-  export setup_abc, run_abc, run_abc_largegen
-  import ABC
-  import Distributions
-  using CompositeDistributions
-  using Compat
   import ExoplanetsSysSim
-  import EvalSysSimModel
-  include(joinpath(Pkg.dir(),"ExoplanetsSysSim","examples","poisson_tests", "christiansen_func.jl"))
+  export setup_abc, run_abc, run_abc_largegen
+  #import EvalSysSimModel
+  using ..EvalSysSimModel
+  import Distributions
+  import ApproximateBayesianComputing
+  const ABC = ApproximateBayesianComputing
+  using ApproximateBayesianComputing.CompositeDistributions
+  using Compat
+  using Distributed
+
+  include(joinpath(dirname(pathof(ExoplanetsSysSim)),"..","examples","poisson_tests", "christiansen_func.jl"))
 
   function setup_abc(num_dist::Integer = 0; max_generations::Int64=100 )
     EvalSysSimModel.setup()

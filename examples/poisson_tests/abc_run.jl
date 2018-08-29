@@ -4,10 +4,11 @@
 
 include(joinpath(pwd(), "abc_setup.jl"))
 
-using SysSimABC
+using .SysSimABC
 using ExoplanetsSysSim
-using JLD
+using JLD2
 using StatsBase
+using Profile
 
 out2txt = false # Write occurrence rates & densities to text files
 expandpart = false # Expand final generation for robust posteriors
@@ -15,17 +16,18 @@ profile_code = false
 
 #srand(42)
 
+#global output
 if profile_code
    println("Setting up simulation...")
    @time abc_plan = setup_abc(0,max_generations=1)
    println("Running simulation...")
-   @time output = run_abc(abc_plan)
+   @time global output = run_abc(abc_plan)
    println("Setting up simulation...")
    @time abc_plan = setup_abc(0,max_generations=5)
    Profile.init(n = 10^7, delay = 0.01)
    Profile.clear_malloc_data()
    println("Running simulation...")
-   @profile output = run_abc(abc_plan)
+   @profile global output = run_abc(abc_plan)
    open("profile.txt.corbits.reallocated", "w") do s
       Profile.print(IOContext(s, :displaysize => (24, 500)))
    end
@@ -34,7 +36,7 @@ else
    @time abc_plan = setup_abc(0,max_generations=50)
    println("")
    println("Running simulation...")
-   @time output = run_abc(abc_plan)
+   @time global output = run_abc(abc_plan)
 end
    println("")
 
