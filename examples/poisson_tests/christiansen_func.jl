@@ -219,7 +219,7 @@ function setup_christiansen(filename::String; force_reread::Bool = false)
   #global df, usable
   df = ExoplanetsSysSim.StellarTable.df
   #usable = ExoplanetsSysSim.StellarTable.usable
-  if ismatch(r".jld2$",filename)
+  if occursin(r".jld2$",filename)
   try 
     data = load(filename)
     df::DataFrame = data["stellar_catalog"]

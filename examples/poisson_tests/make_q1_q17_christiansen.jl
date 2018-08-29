@@ -4,12 +4,12 @@
 #    used in the Hsu et al. 2018 paper
 
 using ExoplanetsSysSim
-using JLD
+using FileIO 
 
 include(joinpath(Pkg.dir(),"ExoplanetsSysSim","examples","poisson_tests", "christiansen_func.jl"))
 
 stellar_catalog_file_in = joinpath(Pkg.dir("ExoplanetsSysSim"), "data", "q1_q17_dr25_stellar.csv")
-stellar_catalog_file_out = joinpath(Pkg.dir("ExoplanetsSysSim"), "data", "q1q17_dr25_kepler_fgk.jld")
+stellar_catalog_file_out = joinpath(Pkg.dir("ExoplanetsSysSim"), "data", "q1q17_dr25_kepler_fgk.jld2")
 
 stellar_catalog = setup_star_table_christiansen(ascii(stellar_catalog_file_in))
 

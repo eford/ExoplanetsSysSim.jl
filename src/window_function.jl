@@ -9,7 +9,7 @@ export setup_window_function, get_window_function_data, get_window_function_id, 
 #using DataArrays
 using DataFrames
 #using CSV
-using JLD2, FileIO
+using FileIO
 using ExoplanetsSysSim
 import ExoplanetsSysSim.SimulationParameters
 
