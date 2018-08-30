@@ -238,7 +238,8 @@ function generate_e_omega_rayleigh_two_gaussians(sigma_hk::Float64; max_e::Float
     k = sigma_hk*randn()
   end
   ecc::Float64 = sqrt(h*h+k*k)
-  w::Float64 = atan2(k,h)
+  #w::Float64 = atan2(k,h)
+  w::Float64 = atan(k,h)
   return ecc, w
 end
 

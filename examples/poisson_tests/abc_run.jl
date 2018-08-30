@@ -6,14 +6,13 @@ include(joinpath(pwd(), "abc_setup.jl"))
 
 using .SysSimABC
 using ExoplanetsSysSim
-using JLD2
 using StatsBase
 using Profile
 
 out2txt = false # Write occurrence rates & densities to text files
 expandpart = false # Expand final generation for robust posteriors
 profile_code = false
-
+use_star_table_sigmas = false
 #srand(42)
 
 #global output

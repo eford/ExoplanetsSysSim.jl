@@ -286,12 +286,12 @@ function calc_target_obs_sky_ave(t::KeplerTarget, sim_param::SimParam)
    num_observer_samples = 1 # get_int(sim_param,"num_viewing_geometry_samples")
 
   np = num_planets(t)
-  obs = Array{TransitPlanetObs}(np)
-  sigma = Array{TransitPlanetObs}(np)
+  obs = Array{TransitPlanetObs}(undef,np)
+  sigma = Array{TransitPlanetObs}(undef,np)
   #id = Array{Tuple{Int32,Int32}}(np)
   #id = Array{Tuple{Int32,Int32}}(np)
   ns = length(t.sys)
-  sdp_sys = Array{SystemDetectionProbsAbstract}(ns)
+  sdp_sys = Array{SystemDetectionProbsAbstract}(undef,ns)
   i = 1
   for (s,sys) in enumerate(t.sys)
     pdet = zeros(num_planets(sys))
@@ -347,7 +347,7 @@ function calc_target_obs_sky_ave(t::KeplerTarget, sim_param::SimParam)
   end
   # TODO SCI DETAIL: Combine sdp_sys to allow for target to have multiple planetary systems
   s1 = findfirst(x->num_planets(x)>0,sdp_sys)  # WARNING IMPORTANT: For now just take first system with planets
-  if s1 == 0 
+  if s1 == nothing
      s1 = 1
   end
   sdp_target = sdp_sys[s1]
@@ -365,13 +365,13 @@ function calc_target_obs_single_obs(t::KeplerTarget, sim_param::SimParam)
    min_detect_prob_to_be_included = 0.0  # get_real(sim_param,"min_detect_prob_to_be_included")
 
   np = num_planets(t)
-  obs = Array{TransitPlanetObs}(np)
-  sigma = Array{TransitPlanetObs}(np)
+  obs = Array{TransitPlanetObs}(undef,np)
+  sigma = Array{TransitPlanetObs}(undef,np)
   #id = Array{Tuple{Int32,Int32}}(np)
   #id = Array{Tuple{Int32,Int32}}(np)
   ns = length(t.sys)
   #sdp_sys = Array{SystemDetectionProbsAbstract}(ns)
-  sdp_sys = Array{ObservedSystemDetectionProbs}(ns)
+  sdp_sys = Array{ObservedSystemDetectionProbs}(undef,ns)
   i = 1
   for (s,sys) in enumerate(t.sys)
     pdet = zeros(num_planets(sys))
@@ -411,7 +411,7 @@ function calc_target_obs_single_obs(t::KeplerTarget, sim_param::SimParam)
   end
   # TODO SCI DETAIL: Combine sdp_sys to allow for target to have multiple planetary systems
   s1 = findfirst(x->num_planets(x)>0,sdp_sys)  # WARNING: For now just take first system with planets, assumes not two stars wht planets in one target
-  if s1 == 0 
+  if s1 == nothing
      s1 = 1
   end
   sdp_target = sdp_sys[s1]

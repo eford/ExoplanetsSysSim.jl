@@ -182,11 +182,11 @@ end
 #OneObserverSystemDetectionProbs = SimulatedSystemDetectionProbs{OneObserver}
 
 function SimulatedSystemDetectionProbs(traits::Type, p::Vector{Float64}; num_samples::Integer = 1)
-  SimulatedSystemDetectionProbs{traits}( p, zeros(length(p),length(p)), zeros(length(p)),  fill(Array{Int64}(0), num_samples) )
+  SimulatedSystemDetectionProbs{traits}( p, zeros(length(p),length(p)), zeros(length(p)),  fill(Array{Int64}(undef,0), num_samples) )
 end
 
 function SimulatedSystemDetectionProbs(traits::Type, n::Integer; num_samples::Integer = 1)
-  SimulatedSystemDetectionProbs{traits}( ones(n), zeros(n,n), zeros(n), fill(Array{Int64}(0), num_samples) )
+  SimulatedSystemDetectionProbs{traits}( ones(n), zeros(n,n), zeros(n), fill(Array{Int64}(undef,0), num_samples) )
 end
 
 SkyAveragedSystemDetectionProbs(p::Vector{Float64}; num_samples::Integer = 1) = SimulatedSystemDetectionProbs( SkyAveraged, p, num_samples=num_samples) 
@@ -220,9 +220,9 @@ prob_detect_n_planets(prob::SimulatedSystemDetectionProbs{T}, n::Integer) where 
 
 # Compute sky-averaged transit probabilities from a planetary system with known physical properties, assuming a single host star
 function calc_simulated_system_detection_probs(ps::PlanetarySystemSingleStar, prob_det_if_tr::Vector{Float64}; num_samples::Integer = 1, max_tranets_in_sys::Integer = 10, min_detect_prob_to_be_included::Float64 = 0.0, observer_trait::Type=SkyAveraged)
-  @assert issubtype(observer_trait,SystemDetectionProbsTrait)
+  @assert observer_trait <: SystemDetectionProbsTrait
   @assert num_planets(ps) == length(prob_det_if_tr)
-  idx_detectable = find(prob_det_if_tr)
+  idx_detectable = findall(x->x>0.0,prob_det_if_tr)
   n = length(idx_detectable)
   @assert n <= max_tranets_in_sys       # Make sure memory to store these
   #if n==0 
@@ -274,7 +274,7 @@ function calc_simulated_system_detection_probs(ps::PlanetarySystemSingleStar, pr
 	      sdp.combo_detected[i] = combo
 	   end
 	end
-	combo_cum_probs += prob_det_this_combo
+	combo_cum_probs .+= prob_det_this_combo
 
         sdp.n_planets[ntr] += prob_det_this_combo   # Accumulate the probability of detecting any n planets
 
@@ -363,7 +363,7 @@ function combine_system_detection_probs(prob::Vector{SimulatedSystemDetectionPro
 	end
     end
     # Combine samples of detected planet combinations
-    prob_merged.combo_detected = fill(Array{Int64}(0), min(length(prob[s1].combo_detected), length(prob[s2].combo_detected) ) )
+    prob_merged.combo_detected = fill(Array{Int64}(undef,0), min(length(prob[s1].combo_detected), length(prob[s2].combo_detected) ) )
     for i in 1:length(prob_merged.combo_detected)
        prob_merged.combo_detected[i] = vcat( prob[s1].combo_detected, prob[s1].combo_detected+offset )
     end

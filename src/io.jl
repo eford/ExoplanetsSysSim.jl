@@ -4,7 +4,7 @@
 module SysSimIO
 using ExoplanetsSysSim
 #using HDF5, JLD
-using JLD2
+using FileIO, JLD2
 
 #if VERSION >= v"0.5-"
 #  import Compat: UTF8String, ASCIIString

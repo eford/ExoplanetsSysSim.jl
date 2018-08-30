@@ -8,7 +8,7 @@ import Pkg, LibGit2
 using ExoplanetsSysSim
 
 export SimParam, add_param_fixed, add_param_active, update_param, set_active, set_inactive, is_active
-export get_any, get_real, get_int, get_function
+export get_any, get_real, get_int, get_bool, get_function
 export make_vector_of_active_param_keys, make_vector_of_sim_param, get_range_for_sim_param, update_sim_param_from_vector!
 export setup_sim_param_demo, test_sim_param_constructors
 #export preallocate_memory!
@@ -143,6 +143,11 @@ function get_int(sim::SimParam, key::String)
   val::Int64 = get(sim.param,key,zero(Int64))
   #@assert(val!=nan(zero(Int64)))
   #@assert(val!=oftype(x,NaN))
+  return val
+end
+
+function get_bool(sim::SimParam, key::String)
+  val::bool = get(sim.param,key,false)
   return val
 end
 

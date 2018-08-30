@@ -94,7 +94,7 @@ function get_window_function_id(kepid::Int64; use_default_for_unknown::Bool = tr
     # if a target is observed for less than 4 quarters, then it won't have a corresponding
     # window function in this list, so throw a warning and use the last window_function_id
     # which corresponds to an "averaged" window function
-    warn("Window function data is not avaialble for kepid $kepid, using default.")
+    @warn "Window function data is not avaialble for kepid $kepid, using default."
     wf_id = win_func_data.default_wf_id
   end
   # TODO SCI DETAIL IMPORTANT? This does not include TPS timeouts or MESthresholds (see DR25 Completeness Products)

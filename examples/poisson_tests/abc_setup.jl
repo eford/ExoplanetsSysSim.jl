@@ -6,6 +6,7 @@ module EvalSysSimModel
   export setup, get_param_vector, get_ss_obs #, evaluate_model
   export gen_data, calc_summary_stats, calc_distance, is_valid
   using ExoplanetsSysSim
+  #using KahanSummation
   include(joinpath(dirname(pathof(ExoplanetsSysSim)),"..","examples","poisson_tests", "christiansen_func.jl"))
 
   #sim_param_closure = SimParam()
@@ -16,7 +17,8 @@ module EvalSysSimModel
       global sim_param_closure
       update_sim_param_from_vector!(param_vector,sim_param_closure)
       rate_tab::Array{Float64,2} = get_any(sim_param_closure, "obs_par", Array{Float64,2})
-      lambda = sum_kbn(rate_tab)
+      #lambda = sum_kbn(rate_tab)  # TODO: Restore kbn
+      lambda = sum(rate_tab)
       if lambda > 10. || any(x -> x < 0., rate_tab)
          return false
       end

@@ -6,7 +6,8 @@ using DataFrames
 #using DataArrays
 using CSV
 #using JLD
-using JLD2
+#using JLD2
+using FileIO
 
 #if VERSION >= v"0.5-"
 #  import Compat: UTF8String, ASCIIString
@@ -29,7 +30,7 @@ function generate_kepler_physical_catalog(sim_param::SimParam)
    end
    num_sys = get_int(sim_param,"num_targets_sim_pass_one")
    generate_kepler_target = get_function(sim_param,"generate_kepler_target")
-   target_list = Array{KeplerTarget}(num_sys)
+   target_list = Array{KeplerTarget}(undef,num_sys)
    map!(x->generate_kepler_target(sim_param), target_list, 1:num_sys )
    return KeplerPhysicalCatalog(target_list)
 end
@@ -53,9 +54,9 @@ function observe_kepler_targets(calc_target_obs::Function, input::KeplerPhysical
   end
   num_targets_sim_pass_one = get_int(sim_param,"num_targets_sim_pass_one")
   if length(output.target) < num_targets_sim_pass_one
-     output.target = Array{KeplerTargetObs}(num_targets_sim_pass_one) 
+     output.target = Array{KeplerTargetObs}(undef,num_targets_sim_pass_one) 
   end
-  #output.target = Array{KeplerTargetObs}(length(input.target) )  # Replaced to reduce memory allocation
+  #output.target = Array{KeplerTargetObs}(undef,length(input.target) )  # Replaced to reduce memory allocation
   map!(x::KeplerTarget->calc_target_obs(x,sim_param)::KeplerTargetObs, output.target, input.target)
   resize!(output.target,length(input.target))
   return output
@@ -121,7 +122,7 @@ function simulated_read_kepler_observations(sim_param::SimParam )
    end
    num_sys = get_int(sim_param,"num_kepler_targets")
    generate_kepler_target = get_function(sim_param,"generate_kepler_target")
-   target_list = Array{KeplerTarget}(num_sys)
+   target_list = Array{KeplerTarget}(undef,num_sys)
    map!(x->generate_kepler_target(sim_param), target_list, 1:num_sys ) 
 
    cat_phys_cut = generate_obs_targets(KeplerPhysicalCatalog(target_list), sim_param)
@@ -132,14 +133,14 @@ function simulated_read_kepler_observations(sim_param::SimParam )
 end
 
 function read_koi_catalog(sim_param::SimParam, force_reread::Bool = false)
-    filename = convert(String,joinpath(Pkg.dir("ExoplanetsSysSim"), "data", convert(String,get(sim_param,"koi_catalog","q1_q17_dr25_koi.csv")) ) )
+    filename = convert(String,joinpath(dirname(pathof(ExoplanetsSysSim)),"..", "data", convert(String,get(sim_param,"koi_catalog","q1_q17_dr25_koi.csv")) ) )
     return read_koi_catalog(filename, force_reread)
 end
 
 function read_koi_catalog(filename::String, force_reread::Bool = false)
     local df, usable
     
-    if ismatch(r".jld2$",filename) && !force_reread
+    if occursin(r".jld2$",filename) && !force_reread
         try 
             data = load(filename)
             df = data["koi_catalog"]
@@ -170,7 +171,7 @@ function read_koi_catalog(filename::String, force_reread::Bool = false)
             has_period = .!(ismissing.(df[:koi_period]) .| ismissing.(df[:koi_period_err1]) .| ismissing.(df[:koi_period_err2]))
 
             is_usable = .&(is_cand, has_radius, has_period)
-            usable = find(is_usable)
+            usable = findall(is_usable)
         catch
             error(string("# Failed to read koi catalog >",filename,"< in ascii format."))
         end
@@ -190,17 +191,17 @@ function setup_actual_planet_candidate_catalog(df_star::DataFrame, df_koi::DataF
         
         for n in 1:length(subset_df[:,1])
             subset_colnum = 1
-            subset_entry = find(x->x==subset_df[n,1], df_koi[names(subset_df)[1]])
+            subset_entry = findall(x->x==subset_df[n,1], df_koi[names(subset_df)[1]])
             # println("Initial cut: ", subset_entry)
             while (length(subset_entry) > 1) & (subset_colnum < length(names(subset_df)))
                 subset_colnum += 1
                 
-                subsubset = find(x->round(x*10.)==round(subset_df[n,subset_colnum]*10.), df_koi[subset_entry,names(subset_df)[subset_colnum]])
+                subsubset = findall(x->round(x*10.)==round(subset_df[n,subset_colnum]*10.), df_koi[subset_entry,names(subset_df)[subset_colnum]])
 	        # println("Extra cut: ", subset_df[n,subset_colnum], " / ", df_koi[subset_entry,col_idx], " = ", subsubset)
 	        subset_entry = subset_entry[subsubset]
             end
             if length(subset_entry) > 1
-	        cand_sub = find(x->x == "CANDIDATE",df_koi[subset_entry,:koi_pdisposition])
+	        cand_sub = findall(x->x == "CANDIDATE",df_koi[subset_entry,:koi_pdisposition])
 	        subset_entry = subset_entry[cand_sub]
 	        if length(subset_entry) > 1
                     println("Multiple planets found in final cut: ", subset_df[n,1])
@@ -211,7 +212,7 @@ function setup_actual_planet_candidate_catalog(df_star::DataFrame, df_koi::DataF
             end
             koi_subset[subset_entry] = true
         end
-        df_koi = df_koi[find(koi_subset),:]
+        df_koi = df_koi[findall(koi_subset),:]
         tot_plan = count(x->x, koi_subset)
     end
     
@@ -239,7 +240,7 @@ function setup_actual_planet_candidate_catalog(df_star::DataFrame, df_koi::DataF
         
         target_obs.obs[plid] = ExoplanetsSysSim.TransitPlanetObs(df_obs[i,:koi_period],df_obs[i,:koi_time0bk],df_obs[i,:koi_depth]/1.0e6,df_obs[i,:koi_duration])
         target_obs.sigma[plid] = ExoplanetsSysSim.TransitPlanetObs((abs(df_obs[i,:koi_period_err1])+abs(df_obs[i,:koi_period_err2]))/2,(abs(df_obs[i,:koi_time0bk_err1])+abs(df_obs[i,:koi_time0bk_err2]))/2,(abs(df_obs[i,:koi_depth_err1]/1.0e6)+abs(df_obs[i,:koi_depth_err2]/1.0e6))/2,(abs(df_obs[i,:koi_duration_err1])+abs(df_obs[i,:koi_duration_err2]))/2)
-	#target_obs.prob_detect = ExoplanetsSysSim.SimulatedSystemDetectionProbs{OneObserver}( ones(num_pl), ones(num_pl,num_pl), ones(num_pl), fill(Array{Int64}(0), 1) )  # Made line below to simplify calling
+	#target_obs.prob_detect = ExoplanetsSysSim.SimulatedSystemDetectionProbs{OneObserver}( ones(num_pl), ones(num_pl,num_pl), ones(num_pl), fill(Array{Int64}(undef,0), 1) )  # Made line below to simplify calling
         target_obs.prob_detect = ExoplanetsSysSim.OneObserverSystemDetectionProbs(num_pl)
         plid -= 1
         if plid == 0
@@ -251,7 +252,7 @@ end
 
 # Two functions below were just for debugging purposes
 function calc_snr_list(cat::KeplerPhysicalCatalog, sim_param::SimParam)
-  snrlist = Array{Float64}(0)
+  snrlist = Array{Float64}(undef,0)
   for t in 1:length(cat.target)
     for p in 1:length(cat.target[t].sys[1].planet)
       snr = calc_snr_if_transit(cat.target[t],1,p,sim_param)
@@ -260,11 +261,11 @@ function calc_snr_list(cat::KeplerPhysicalCatalog, sim_param::SimParam)
       end
     end
   end
-  snrlist[find(x->x>7.1,snrlist)]
+  snrlist[findall(x->x>7.1,snrlist)]
 end
 
 function calc_prob_detect_list(cat::KeplerPhysicalCatalog, sim_param::SimParam)
-  pdetectlist = Array{Float64}(0)
+  pdetectlist = Array{Float64}(undef,0)
   for t in 1:length(cat.target)
     for p in 1:length(cat.target[t].sys[1].planet)
       pdet = calc_prob_detect_if_transit(cat.target[t],1,p,sim_param)
@@ -273,7 +274,7 @@ function calc_prob_detect_list(cat::KeplerPhysicalCatalog, sim_param::SimParam)
       end
     end
   end
-  idx = find(x->x>0.0,pdetectlist)
+  idx = findall(x->x>0.0,pdetectlist)
   pdetectlist[idx]
 end
 
