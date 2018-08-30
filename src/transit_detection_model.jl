@@ -34,8 +34,8 @@ function kepler_window_function_dr25_model(t::KeplerTarget, exp_num_transits_no_
    ExoplanetsSysSim.WindowFunction.eval_window_function(t.window_function_id, Duration=duration, Period=period)
 end
 
-#kepler_window_function = kepler_window_function_binomial_model
-kepler_window_function = kepler_window_function_dr25_model
+kepler_window_function = kepler_window_function_binomial_model
+#kepler_window_function = kepler_window_function_dr25_model
 
 # See Christiansen et al. (2015)  This assumes a linear limbdarkening coefficient of 0.6
 function frac_depth_to_tps_depth(frac_depth::Float64)

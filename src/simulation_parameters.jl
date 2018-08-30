@@ -239,41 +239,40 @@ function setup_sim_param_demo(args::Vector{String} = Array{String}(0) )   # allo
   add_param_fixed(sim_param,"max_tranets_in_sys",7)
   add_param_fixed(sim_param,"num_targets_sim_pass_one",190000)                      # Note this is used for the number of stars in the simulations, not necessarily related to number of Kepler targets
   add_param_fixed(sim_param,"num_kepler_targets",190000)                           # Note this is used for the number of Kepler targets for the observational catalog
-  add_param_fixed(sim_param,"generate_star",generate_star_dumb)
-  #add_param_fixed(sim_param,"generate_planetary_system", generate_planetary_system_simple)
-  add_param_fixed(sim_param,"generate_planetary_system", generate_planetary_system_uncorrelated_incl)
+  add_param_fixed(sim_param,"generate_star",ExoplanetsSysSim.generate_star_dumb)
+  #add_param_fixed(sim_param,"generate_planetary_system", ExoplanetsSysSim.generate_planetary_system_simple)
+  add_param_fixed(sim_param,"generate_planetary_system", ExoplanetsSysSim.generate_planetary_system_uncorrelated_incl)
 
-  # add_param_fixed(sim_param,"generate_kepler_target",generate_kepler_target_simple)
-  add_param_fixed(sim_param,"generate_kepler_target",generate_kepler_target_from_table)
+  # add_param_fixed(sim_param,"generate_kepler_target",ExoplanetsSysSim.generate_kepler_target_simple)
+  add_param_fixed(sim_param,"generate_kepler_target",ExoplanetsSysSim.generate_kepler_target_from_table)
   add_param_fixed(sim_param,"star_table_setup",StellarTable.setup_star_table)
   add_param_fixed(sim_param,"stellar_catalog","q1_q17_dr24_stellar.jld")
-  add_param_fixed(sim_param,"generate_num_planets",generate_num_planets_poisson)
+  add_param_fixed(sim_param,"generate_num_planets",ExoplanetsSysSim.generate_num_planets_poisson)
   add_param_active(sim_param,"log_eta_pl",log(2.0))
-  add_param_fixed(sim_param,"generate_planet_mass_from_radius",generate_planet_mass_from_radius_powerlaw)
+  add_param_fixed(sim_param,"generate_planet_mass_from_radius",ExoplanetsSysSim.generate_planet_mass_from_radius_powerlaw)
   add_param_fixed(sim_param,"mr_power_index",2.0)
   add_param_fixed(sim_param,"mr_const",1.0)
-  #add_param_fixed(sim_param,"generate_period_and_sizes",generate_period_and_sizes_log_normal)
+  #add_param_fixed(sim_param,"generate_period_and_sizes",ExoplanetsSysSim.generate_period_and_sizes_log_normal)
   #add_param_active(sim_param,"mean_log_planet_radius",log(2.0*earth_radius))
   #add_param_active(sim_param,"sigma_log_planet_radius",log(2.0))
   #add_param_active(sim_param,"mean_log_planet_period",log(5.0))
   #add_param_active(sim_param,"sigma_log_planet_period",log(2.0))
-  add_param_fixed(sim_param,"generate_period_and_sizes", generate_period_and_sizes_power_law)
+  add_param_fixed(sim_param,"generate_period_and_sizes", ExoplanetsSysSim.generate_period_and_sizes_power_law)
   add_param_active(sim_param,"power_law_P",0.3)
   add_param_active(sim_param,"power_law_r",-2.44)
   add_param_fixed(sim_param,"min_period",1.0)
   add_param_fixed(sim_param,"max_period",100.0)
-  add_param_fixed(sim_param,"min_radius",0.5*earth_radius)
-  add_param_fixed(sim_param,"max_radius",10.0*earth_radius)
-  add_param_fixed(sim_param,"generate_e_omega",generate_e_omega_rayleigh)
+  add_param_fixed(sim_param,"min_radius",0.5*ExoplanetsSysSim.earth_radius)
+  add_param_fixed(sim_param,"max_radius",10.0*ExoplanetsSysSim.earth_radius)
+  add_param_fixed(sim_param,"generate_e_omega",ExoplanetsSysSim.generate_e_omega_rayleigh)
   add_param_fixed(sim_param,"sigma_hk",0.03)
-  add_param_fixed(sim_param,"sigma_incl",2.0)   # degrees 
-  add_param_fixed(sim_param,"calc_target_obs_sky_ave",calc_target_obs_sky_ave)
-  add_param_fixed(sim_param,"calc_target_obs_single_obs",calc_target_obs_single_obs)
-  add_param_fixed(sim_param,"read_target_obs",simulated_read_kepler_observations)
-  add_param_fixed(sim_param,"transit_noise_model",transit_noise_model_fixed_noise)
+  add_param_fixed(sim_param,"sigma_incl",2.0)   # degrees
+  add_param_fixed(sim_param,"calc_target_obs_sky_ave",ExoplanetsSysSim.calc_target_obs_sky_ave)
+  add_param_fixed(sim_param,"calc_target_obs_single_obs",ExoplanetsSysSim.calc_target_obs_single_obs)
+  add_param_fixed(sim_param,"read_target_obs",ExoplanetsSysSim.simulated_read_kepler_observations)
+  add_param_fixed(sim_param,"transit_noise_model",ExoplanetsSysSim.transit_noise_model_fixed_noise)
   # add_param_fixed(sim_param,"transit_noise_model",transit_noise_model_diagonal)
   # add_param_fixed(sim_param,"rng_seed",1234)   # If you want to be able to reproduce simulations
-   
 
   # Do other initialization tasks belong here or elsewhere?
   # TODO OPT:  Try to preallocate memory for each target to see if this makes a performance difference

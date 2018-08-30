@@ -18,6 +18,7 @@ df = DataFrame()
         
 function setup(sim_param::SimParam; force_reread::Bool = false)
   global df
+  wf = WindowFunction.setup_window_function(sim_param)
   if haskey(sim_param,"read_stellar_catalog") && !force_reread
      return df
      #return data
@@ -42,7 +43,7 @@ function setup(filename::String)
   else
   try 
     #df = readtable(filename)
-    df = CSV.read(filename,nullable=true)
+    df = CSV.read(filename,allowmissing=:all)
   catch
     error(string("# Failed to read stellar catalog >",filename,"< in ascii format."))
   end
