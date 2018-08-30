@@ -29,7 +29,7 @@ duration(obs::TransitPlanetObs) = obs.duration
 semimajor_axis(P::Float64, M::Float64) = (grav_const/(4pi^2)*M*P*P)^(1/3)
 
 function semimajor_axis(ps::PlanetarySystemAbstract, id::Integer)
-  M = mass(ps.star) + ps.planet[id].mass   # TODO SCI DETAIL: Replace with Jacobi mass?  Probably not important unless start including TTVs at some point
+  M = mass(ps.star) + ps.planet[id].mass   # TODO SCI DETAIL: Replace with Jacobi mass?  Not important unless start including TTVs, even then unlikely to matter
   @assert(M>0.0)
   @assert(ps.orbit[id].P>0.0)
   return semimajor_axis(ps.orbit[id].P,M)
@@ -255,12 +255,6 @@ calc_transit_duration(t::KeplerTarget, s::Integer, p::Integer ) = calc_transit_d
 function calc_expected_num_transits(t::KeplerTarget, s::Integer, p::Integer, sim_param::SimParam)  
  period = t.sys[s].orbit[p].P
  exp_num_transits = t.duty_cycle * t.data_span/period
- #= 
- if exp_num_transits <=6 
- end
- # TODO SCI DETAIL: Calculate more accurat number of transits, perhaps using star and specific window function or perhaps specific times of data gaps more given module
-  DARIN: Could your window function files help here?
- =#
  return exp_num_transits
 end
 
@@ -279,7 +273,7 @@ type KeplerTargetObs                        # QUERY:  Do we want to make this ty
   #has_sc::Vector{Bool}                      # TODO OPT: Make Immutable Vector or BitArray to reduce memory use?  
   has_sc::BitArray{1}                        # WARNING: Changed from Array{Bool}.  Alternatively, we could try StaticArray{Bool} so fixed size?  Do we even need to keep this?
 
-  star::StarObs                             # TODO SCI DETAIL: Add more members to StarObs, so can used observed rather than actual star properties
+  star::StarObs                             
 end
 #KeplerTargetObs(n::Integer) = KeplerTargetObs( fill(TransitPlanetObs(),n), fill(TransitPlanetObs(),n), fill(tuple(0,0),n),  ObservedSystemDetectionProbsEmpty(),  fill(false,num_quarters), StarObs(0.0,0.0) )
 KeplerTargetObs(n::Integer) = KeplerTargetObs( fill(TransitPlanetObs(),n), fill(TransitPlanetObs(),n), ObservedSystemDetectionProbsEmpty(),  falses(has_sc_bit_array_size), StarObs(0.0,0.0,0) )
@@ -306,20 +300,20 @@ function calc_target_obs_sky_ave(t::KeplerTarget, sim_param::SimParam)
          println("# s=",s, " p=",p," num_sys= ",length(t.sys), " num_pl= ",num_planets(sys) )
       end
         ntr = calc_expected_num_transits(t, s, p, sim_param)
-        # period = sys.orbit[p].P
+        period = sys.orbit[p].P
         # t0 = rand(Uniform(0.0,period))   # WARNING: Not being calculated from orbit
         size_ratio = t.sys[s].planet[p].radius/t.sys[s].star.radius
         depth = calc_transit_depth(t,s,p)
         duration_central = calc_transit_duration_central(t,s,p)
         cdpp_central = interpolate_cdpp_to_duration(t, duration_central)
 	snr_central = calc_snr_if_transit(t, depth, duration_central, cdpp_central, sim_param, num_transit=ntr)
-        pdet_ave = calc_ave_prob_detect_if_transit_from_snr(t, snr_central, duration_central, size_ratio, cdpp_central, sim_param, num_transit=ntr) 
+        pdet_ave = calc_ave_prob_detect_if_transit_from_snr(t, snr_central, period, duration_central, size_ratio, cdpp_central, sim_param, num_transit=ntr) 
  
 	add_to_catalog = pdet_ave > min_detect_prob_to_be_included  # Include all planets with sufficient detection probability
 
 
 	if add_to_catalog 
-           pdet_central = calc_prob_detect_if_transit(t, snr_central, sim_param, num_transit=ntr)
+           pdet_central = calc_prob_detect_if_transit(t, snr_central, period, duration_central, sim_param, num_transit=ntr)
            threshold_pdet_ratio = rand()
 	   const hard_max_num_b_tries = 100
 	   max_num_b_tries = min_detect_prob_to_be_included == 0. ? hard_max_num_b_tries : min(hard_max_num_b_tries,convert(Int64,1/min_detect_prob_to_be_included))
@@ -332,7 +326,7 @@ function calc_target_obs_sky_ave(t::KeplerTarget, sim_param::SimParam)
 	      duration = duration_central * transit_duration_factor   # WARNING:  Technically, this duration may be slightly reduced for grazing cases to account for reduction in SNR due to planet not being completely inscribed by star at mid-transit.  But this will be a smaller effect than limb-darkening for grazing transits.  Also, makes a variant of the small angle approximation
               cdpp = interpolate_cdpp_to_duration(t, duration)
 	      snr = snr_central * (cdpp_central/cdpp) * sqrt(transit_duration_factor) 
-              pdet_this_b = calc_prob_detect_if_transit(t, snr, sim_param, num_transit=ntr)
+              pdet_this_b = calc_prob_detect_if_transit(t, snr, period, duration, sim_param, num_transit=ntr)
 
               if pdet_this_b >= threshold_pdet_ratio * pdet_central
                   #println("# Adding pdet_this_b = ", pdet_this_b, " pdet_c = ", pdet_central, " snr= ",snr, " cdpp= ",cdpp, " duration= ",duration, " b=",b, " u01= ", threshold_pdet_ratio)
@@ -391,7 +385,7 @@ function calc_target_obs_single_obs(t::KeplerTarget, sim_param::SimParam)
 	   continue
 	end
         ntr = calc_expected_num_transits(t, s, p, sim_param)
-        # period = sys.orbit[p].P
+        period = sys.orbit[p].P
         # t0 = rand(Uniform(0.0,period))   # WARNING: Not being calculated from orbit
         depth = calc_transit_depth(t,s,p)
         cdpp = interpolate_cdpp_to_duration(t, duration)
@@ -402,7 +396,7 @@ function calc_target_obs_single_obs(t::KeplerTarget, sim_param::SimParam)
         depth *= snr_correction
         snr = calc_snr_if_transit(t, depth, duration, cdpp, sim_param, num_transit=ntr)
 
-        pdet[p] = calc_prob_detect_if_transit(t, depth, duration, cdpp, sim_param, num_transit=ntr)
+        pdet[p] = calc_prob_detect_if_transit(t, depth, period, duration, cdpp, sim_param, num_transit=ntr)
         #pdet[p] = calc_prob_detect_if_transit(t, snr, sim_param, num_transit=ntr)
 
 	if pdet[p] > min_detect_prob_to_be_included   
