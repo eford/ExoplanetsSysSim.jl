@@ -23,11 +23,13 @@ struct window_function_data
   allsortedkepids::Array{Int64,1}          # value is Kepler ID.  Index is same as index to window_function_id_arr
   window_function_id_arr::Array{Int64,1}   # value is index for window_func_array.  Index is same as index to allsortedkepids
   default_wf_id::Int64                     # Index corresponding to the default window function
+  already_warned::Array{Bool,1}            # Wether we've already thrown a warning about this kepid
 end
 
 
+
 function window_function_data()
-  window_function_data( Array{Float64,3}(undef,0,0,0), Array{Float64,1}(undef,0),Array{Float64,1}(undef,0), Array{Int64,1}(undef,0),Array{Int64,1}(undef,0),Array{Int64,1}(undef,0), 0 )
+  window_function_data( Array{Float64,3}(undef,0,0,0), Array{Float64,1}(undef,0),Array{Float64,1}(undef,0), Array{Int64,1}(undef,0),Array{Int64,1}(undef,0),Array{Int64,1}(undef,0), 0, falses(0) )
 end
 
 
@@ -63,9 +65,9 @@ function setup(filename::String)
       sorted_quarter_strings = wfdata["sorted_quarter_strings"]
       allsortedkepids = wfdata["allsortedkepids"]
       window_function_id_arr = wfdata["window_function_id_arr"]
-
+      already_warned = falses(length(allsortedkepids))
       global win_func_data = window_function_data(window_func_array, wf_durations_in_hrs, wf_periods_in_days, sorted_quarter_strings, 
-                                                allsortedkepids, window_function_id_arr, maximum(window_function_id_arr) )
+                                                allsortedkepids, window_function_id_arr, maximum(window_function_id_arr), already_warned )
 
     catch
       error(string("# Failed to read window function data > ", filename," < in jld2 format."))
@@ -88,13 +90,19 @@ function get_window_function_id(kepid::Int64; use_default_for_unknown::Bool = tr
   # from DR25topwinfuncs.jld2 made by Darin Ragozzine's cleanDR25winfuncs.jl script.
   no_win_func_available::Int64 = -1        # hardcoding this in, should match convention in window function input file
 
-  wf_id = win_func_data.window_function_id_arr[searchsortedfirst(win_func_data.allsortedkepids,kepid)] # all Kepler kepids are in allsortedkepids
+  idx = searchsortedfirst(win_func_data.allsortedkepids,kepid) # all Kepler kepids are in allsortedkepids
+  wf_id = win_func_data.window_function_id_arr[idx]
 
   if wf_id == no_win_func_available && use_default_for_unknown
     # if a target is observed for less than 4 quarters, then it won't have a corresponding
     # window function in this list, so throw a warning and use the last window_function_id
     # which corresponds to an "averaged" window function
-    @warn "Window function data is not avaialble for kepid $kepid, using default."
+    if !win_func_data.already_warned[idx]
+       win_func_data.already_warned[idx] = true
+       if sum(win_func_data.already_warned) < 20
+          @warn "Window function data is not avaialble for kepid $kepid, using default."
+       end
+    end
     wf_id = win_func_data.default_wf_id
   end
   # TODO SCI DETAIL IMPORTANT? This does not include TPS timeouts or MESthresholds (see DR25 Completeness Products)
