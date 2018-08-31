@@ -1,6 +1,6 @@
 #Pkg.add("ParallelDataTransfer")
 
-addprocs(2) #number of additional processors
+addprocs(9) #number of additional processors
 
 @everywhere using ParallelDataTransfer
 @everywhere using ExoplanetsSysSim
@@ -260,7 +260,7 @@ end
 
 model_name = "Clustered_P_R_broken_R_simulated_optimization" #"Clustered_P_R_broken_R_simulated_optimization"
 optimization_number = "_random"*ARGS[1] #if want to run on the cluster with random initial active parameters: "_random"*ARGS[1]
-max_evals = 10000
+max_evals = 3000
 file_name = model_name*optimization_number*"_targs"*string(get_int(sim_param,"num_targets_sim_pass_one"))*"_evals"*string(max_evals)
 
 sendto(workers(), max_evals=max_evals, file_name=file_name)
@@ -358,14 +358,14 @@ println("# Active parameters: ", make_vector_of_active_param_keys(sim_param))
 println(f, "# Active parameters: ", make_vector_of_active_param_keys(sim_param))
 println(f, "# Starting active parameter values: ", active_param_start)
 println(f, "# Optimization active parameters search bounds: ", active_params_box)
-println(f, "# Method: adaptive_de_rand_1_bin_radiuslimited")
+println(f, "# Method: dxnes")
 println(f, "# PopulationSize: ", PopSize)
 println(f, "# Format: Active_params: [active parameter values]")
 println(f, "# Format: Dist: [distances][total distance]")
 println(f, "# Format: Dist_weighted: [weighted distances][total weighted distance]")
 println(f, "# Distances used: Dist_KS (all, weighted)") #Edit this line to specify which distances were actually used in the optimizer!
 
-target_function_weighted(active_param_start) #to simulate the model once with the drawn parameters and compare to the Kepler population before starting the optimization
+target_function_Kepler_weighted(active_param_start) #to simulate the model once with the drawn parameters and compare to the Kepler population before starting the optimization
 
 
 
@@ -378,7 +378,7 @@ target_function_weighted(active_param_start) #to simulate the model once with th
 using BlackBoxOptim              # see https://github.com/robertfeldt/BlackBoxOptim.jl for documentation
 
 tic()
-opt_result = bboptimize(target_function_weighted; SearchRange = active_params_box, NumDimensions = length(active_param_true), Method = :adaptive_de_rand_1_bin_radiuslimited, PopulationSize = PopSize, MaxFuncEvals = max_evals, TargetFitness = mean_weighted_dist, FitnessTolerance = std_weighted_dist, TraceMode = :verbose, Workers = workers())
+opt_result = bboptimize(target_function_Kepler_weighted; SearchRange = active_params_box, NumDimensions = length(active_param_true), Method = :dxnes, PopulationSize = PopSize, MaxFuncEvals = max_evals, TargetFitness = mean_weighted_dist, FitnessTolerance = std_weighted_dist, TraceMode = :verbose, Workers = workers())
 t_elapsed = toc()
 
 println(f, "# best_candidate: ", best_candidate(opt_result))

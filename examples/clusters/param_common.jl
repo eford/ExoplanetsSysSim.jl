@@ -39,25 +39,25 @@ function setup_sim_param_model(args::Vector{String} = Array{String}(0) )   # all
   add_param_active(sim_param,"break_radius",3.0*ExoplanetsSysSim.earth_radius)
 
   # generate_num_planets_in_cluster currently use these for the Inclination distribution
-  add_param_fixed(sim_param,"sigma_incl",1.5) # degrees; 0 = coplanar w/ generate_kepler_target_simple; ignored by generate_planetary_system_uncorrelated_incl
-  add_param_fixed(sim_param,"sigma_incl_near_mmr",1.5)
+  add_param_active(sim_param,"sigma_incl",1.5) # degrees; 0 = coplanar w/ generate_kepler_target_simple; ignored by generate_planetary_system_uncorrelated_incl
+  add_param_active(sim_param,"sigma_incl_near_mmr",1.5)
 
   add_param_fixed(sim_param,"max_incl_sys",0.0) #degrees; gives system inclinations from "max_incl_sys" (deg) to 90 (deg), so set to 0 for isotropic distribution of system inclinations; NOTE: make sure the difference between this and 90 (deg) is at least greater than "sigma_incl" and "sigma_incl_near_mmr"!
 
   # generate_num_planets_in_cluster currently use these for the Eccentricity distribution
   add_param_fixed(sim_param,"generate_e_omega",ExoplanetsSysSim.generate_e_omega_rayleigh)
-  add_param_fixed(sim_param,"sigma_hk",0.05)
+  add_param_active(sim_param,"sigma_hk",0.05)
   #add_param_fixed(sim_param,"sigma_hk_one",0.1)
   #add_param_fixed(sim_param,"sigma_hk_multi",0.03)
 
   # generate_num_planets_in_cluster currently use these for the Stability tests
-  add_param_fixed(sim_param,"num_mutual_hill_radii",8.0) #10.0
+  add_param_active(sim_param,"num_mutual_hill_radii",8.0) #10.0
   add_param_fixed(sim_param,"generate_planet_mass_from_radius",generate_planet_mass_from_radius_Ning2018) # "ExoplanetsSysSim.generate_planet_mass_from_radius_powerlaw" or "generate_planet_mass_from_radius_Ning2018"
   add_param_fixed(sim_param,"mr_power_index",2.0)
   add_param_fixed(sim_param,"mr_const",1.0)
   add_param_fixed(sim_param,"mr_max_mass",1e3*ExoplanetsSysSim.earth_mass)
-  add_param_fixed(sim_param,"sigma_log_radius_in_cluster",0.25)
-  add_param_fixed(sim_param,"sigma_logperiod_per_pl_in_cluster",0.15)
+  add_param_active(sim_param,"sigma_log_radius_in_cluster",0.25)
+  add_param_active(sim_param,"sigma_logperiod_per_pl_in_cluster",0.15)
 
   # Functions to calculate observables from physical system properties
   add_param_fixed(sim_param,"calc_target_obs_single_obs",ExoplanetsSysSim.calc_target_obs_single_obs)   
