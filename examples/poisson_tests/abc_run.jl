@@ -11,13 +11,30 @@ using StatsBase
 
 out2txt = false # Write occurrence rates & densities to text files
 expandpart = true # Expand final generation for robust posteriors
+profile_code = false
 
-println("Setting up simulation...")
-@time abc_plan = setup_abc()
-println("")
-println("Running simulation...")
-@time output = run_abc(abc_plan)
-println("")
+if profile_code
+   println("Setting up simulation...")
+   @time abc_plan = setup_abc(0,max_generations=1)
+   println("Running simulation...")
+   @time output = run_abc(abc_plan)
+   println("Setting up simulation...")
+   @time abc_plan = setup_abc(0,max_generations=5)
+   Profile.init(n = 10^7, delay = 0.01)
+   Profile.clear_malloc_data()
+   println("Running simulation...")
+   @profile output = run_abc(abc_plan)
+   open("profile.txt.corbits.reallocated", "w") do s
+       Profile.print(IOContext(s, :displaysize => (24, 500)))
+   end
+else
+    println("Setting up simulation...")
+    @time abc_plan = setup_abc()
+    println("")
+    println("Running simulation...")
+    @time output = run_abc(abc_plan)
+    println("")
+end
 
 if expandpart
     println("Expanding to large generation...")
@@ -30,8 +47,8 @@ if out2txt
     file_dens = open("dens_output.txt", "w")
 end
 
-limitP = get_any(EvalSysSimModel.sim_param_closure, "p_lim_arr", Array{Float64,1})
-limitR = get_any(EvalSysSimModel.sim_param_closure, "r_lim_arr", Array{Float64,1})
+limitP = get_any(EvalSysSimModel.sim_param_closure, "p_lim_arr", Array{Float64,1})::Array{Float64,1}
+limitR = get_any(EvalSysSimModel.sim_param_closure, "r_lim_arr", Array{Float64,1})::Array{Float64,1}
 const r_dim = length(limitR)-1
 
 if expandpart
