@@ -75,7 +75,7 @@ function generate_kepler_target_from_table(sim_param::SimParam)
         else
             mass = 10^((log10(radius)+0.02)/0.917)
         end
-        
+
         dens   = (mass*sun_mass_in_kg_IAU2010*1000.)/(4//3*pi*(radius*sun_radius_in_m_IAU2015*100.)^3)  # Self-consistent density (gm/cm^3)
   else
     radius = star_table(star_id,:radius)

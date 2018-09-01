@@ -94,10 +94,14 @@ function set_test_param(sim_param_closure::SimParam)
             @assert (size(rate_init) == (r_dim, p_dim))
             rate_tab_init = rate_init*0.01
         end
+        lamb_col = sum(rate_tab_init, 1)
+        rate_tab_init = vcat(lamb_col, rate_tab_init)
         add_param_active(sim_param_closure, "obs_par", rate_tab_init)
     else
         rate_init = fill(1.0, n_bin)
         rate_tab_init = reshape(rate_init*0.01, (r_dim, p_dim))
+        lamb_col = sum(rate_tab_init, 1)
+        rate_tab_init = vcat(lamb_col, rate_tab_init)
         add_param_active(sim_param_closure, "obs_par", rate_tab_init)
     end
     
@@ -140,11 +144,17 @@ end
 
 function generate_num_planets_christiansen(s::Star, sim_param::SimParam)
   const max_tranets_in_sys::Int64 = get_int(sim_param,"max_tranets_in_sys") # TODO SCI: Is 7 planets max per system OK, even when fitting across potentially 9 period bins?
-  const max_tranets_per_P::Int64 = 3  # Set maximum number of planets per period range as loose stability criteria and to prevent near-crossing orbits
+  #const max_tranets_per_P::Int64 = 3  # Set maximum number of planets per period range as loose stability criteria and to prevent near-crossing orbits
   rate_tab::Array{Float64,2} = get_any(sim_param, "obs_par", Array{Float64,2})
-  lambda = sum_kbn(rate_tab)
-  #println("# lambda= ", lambda)
-  ExoplanetsSysSim.generate_num_planets_poisson(lambda,min(max_tranets_per_P*size(rate_tab, 2), max_tranets_in_sys))
+  limitP::Array{Float64,1} = get_any(sim_param, "p_lim_arr", Array{Float64,1})
+  const p_dim = length(get_any(sim_param, "p_lim_arr", Array{Float64,1}))-1
+  const r_dim = length(get_any(sim_param, "r_lim_arr", Array{Float64,1}))-1
+  sum_lambda = 0.0
+  for i in 1:p_dim
+      sum_lambda += ExoplanetsSysSim.generate_num_planets_poisson(rate_tab[(i-1)*(r_dim+1)], 3.0*log(limitP[i+1]/(2.0*limitP[i])))
+  end
+  #println("# lambda= ", sum_lambda) 
+  return min(sum_lambda, max_tranets_in_sys)
 end
 
 function generate_period_and_sizes_christiansen(s::Star, sim_param::SimParam; num_pl::Integer = 1)
@@ -152,6 +162,7 @@ function generate_period_and_sizes_christiansen(s::Star, sim_param::SimParam; nu
   
   limitP::Array{Float64,1} = get_any(sim_param, "p_lim_arr", Array{Float64,1})
   limitRp::Array{Float64,1} = get_any(sim_param, "r_lim_arr", Array{Float64,1})
+  const r_dim = length(limitRp)-1
   sepa_min = 0.05  # Minimum orbital separation in AU
   backup_sepa_factor_slightly_less_than_one = 0.95  
     
@@ -159,21 +170,24 @@ function generate_period_and_sizes_christiansen(s::Star, sim_param::SimParam; nu
   @assert ((length(limitRp)-1) == size(rate_tab, 1))
   Plist = zeros(num_pl)
   Rplist = zeros(num_pl)
-  rate_tab_1d = reshape(rate_tab,length(rate_tab))
+  #rate_tab_1d = reshape(rate_tab,length(rate_tab))
   #logmaxcuml = logsumexp(rate_tab_1d)
   #cuml = cumsum_kbn(exp(rate_tab_1d-logmaxcuml))
-  maxcuml = sum(rate_tab_1d)
-  cuml = cumsum_kbn(rate_tab_1d/maxcuml)
+  #maxcuml = sum(rate_tab_1d)
+  #cuml = cumsum_kbn(rate_tab_1d/maxcuml)
+  maxcuml = sum(rate_tab[1,:])
+  cuml = cumsum_kbn(rate_tab[1,:]/maxcuml)  
 
   # We assume uniform sampling in log P and log Rp within each bin
   j_idx = ones(Int64, num_pl)
     
   for n in 1:num_pl
     rollp = Base.rand()
-    idx = findfirst(x -> x > rollp, cuml)
-    i_idx = (idx-1)%size(rate_tab,1)+1
-    j_idx[n] = floor(Int64,(idx-1)//size(rate_tab,1))+1
-    Rplist[n] = exp(Base.rand()*(log(limitRp[i_idx+1])-log(limitRp[i_idx]))+log(limitRp[i_idx]))
+    #idx = findfirst(x -> x > rollp, cuml)
+    #i_idx = (idx-1)%size(rate_tab,1)+1
+    #j_idx[n] = floor(Int64,(idx-1)//size(rate_tab,1))+1
+    #Rplist[n] = exp(Base.rand()*(log(limitRp[i_idx+1])-log(limitRp[i_idx]))+log(limitRp[i_idx]))
+    j_idx[n] = findfirst(x -> x > rollp, cuml)
   end
     
   for j in 1:(length(limitP)-1)
@@ -186,8 +200,11 @@ function generate_period_and_sizes_christiansen(s::Star, sim_param::SimParam; nu
       logsepa_min = min(loga_min_ext-loga_min, (loga_max-loga_min)/n_range/2*backup_sepa_factor_slightly_less_than_one)  # Prevents minimum separations too large
       tmp_logalist = draw_uniform_selfavoiding(n_range,min_separation=logsepa_min,lower_bound=loga_min,upper_bound=loga_max)
       tmp_Plist = exp.((3*tmp_logalist - log(s.mass))/2)*ExoplanetsSysSim.day_in_year  # Convert from log a (in AU) back to P (in days)
+      rad_dist = Distributions.Categorical(rate_tab[((j-1)*(r_dim+1)+2):((j-1)*(r_dim+1)+(r_dim+1))]) # Distribution for fraction of times the next planet draw would be assigned to a given radius bin
       for n in 1:n_range
         Plist[tmp_ind[n]] = tmp_Plist[n]
+        i_idx = rand(rad_dist)
+        Rplist[tmp_ind[n]] = exp(Base.rand()*(log(limitRp[i_idx+1])-log(limitRp[i_idx]))+log(limitRp[i_idx]))  
       end
     end
   end
