@@ -110,10 +110,10 @@ module SysSimABC
     const r_dim = length(get_any(EvalSysSimModel.sim_param_closure, "r_lim_arr", Array{Float64,1}))-1
     prior_arr = ContinuousDistribution[]
     for i in 1:(length(limitP)-1)
-      max_in_col = 3.*log(limitP[i+1]/(2.*limitP[i]))
+      max_in_col = 3*log(limitP[i+1]/(2*limitP[i]))
       lambda_col = Uniform(0.0, max_in_col)
       dirch = Dirichlet(ones(r_dim))
-      vcat(prior_arr, [lambda_col, dirch])
+      prior_arr = vcat(prior_arr, [lambda_col, dirch])
     end
     param_prior = CompositeDist(prior_arr)
     in_parallel = nworkers() > 1 ? true : false
@@ -135,10 +135,10 @@ module SysSimABC
     const r_dim = length(get_any(EvalSysSimModel.sim_param_closure, "r_lim_arr", Array{Float64,1}))-1
     prior_arr = ContinuousDistribution[]
     for i in 1:(length(limitP)-1)
-      max_in_col = 3.*log(limitP[i+1]/(2.*limitP[i]))
+      max_in_col = 3*log(limitP[i+1]/(2*limitP[i]))
       lambda_col = Uniform(0.0, max_in_col)
       dirch = Dirichlet(ones(r_dim))
-      vcat(prior_arr, [lambda_col, dirch])
+      prior_arr = vcat(prior_arr, [lambda_col, dirch])
     end
     param_prior = CompositeDist(prior_arr)
     in_parallel = nworkers() > 1 ? true : false

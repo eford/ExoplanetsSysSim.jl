@@ -147,11 +147,11 @@ function generate_num_planets_christiansen(s::Star, sim_param::SimParam)
   #const max_tranets_per_P::Int64 = 3  # Set maximum number of planets per period range as loose stability criteria and to prevent near-crossing orbits
   rate_tab::Array{Float64,2} = get_any(sim_param, "obs_par", Array{Float64,2})
   limitP::Array{Float64,1} = get_any(sim_param, "p_lim_arr", Array{Float64,1})
-  const p_dim = length(get_any(sim_param, "p_lim_arr", Array{Float64,1}))-1
+  const p_dim = length(limitP)-1
   const r_dim = length(get_any(sim_param, "r_lim_arr", Array{Float64,1}))-1
   sum_lambda = 0.0
   for i in 1:p_dim
-      sum_lambda += ExoplanetsSysSim.generate_num_planets_poisson(rate_tab[(i-1)*(r_dim+1)], 3.0*log(limitP[i+1]/(2.0*limitP[i])))
+      sum_lambda += ExoplanetsSysSim.generate_num_planets_poisson(rate_tab[1,i], 3.0*log(limitP[i+1]/(2.0*limitP[i])))
   end
   #println("# lambda= ", sum_lambda) 
   return min(sum_lambda, max_tranets_in_sys)
