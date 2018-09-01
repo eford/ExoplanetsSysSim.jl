@@ -4,23 +4,35 @@
 
 module EvalSysSimModel
   export setup, get_param_vector, get_ss_obs #, evaluate_model
-  export gen_data, calc_summary_stats, calc_distance, is_valid
+  export gen_data, calc_summary_stats, calc_distance, is_valid, normalize_dirch
   using ExoplanetsSysSim
   include(joinpath(Pkg.dir(),"ExoplanetsSysSim","examples","poisson_tests", "christiansen_func.jl"))
 
-  #sim_param_closure = SimParam()
-  sim_param_closure = setup_sim_param_christiansen()
+  sim_param_closure = SimParam()
   summary_stat_ref_closure =  CatalogSummaryStatistics()
 
     function is_valid(param_vector::Vector{Float64})
       global sim_param_closure
       update_sim_param_from_vector!(param_vector,sim_param_closure)
       const rate_tab::Array{Float64,2} = get_any(sim_param_closure, "obs_par", Array{Float64,2})
-      const lambda = sum_kbn(rate_tab)
-      if lambda > 10. || any(x -> x < 0., rate_tab)
+      #const lambda = sum_kbn(rate_tab)
+      if any(x -> x < 0., rate_tab[2:size(rate_tab,1),:]) || any(x -> x > 3., rate_tab[1,:])# || lambda > 10.
          return false
       end
       return true
+    end
+
+    function normalize_dirch(param_vector::Vector{Float64})
+        global sim_param_closure
+        const p_dim = length(get_any(sim_param_closure, "p_lim_arr", Array{Float64,1}))-1
+        const r_dim = length(get_any(sim_param_closure, "r_lim_arr", Array{Float64,1}))-1
+
+        for i=1:p_dim
+            param_vector[((i-1)*(r_dim+1)+2):((i-1)*(r_dim+1)+(r_dim+1))] ./= sum(param_vector[((i-1)*(r_dim+1)+2):((i-1)*(r_dim+1)+(r_dim+1))])
+        end
+
+        update_sim_param_from_vector!(param_vector,sim_param_closure)
+        return param_vector
     end
 
     function gen_data(param_vector::Vector{Float64})
@@ -37,7 +49,6 @@ module EvalSysSimModel
     function calc_summary_stats(cat::KeplerObsCatalog)
       global sim_param_closure
       sum_stat = calc_summary_stats_obs_binned_rates(cat, sim_param_closure, obs_skyavg = true)
-      #sum_stat = calc_summary_stats_obs_binned_rates(cat, sim_param_closure, obs_skyavg = false)
       return sum_stat
     end
 
@@ -50,8 +61,7 @@ module EvalSysSimModel
     end
 
   function setup()
-    #global sim_param_closure = setup_sim_param_christiansen()
-    global sim_param_closure 
+    global sim_param_closure = setup_sim_param_christiansen()
     sim_param_closure = set_test_param(sim_param_closure)
 
     ### Use simulated planet candidate catalog data
@@ -59,10 +69,6 @@ module EvalSysSimModel
     #cat_obs = simulated_read_kepler_observations(sim_param_closure)
     ###
     
-    WindowFunction.setup(sim_param_closure)
-    println("# Finished reading in window function data")
-    # add_param_fixed(sim_param_closure,"win_func_data",ExoplanetsSysSim.WindowFunction.get_window_function_data() )  # TODO OPT DETAIL: Does this serve any purpose?
-
     ### Use real planet candidate catalog data
     df_star = setup_star_table_christiansen(sim_param_closure)
     println("# Finished reading in stellar data")
@@ -96,16 +102,25 @@ module SysSimABC
   import EvalSysSimModel
   include(joinpath(Pkg.dir(),"ExoplanetsSysSim","examples","poisson_tests", "christiansen_func.jl"))
 
-  function setup_abc(num_dist::Integer = 0; max_generations::Int64=100 )
+  function setup_abc(num_dist::Integer = 0)
     EvalSysSimModel.setup()
     theta_true = EvalSysSimModel.get_param_vector()
-    param_prior = CompositeDist( Distributions.ContinuousDistribution[Distributions.Uniform(0., 3.) for x in 1:length(theta_true)] )
+    #param_prior = CompositeDist( Distributions.ContinuousDistribution[Distributions.Uniform(0., 0.3) for x in 1:length(theta_true)] )
+    limitP::Array{Float64,1} = get_any(EvalSysSimModel.sim_param_closure, "p_lim_arr", Array{Float64,1})
+    const r_dim = length(get_any(EvalSysSimModel.sim_param_closure, "r_lim_arr", Array{Float64,1}))-1
+    prior_arr = ContinuousDistribution[]
+    for i in 1:(length(limitP)-1)
+      max_in_col = 3.*log(limitP[i+1]/(2.*limitP[i]))
+      lambda_col = Uniform(0.0, max_in_col)
+      dirch = Dirichlet(ones(r_dim))
+      vcat(prior_arr, [lambda_col, dirch])
+    end
+    param_prior = CompositeDist(prior_arr)
     in_parallel = nworkers() > 1 ? true : false
 
     calc_distance_ltd(sum_stat_obs::ExoplanetsSysSim.CatalogSummaryStatistics,sum_stat_sim::ExoplanetsSysSim.CatalogSummaryStatistics) = EvalSysSimModel.calc_distance(sum_stat_obs,sum_stat_sim,num_dist)
 
-    global abc_plan = ABC.abc_pmc_plan_type(EvalSysSimModel.gen_data,EvalSysSimModel.calc_summary_stats,calc_distance_ltd, param_prior, make_proposal_dist=ABC.make_proposal_dist_gaussian_diag_covar, is_valid=EvalSysSimModel.is_valid,
-                                     num_part=20, num_max_attempt=20, num_max_times=max_generations, num_dist_per_obs=5, epsilon_init=9.9e99, target_epsilon=1.0e-100, in_parallel=in_parallel, adaptive_quantiles = false, epsilon_reduction_factor=0.9, tau_factor=2.0);
+    global abc_plan = ABC.abc_pmc_plan_type(EvalSysSimModel.gen_data,EvalSysSimModel.calc_summary_stats,calc_distance_ltd, param_prior, make_proposal_dist=ABC.make_proposal_dist_gaussian_diag_covar, is_valid=EvalSysSimModel.is_valid, normalize=EvalSysSimModel.normalize_dirch, num_part=50, num_max_attempt=50, num_max_times=200, epsilon_init=9.9e99, target_epsilon=1.0e-100, in_parallel=in_parallel, adaptive_quantiles = false, epsilon_reduction_factor=0.9, tau_factor=2.0);
   end
 
   function run_abc_largegen(pop::ABC.abc_population_type, ss_true::ExoplanetsSysSim.CatalogSummaryStatistics, epshist_targ::Float64, npart::Integer = 1000, num_dist::Integer = 0)
@@ -115,16 +130,31 @@ module SysSimABC
     EvalSysSimModel.set_simparam_ss(sim_param_closure, ss_true)	
 
     theta_true = EvalSysSimModel.get_param_vector()
-    param_prior = CompositeDist( Distributions.ContinuousDistribution[Distributions.Uniform(0., 3.) for x in 1:length(theta_true)] )
+    #param_prior = CompositeDist( Distributions.ContinuousDistribution[Distributions.Uniform(0., 0.3) for x in 1:length(theta_true)] )
+    limitP::Array{Float64,1} = get_any(EvalSysSimModel.sim_param_closure, "p_lim_arr", Array{Float64,1})
+    const r_dim = length(get_any(EvalSysSimModel.sim_param_closure, "r_lim_arr", Array{Float64,1}))-1
+    prior_arr = ContinuousDistribution[]
+    for i in 1:(length(limitP)-1)
+      max_in_col = 3.*log(limitP[i+1]/(2.*limitP[i]))
+      lambda_col = Uniform(0.0, max_in_col)
+      dirch = Dirichlet(ones(r_dim))
+      vcat(prior_arr, [lambda_col, dirch])
+    end
+    param_prior = CompositeDist(prior_arr)
     in_parallel = nworkers() > 1 ? true : false
 
     calc_distance_ltd(sum_stat_obs::ExoplanetsSysSim.CatalogSummaryStatistics,sum_stat_sim::ExoplanetsSysSim.CatalogSummaryStatistics) = EvalSysSimModel.calc_distance(sum_stat_obs,sum_stat_sim,num_dist)
 
-    global abc_plan = ABC.abc_pmc_plan_type(EvalSysSimModel.gen_data,EvalSysSimModel.calc_summary_stats,calc_distance_ltd, param_prior, is_valid=EvalSysSimModel.is_valid,
-                                     num_part=npart, num_max_attempt=50, num_max_times=1, epsilon_init=9.9e99, target_epsilon=1.0e-100, in_parallel=in_parallel);
+    global abc_plan = ABC.abc_pmc_plan_type(EvalSysSimModel.gen_data,EvalSysSimModel.calc_summary_stats,calc_distance_ltd, param_prior, is_valid=EvalSysSimModel.is_valid, normalize=EvalSysSimModel.normalize_dirch, num_part=npart, num_max_attempt=50, num_max_times=1, epsilon_init=9.9e99, target_epsilon=1.0e-100, in_parallel=in_parallel);
 
-    #println("# run_abc_largegen: ",EvalSysSimModel.sim_param_closure)
+    println("# run_abc_largegen: ",EvalSysSimModel.sim_param_closure)
+    #if (std(pop.theta, 2)[1])/(mean(pop.theta, 2)[1]) > 0.3
+    #    sampler_largegen = abc_plan.make_proposal_dist(pop, 1.2)
+    #elseif (std(pop.theta, 2)[1])/(mean(pop.theta, 2)[1]) > 0.1
+    #    sampler_largegen = abc_plan.make_proposal_dist(pop, 1.6)
+    #else
     sampler_largegen = abc_plan.make_proposal_dist(pop, abc_plan.tau_factor)
+    #end
     theta_largegen = Array{Float64}(size(pop.theta, 1), npart)
     weight_largegen = Array{Float64}(npart)
     for i in 1:npart
@@ -139,7 +169,7 @@ module SysSimABC
 
   function run_abc(abc_plan::ABC.abc_pmc_plan_type)
     #global sim_param_closure
-#    println("# run_abc: ",EvalSysSimModel.sim_param_closure)
+    println("# run_abc: ",EvalSysSimModel.sim_param_closure)
     ss_true = EvalSysSimModel.get_ss_obs()
     #println("True catalog SS: ", ss_true)
     pop_out = ABC.run_abc(abc_plan,ss_true;verbose=true)
@@ -149,7 +179,7 @@ module SysSimABC
     #global sim_param_closure
     dist_threshold = maximum(pop.dist)
     EvalSysSimModel.add_param_fixed(EvalSysSimModel.sim_param_closure,"minimum ABC dist skip pass 2",dist_threshold)
-    #println("# run_abc: ",EvalSysSimModel.sim_param_closure)
+    println("# run_abc: ",EvalSysSimModel.sim_param_closure)
     ss_true = EvalSysSimModel.get_ss_obs()
     pop_out = ABC.run_abc(abc_plan,ss_true,pop;verbose=true)
   end
