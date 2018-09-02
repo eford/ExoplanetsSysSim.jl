@@ -67,7 +67,7 @@ function make_proposal_dist_multidim_beta(theta::AbstractArray{Float64,2}, weigh
              ContinuousDistribution[ Beta(alpha(theta_mean[i],tau[i]), beta(theta_mean[i],tau[i])) for i in (col_startidx+1):(col_startidx+r_dim)]   )
     end
 
-    dist = ABC.CompositeDistributions.CompositeDist()
+    dist = ABC.CompositeDistributions.CompositeDist(dist_arr)
 end
 
 function make_proposal_dist_multidim_beta(pop::abc_population_type, tau_factor::Float64; verbose::Bool = false)
