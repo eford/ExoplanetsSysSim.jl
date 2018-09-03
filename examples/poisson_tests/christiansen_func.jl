@@ -149,7 +149,7 @@ function generate_num_planets_christiansen(s::Star, sim_param::SimParam)
   limitP::Array{Float64,1} = get_any(sim_param, "p_lim_arr", Array{Float64,1})
   const p_dim = length(limitP)-1
   const r_dim = length(get_any(sim_param, "r_lim_arr", Array{Float64,1}))-1
-  sum_lambda = 0.0
+  sum_lambda = 0
   for i in 1:p_dim
       sum_lambda += ExoplanetsSysSim.generate_num_planets_poisson(rate_tab[1,i], convert(Int64, floor(3*log(limitP[i+1]/limitP[i])/log(2))))
   end
