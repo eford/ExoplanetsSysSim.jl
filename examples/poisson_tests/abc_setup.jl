@@ -7,6 +7,7 @@ export setup, get_param_vector, get_ss_obs #, evaluate_model
 export gen_data, calc_summary_stats, calc_distance, is_valid, normalize_dirch
 export make_proposal_dist_multidim_beta
 using ExoplanetsSysSim
+using ABC
 include(joinpath(Pkg.dir(),"ExoplanetsSysSim","examples","poisson_tests", "christiansen_func.jl"))
 
 sim_param_closure = SimParam()
@@ -149,7 +150,7 @@ function setup_abc(num_dist::Integer = 0)
     const r_dim = length(get_any(EvalSysSimModel.sim_param_closure, "r_lim_arr", Array{Float64,1}))-1
     prior_arr = ContinuousDistribution[]
     for i in 1:(length(limitP)-1)
-        max_in_col = 3*log(limitP[i+1]/limitP[i])/log(2)
+        max_in_col = floor(3*log(limitP[i+1]/limitP[i])/log(2))
         lambda_col = Uniform(0.0, max_in_col)
         dirch = Dirichlet(ones(r_dim))
         prior_arr = vcat(prior_arr, [lambda_col, dirch])
@@ -174,7 +175,7 @@ function run_abc_largegen(pop::ABC.abc_population_type, ss_true::ExoplanetsSysSi
     const r_dim = length(get_any(EvalSysSimModel.sim_param_closure, "r_lim_arr", Array{Float64,1}))-1
     prior_arr = ContinuousDistribution[]
     for i in 1:(length(limitP)-1)
-        max_in_col = 3*log(limitP[i+1]/limitP[i])/log(2)
+        max_in_col = floor(3*log(limitP[i+1]/limitP[i])/log(2))
         lambda_col = Uniform(0.0, max_in_col)
         dirch = Dirichlet(ones(r_dim))
         prior_arr = vcat(prior_arr, [lambda_col, dirch])
