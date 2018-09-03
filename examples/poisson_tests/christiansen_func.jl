@@ -167,7 +167,7 @@ function generate_period_and_sizes_christiansen(s::Star, sim_param::SimParam; nu
   backup_sepa_factor_slightly_less_than_one = 0.95  
     
   @assert ((length(limitP)-1) == size(rate_tab, 2))
-  @assert ((length(limitRp)-1) == size(rate_tab, 1))
+  @assert ((length(limitRp)-1) == (size(rate_tab, 1)-1))
   Plist = zeros(num_pl)
   Rplist = zeros(num_pl)
   #rate_tab_1d = reshape(rate_tab,length(rate_tab))
