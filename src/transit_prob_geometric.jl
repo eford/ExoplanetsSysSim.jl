@@ -163,7 +163,7 @@ end
 @compat abstract type OneObserver <: SystemDetectionProbsTrait end
 # Derived types will allow us to specialize depending on whether using sky-averaged values, values for actual geometry (both of which require the physical catalog), or estimates based on observed data
 
-type SimulatedSystemDetectionProbs{T<:SystemDetectionProbsTrait} <: SystemDetectionProbsAbstract         # To be used for simulated systems where we can calculat everything
+mutable struct SimulatedSystemDetectionProbs{T<:SystemDetectionProbsTrait} <: SystemDetectionProbsAbstract         # To be used for simulated systems where we can calculat everything
   # Inputs to CORBITS
   detect_planet_if_transits::Vector{Float64}       # Probability of detecting each planet, averaged over all observers for each planet individually, assumes b~U[0,1);  To be used in pass 1
 
@@ -182,11 +182,11 @@ end
 #OneObserverSystemDetectionProbs = SimulatedSystemDetectionProbs{OneObserver}
 
 function SimulatedSystemDetectionProbs(traits::Type, p::Vector{Float64}; num_samples::Integer = 1)
-  SimulatedSystemDetectionProbs{traits}( p, zeros(length(p),length(p)), zeros(length(p)),  fill(Array{Int64}(0), num_samples) )
+  SimulatedSystemDetectionProbs{traits}( p, zeros(length(p),length(p)), zeros(length(p)),  fill(Array{Int64}(undef,0), num_samples) )
 end
 
 function SimulatedSystemDetectionProbs(traits::Type, n::Integer; num_samples::Integer = 1)
-  SimulatedSystemDetectionProbs{traits}( ones(n), zeros(n,n), zeros(n), fill(Array{Int64}(0), num_samples) )
+  SimulatedSystemDetectionProbs{traits}( ones(n), zeros(n,n), zeros(n), fill(Array{Int64}(undef,0), num_samples) )
 end
 
 SkyAveragedSystemDetectionProbs(p::Vector{Float64}; num_samples::Integer = 1) = SimulatedSystemDetectionProbs( SkyAveraged, p, num_samples=num_samples) 
@@ -199,30 +199,30 @@ OneObserverSystemDetectionProbs(n::Integer; num_samples::Integer = 1) = Simulate
 OneObserverSystemDetectionProbsEmpty() = SimulatedSystemDetectionProbs(OneObserver,0)
 
 # Functions common to various types of SystemDetectionProbs
-num_planets{T<:SystemDetectionProbsTrait}(prob::SimulatedSystemDetectionProbs{T}) = length(prob.detect_planet_if_transits)
-function prob_detect_if_transits{T<:SystemDetectionProbsTrait}(prob::SimulatedSystemDetectionProbs{T}, pl_id::Integer) 
+num_planets(prob::SimulatedSystemDetectionProbs{T}) where T<:SystemDetectionProbsTrait = length(prob.detect_planet_if_transits)
+function prob_detect_if_transits(prob::SimulatedSystemDetectionProbs{T}, pl_id::Integer) where T<:SystemDetectionProbsTrait
   @assert 1<=pl_id<=length(prob.detect_planet_if_transits)
   prob.detect_planet_if_transits[pl_id]
 end
-function prob_detect{T<:SystemDetectionProbsTrait}(prob::SimulatedSystemDetectionProbs{T}, pl_id::Integer) 
+function prob_detect(prob::SimulatedSystemDetectionProbs{T}, pl_id::Integer)  where T<:SystemDetectionProbsTrait
   if ! (1<=pl_id<=size(prob.pairwise,1) )
     println("#ERROR:  pl_id =", pl_id, " prob.pairwise= ", prob.pairwise)
   end
   @assert 1<=pl_id<=size(prob.pairwise,1)
   return prob.pairwise[pl_id,pl_id]
 end
-function prob_detect_both_planets{T<:SystemDetectionProbsTrait}(prob::SimulatedSystemDetectionProbs{T}, pl_id::Integer, ql_id::Integer)
+function prob_detect_both_planets(prob::SimulatedSystemDetectionProbs{T}, pl_id::Integer, ql_id::Integer) where T<:SystemDetectionProbsTrait
   @assert 1<=pl_id<=size(prob.pairwise,1)
   @assert 1<=ql_id<=size(prob.pairwise,1)
   prob.pairwise[pl_id,ql_id]
 end
-prob_detect_n_planets{T<:SystemDetectionProbsTrait}(prob::SimulatedSystemDetectionProbs{T}, n::Integer) = 1<=n<=length(prob.n_planets) ? prob.n_planets[n] : 0.0
+prob_detect_n_planets(prob::SimulatedSystemDetectionProbs{T}, n::Integer) where T<:SystemDetectionProbsTrait = 1<=n<=length(prob.n_planets) ? prob.n_planets[n] : 0.0
 
 # Compute sky-averaged transit probabilities from a planetary system with known physical properties, assuming a single host star
 function calc_simulated_system_detection_probs(ps::PlanetarySystemSingleStar, prob_det_if_tr::Vector{Float64}; num_samples::Integer = 1, max_tranets_in_sys::Integer = 10, min_detect_prob_to_be_included::Float64 = 0.0, observer_trait::Type=SkyAveraged)
-  @assert issubtype(observer_trait,SystemDetectionProbsTrait)
+  @assert observer_trait <: SystemDetectionProbsTrait
   @assert num_planets(ps) == length(prob_det_if_tr)
-  idx_detectable = find(prob_det_if_tr)
+  idx_detectable = findall(x->x>0.0,prob_det_if_tr)
   n = length(idx_detectable)
   @assert n <= max_tranets_in_sys       # Make sure memory to store these
   #if n==0 
@@ -274,7 +274,7 @@ function calc_simulated_system_detection_probs(ps::PlanetarySystemSingleStar, pr
 	      sdp.combo_detected[i] = combo
 	   end
 	end
-	combo_cum_probs += prob_det_this_combo
+	combo_cum_probs .+= prob_det_this_combo
 
         sdp.n_planets[ntr] += prob_det_this_combo   # Accumulate the probability of detecting any n planets
 
@@ -332,7 +332,7 @@ function calc_simulated_system_detection_probs(ps::PlanetarySystemSingleStar, pr
 end
 
 if false # WARNING: Complicated and untested
-function combine_system_detection_probs{T}(prob::Vector{SimulatedSystemDetectionProbs{T}}, s1::Integer, s2::Integer) # WARNING: Complicated and untested
+function combine_system_detection_probs(prob::Vector{SimulatedSystemDetectionProbs{T}}, s1::Integer, s2::Integer) where T # WARNING: Complicated and untested
     npl_s1 = min(num_planets(prob[s1]), max_tranets_in_sys)
     npl_s2 = min(num_planets(prob[s2]), max_tranets_in_sys)
     num_planets_across_systems = npl_s1 + npl_s2
@@ -363,14 +363,14 @@ function combine_system_detection_probs{T}(prob::Vector{SimulatedSystemDetection
 	end
     end
     # Combine samples of detected planet combinations
-    prob_merged.combo_detected = fill(Array{Int64}(0), min(length(prob[s1].combo_detected), length(prob[s2].combo_detected) ) )
+    prob_merged.combo_detected = fill(Array{Int64}(undef,0), min(length(prob[s1].combo_detected), length(prob[s2].combo_detected) ) )
     for i in 1:length(prob_merged.combo_detected)
        prob_merged.combo_detected[i] = vcat( prob[s1].combo_detected, prob[s1].combo_detected+offset )
     end
     return prob_merged
 end 
 
-function select_subset{T<:SystemDetectionProbsTrait}(prob::SimulatedSystemDetectionProbs{T}, idx::Vector{Int64}) # WARNING: Complicated and untested
+function select_subset(prob::SimulatedSystemDetectionProbs{T}, idx::Vector{Int64}) # WARNING: Complicated and untested where {T<:SystemDetectionProbsTrait}
     n = length(idx)
     subset = SimulatedSystemDetectionProbs{T}(n)
     subset.detect_planet_if_transits = prob.detect_planet_if_transits[idx]
@@ -387,8 +387,8 @@ end
 # ASSUMING: Planetary systems for same target are uncorrelated
 # Compute sky-averaged transit probabilities from a target with known physical properties
 function calc_simulated_system_detection_probs(t::KeplerTarget, sim_param::SimParam ) # WARNING: Complicated and untested
-  const max_tranets_in_sys = get_int(param,"max_tranets_in_sys",10)
-  const min_detect_prob_to_be_included = get(param,"max_tranets_in_sys", 0.0)
+  max_tranets_in_sys = get_int(param,"max_tranets_in_sys",10)
+  min_detect_prob_to_be_included = get(param,"max_tranets_in_sys", 0.0)
   s1 = findfirst(num_planets,t.sys)
   if num_planets(t) == num_planets(t.sys[s1])
     # Target has only one system with planets
@@ -430,7 +430,7 @@ end
 end
 
 
-type ObservedSystemDetectionProbs <: SystemDetectionProbsAbstract          # TODO OPT:  For observed systems (or simulations of observed systems) were we can't know everything.  Is this even used?  Or should we just compute these on the fly, rather than storing them? Do we even want to keep this?
+mutable struct ObservedSystemDetectionProbs <: SystemDetectionProbsAbstract          # TODO OPT:  For observed systems (or simulations of observed systems) were we can't know everything.  Is this even used?  Or should we just compute these on the fly, rather than storing them? Do we even want to keep this?
   planet_transits::Vector{Float64}                         # Probability that each planet transits individually for one observer based on actual i, e, and omega 
   detect_planet_if_transits::Vector{Float64}               # Probability of detecting each planet given that it transits. Assumes one observer based on actual i, e and omega
   # snr::Vector{Float64}                      # Dimensionless SNR of detection for each planet QUERY: Should we store this here?

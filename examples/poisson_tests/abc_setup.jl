@@ -6,16 +6,19 @@ module EvalSysSimModel
   export setup, get_param_vector, get_ss_obs #, evaluate_model
   export gen_data, calc_summary_stats, calc_distance, is_valid
   using ExoplanetsSysSim
-  include(joinpath(Pkg.dir(),"ExoplanetsSysSim","examples","poisson_tests", "christiansen_func.jl"))
+  #using KahanSummation
+  include(joinpath(dirname(pathof(ExoplanetsSysSim)),"..","examples","poisson_tests", "christiansen_func.jl"))
 
-  sim_param_closure = SimParam()
+  #sim_param_closure = SimParam()
+  sim_param_closure = setup_sim_param_christiansen()
   summary_stat_ref_closure =  CatalogSummaryStatistics()
 
     function is_valid(param_vector::Vector{Float64})
       global sim_param_closure
       update_sim_param_from_vector!(param_vector,sim_param_closure)
-      const rate_tab::Array{Float64,2} = get_any(sim_param_closure, "obs_par", Array{Float64,2})
-      const lambda = sum_kbn(rate_tab)
+      rate_tab::Array{Float64,2} = get_any(sim_param_closure, "obs_par", Array{Float64,2})
+      #lambda = sum_kbn(rate_tab)  # TODO: Restore kbn
+      lambda = sum(rate_tab)
       if lambda > 10. || any(x -> x < 0., rate_tab)
          return false
       end
@@ -49,7 +52,8 @@ module EvalSysSimModel
     end
 
   function setup()
-    global sim_param_closure = setup_sim_param_christiansen()
+    #global sim_param_closure = setup_sim_param_christiansen()
+    global sim_param_closure 
     sim_param_closure = set_test_param(sim_param_closure)
 
     ### Use simulated planet candidate catalog data
@@ -57,6 +61,10 @@ module EvalSysSimModel
     #cat_obs = simulated_read_kepler_observations(sim_param_closure)
     ###
     
+    WindowFunction.setup(sim_param_closure)
+    println("# Finished reading in window function data")
+    # add_param_fixed(sim_param_closure,"win_func_data",ExoplanetsSysSim.WindowFunction.get_window_function_data() )  # TODO OPT DETAIL: Does this serve any purpose?
+
     ### Use real planet candidate catalog data
     df_star = setup_star_table_christiansen(sim_param_closure)
     println("# Finished reading in stellar data")
@@ -78,22 +86,26 @@ module EvalSysSimModel
 
 end  # module EvalSysSimModel
 
-include(joinpath(Pkg.dir("ABC"),"src/composite.jl"))
+#include(joinpath(Pkg.dir("ABC"),"src/composite.jl"))
 
 module SysSimABC
-  export setup_abc, run_abc, run_abc_largegen
-  import ABC
-  import Distributions
-  using CompositeDistributions
-  using Compat
   import ExoplanetsSysSim
-  import EvalSysSimModel
-  include(joinpath(Pkg.dir(),"ExoplanetsSysSim","examples","poisson_tests", "christiansen_func.jl"))
+  export setup_abc, run_abc, run_abc_largegen
+  #import EvalSysSimModel
+  using ..EvalSysSimModel
+  import Distributions
+  import ApproximateBayesianComputing
+  const ABC = ApproximateBayesianComputing
+  using ApproximateBayesianComputing.CompositeDistributions
+  using Compat
+  using Distributed
+
+  include(joinpath(dirname(pathof(ExoplanetsSysSim)),"..","examples","poisson_tests", "christiansen_func.jl"))
 
   function setup_abc(num_dist::Integer = 0; max_generations::Int64=100 )
     EvalSysSimModel.setup()
     theta_true = EvalSysSimModel.get_param_vector()
-    param_prior = CompositeDist( Distributions.ContinuousDistribution[Distributions.Uniform(0., 5.) for x in 1:length(theta_true)] )
+    param_prior = CompositeDist( Distributions.ContinuousDistribution[Distributions.Uniform(0., 3.) for x in 1:length(theta_true)] )
     in_parallel = nworkers() > 1 ? true : false
 
     calc_distance_ltd(sum_stat_obs::ExoplanetsSysSim.CatalogSummaryStatistics,sum_stat_sim::ExoplanetsSysSim.CatalogSummaryStatistics) = EvalSysSimModel.calc_distance(sum_stat_obs,sum_stat_sim,num_dist)
@@ -109,7 +121,7 @@ module SysSimABC
     EvalSysSimModel.set_simparam_ss(sim_param_closure, ss_true)	
 
     theta_true = EvalSysSimModel.get_param_vector()
-    param_prior = CompositeDist( Distributions.ContinuousDistribution[Distributions.Uniform(0., 5.) for x in 1:length(theta_true)] )
+    param_prior = CompositeDist( Distributions.ContinuousDistribution[Distributions.Uniform(0., 3.) for x in 1:length(theta_true)] )
     in_parallel = nworkers() > 1 ? true : false
 
     calc_distance_ltd(sum_stat_obs::ExoplanetsSysSim.CatalogSummaryStatistics,sum_stat_sim::ExoplanetsSysSim.CatalogSummaryStatistics) = EvalSysSimModel.calc_distance(sum_stat_obs,sum_stat_sim,num_dist)
@@ -117,7 +129,7 @@ module SysSimABC
     global abc_plan = ABC.abc_pmc_plan_type(EvalSysSimModel.gen_data,EvalSysSimModel.calc_summary_stats,calc_distance_ltd, param_prior, is_valid=EvalSysSimModel.is_valid,
                                      num_part=npart, num_max_attempt=50, num_max_times=1, epsilon_init=9.9e99, target_epsilon=1.0e-100, in_parallel=in_parallel);
 
-    println("# run_abc_largegen: ",EvalSysSimModel.sim_param_closure)
+    #println("# run_abc_largegen: ",EvalSysSimModel.sim_param_closure)
     sampler_largegen = abc_plan.make_proposal_dist(pop, abc_plan.tau_factor)
     theta_largegen = Array{Float64}(size(pop.theta, 1), npart)
     weight_largegen = Array{Float64}(npart)
@@ -133,7 +145,7 @@ module SysSimABC
 
   function run_abc(abc_plan::ABC.abc_pmc_plan_type)
     #global sim_param_closure
-    println("# run_abc: ",EvalSysSimModel.sim_param_closure)
+#    println("# run_abc: ",EvalSysSimModel.sim_param_closure)
     ss_true = EvalSysSimModel.get_ss_obs()
     #println("True catalog SS: ", ss_true)
     pop_out = ABC.run_abc(abc_plan,ss_true;verbose=true)
@@ -143,7 +155,7 @@ module SysSimABC
     #global sim_param_closure
     dist_threshold = maximum(pop.dist)
     EvalSysSimModel.add_param_fixed(EvalSysSimModel.sim_param_closure,"minimum ABC dist skip pass 2",dist_threshold)
-    println("# run_abc: ",EvalSysSimModel.sim_param_closure)
+    #println("# run_abc: ",EvalSysSimModel.sim_param_closure)
     ss_true = EvalSysSimModel.get_ss_obs()
     pop_out = ABC.run_abc(abc_plan,ss_true,pop;verbose=true)
   end

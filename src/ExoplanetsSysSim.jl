@@ -3,7 +3,10 @@
 module ExoplanetsSysSim
 
 # Packages to be used                 # Note: Tried to keep to a minimum in core package to help with maintainability
-import Compat: UTF8String, ASCIIString, @compat, readstring, is_windows
+import Compat: @compat, readstring, is_windows
+if VERSION < v"0.7"
+  import Compat: UTF8String, ASCIIString
+end
 if VERSION >= v"0.5-"
   using Combinatorics
 end
@@ -14,17 +17,22 @@ if VERSION < VersionNumber(0,3,20)
   using Docile
 end
 
+using CORBITS
+
 # Includes & associated  exports for types, then generic functions, then demo functions
 include("constants.jl")
 #require(joinpath(Pkg.dir("ExoplanetsSysSim"), "src", "constants.jl"))       
 export SimParam
-include("simulation_parameters.jl")
+export SimulationParameters
 export add_param_fixed, add_param_active, set_active, set_inactive, is_active, update_param, get, get_real, get_int, get_function, get_any, haskey, make_vector_of_sim_param, update_sim_param_from_vector!, make_vector_of_active_param_keys, get_range_for_sim_param
 export setup_sim_param_demo
+include("simulation_parameters.jl")
+using ExoplanetsSysSim.SimulationParameters
 export Orbit
 include("orbit.jl")
 export Planet
 include("planet.jl")
+include("limb_darkening.jl")
 export StarAbstract, Star, SingleStar, BinaryStar
 include("star.jl")
 export flux, mass
@@ -32,11 +40,14 @@ export generate_stars
 export PlanetarySystemAbstract, PlanetarySystemSingleStar, PlanetarySystem
 include("limb_darkening.jl")
 include("planetary_system.jl")
-include("corbits.jl")
-export prob_of_transits_approx
+#include("corbits.jl")
+#export prob_of_transits_approx
+include("window_function.jl")
+export WindowFunction
+export setup_window_function, get_window_function_data, get_window_function_id, eval_window_function
 include("stellar_table.jl")
 export  StellarTable
-export setup_star_table, star_table, num_usable_in_star_table, set_star_table
+export setup_star_table, star_table, num_usable_in_star_table, set_star_table, star_table_has_key
 export KeplerTarget
 export num_planets, generate_kepler_target_from_table, generate_kepler_target_simple
 include("target.jl")

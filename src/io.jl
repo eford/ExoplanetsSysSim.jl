@@ -3,7 +3,8 @@
 
 module SysSimIO
 using ExoplanetsSysSim
-using HDF5, JLD
+#using HDF5, JLD
+using FileIO, JLD2
 
 #if VERSION >= v"0.5-"
 #  import Compat: UTF8String, ASCIIString
@@ -14,10 +15,10 @@ export save_sim_param, save_sim_results, load_sim_param, load_distances, load_su
 function save_sim_param(filename::String, p::SimParam)
  local file
  try
-   file = JLD.jldopen(filename,"w")
+   file = JLD2.jldopen(filename,"w")
    write_sim_param(file,p)
  catch
-   println("# Problem writing parameters to jld file: ", filename)
+   println("# Problem writing parameters to jld2 file: ", filename)
    return false
  finally
    close(file)
@@ -28,26 +29,26 @@ end
 function save_sim_results(filename::String, p::SimParam; distances::Vector{Float64}=Array{Float64}(0), summary_stats::CatalogSummaryStatistics = CatalogSummaryStatistics() )
  local file
  try
-   file = JLD.jldopen(filename,"w")
+   file = JLD2.jldopen(filename,"w")
    write_sim_param(file,p)
    write_sim_summary_stats(file,summary_stats)
    write_sim_distances(file,distances)
  catch
-   println("# Problem writing data to jld file: ", filename)
+   println("# Problem writing data to jld2 file: ", filename)
  finally
    close(file)
   end
 end
 
-function write_sim_distances(file::JLD.JldFile, d::Vector{Float64} )
-  JLD.write(file,"distances",d)
+function write_sim_distances(file::JLD2.JLDFile, d::Vector{Float64} )
+  JLD2.write(file,"distances",d)
 end
 
-function write_sim_summary_stats(file::JLD.JldFile, ss::CatalogSummaryStatistics )
-  JLD.write(file,"summary_stats",ss.stat)
+function write_sim_summary_stats(file::JLD2.JLDFile, ss::CatalogSummaryStatistics )
+  JLD2.write(file,"summary_stats",ss.stat)
 end
 
-function write_sim_param(file::JLD.JldFile, p::SimParam)
+function write_sim_param(file::JLD2.JLDFile, p::SimParam)
  sim_param_bool = Dict{String,Bool}()
  sim_param_int = Dict{String,Integer}()
  sim_param_real = Dict{String,Real}()
@@ -69,12 +70,12 @@ function write_sim_param(file::JLD.JldFile, p::SimParam)
 	  warn(string("Can't store value of >",k,"< due to type ", typeof(p.param[k])))
    end
  end
-   JLD.write(file,"sim_param_int",sim_param_int)
-   JLD.write(file,"sim_param_real",sim_param_real)
-   JLD.write(file,"sim_param_function",sim_param_function)
-   JLD.write(file,"sim_param_string",sim_param_string)
-   JLD.write(file,"sim_param_bool",sim_param_bool)
-   JLD.write(file,"sim_param_active",p.active)
+   JLD2.write(file,"sim_param_int",sim_param_int)
+   JLD2.write(file,"sim_param_real",sim_param_real)
+   JLD2.write(file,"sim_param_function",sim_param_function)
+   JLD2.write(file,"sim_param_string",sim_param_string)
+   JLD2.write(file,"sim_param_bool",sim_param_bool)
+   JLD2.write(file,"sim_param_active",p.active)
 end
 
 
@@ -126,9 +127,9 @@ end
 
 function test_io()
   sim_param = setup_sim_param_demo()
-  save_sim_param("test.jld",sim_param)
-  spd = load_sim_param("test.jld")
-  rm("test.jld")
+  save_sim_param("test.jld2",sim_param)
+  spd = load_sim_param("test.jld2")
+  rm("test.jld2")
 end
 
 end # module SysSimIO

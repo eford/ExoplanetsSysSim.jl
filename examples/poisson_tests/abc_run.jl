@@ -5,38 +5,39 @@
 using ExoplanetsSysSim
 include(joinpath(pwd(), "abc_setup.jl"))
 
-using SysSimABC
-using JLD
+using .SysSimABC
+using ExoplanetsSysSim
 using StatsBase
+using Profile
 
 out2txt = false # Write occurrence rates & densities to text files
 expandpart = false # Expand final generation for robust posteriors
 profile_code = false
 
 #srand(42)
+use_star_table_sigmas = false
 
-println("Setting up simulation...")
-println("Running simulation...")
+
 if profile_code
    println("Setting up simulation...")
    @time abc_plan = setup_abc(0,max_generations=1)
    println("Running simulation...")
-   @time output = run_abc(abc_plan)
+   @time global output = run_abc(abc_plan)
    println("Setting up simulation...")
    @time abc_plan = setup_abc(0,max_generations=5)
-   println("Running simulation...")
    Profile.init(n = 10^7, delay = 0.01)
    Profile.clear_malloc_data()
-   @profile output = run_abc(abc_plan)
+   println("Running simulation...")
+   @profile global output = run_abc(abc_plan)
    open("profile.txt.corbits.reallocated", "w") do s
       Profile.print(IOContext(s, :displaysize => (24, 500)))
    end
 else
    println("Setting up simulation...")
-   @time abc_plan = setup_abc(0,max_generations=10)
+   @time abc_plan = setup_abc(0,max_generations=50)
    println("")
    println("Running simulation...")
-   @time output = run_abc(abc_plan)
+   @time global output = run_abc(abc_plan)
 end
    println("")
 
@@ -51,8 +52,8 @@ if out2txt
     file_dens = open("dens_output.txt", "w")
 end
 
-limitP = get_any(EvalSysSimModel.sim_param_closure, "p_lim_arr", Array{Float64,1})
-limitR = get_any(EvalSysSimModel.sim_param_closure, "r_lim_arr", Array{Float64,1})
+limitP = get_any(EvalSysSimModel.sim_param_closure, "p_lim_arr", Array{Float64,1})::Array{Float64,1} 
+limitR = get_any(EvalSysSimModel.sim_param_closure, "r_lim_arr", Array{Float64,1})::Array{Float64,1} 
 
 if expandpart
     weight_vec = pweights(weights_largegen)

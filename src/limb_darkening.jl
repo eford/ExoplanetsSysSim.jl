@@ -79,9 +79,3 @@ function depth_small_planet(z::T,p::T,ld::LimbDarkeningParam4thOrder) where T<:R
   return F
 end
 
-
-
-
-
-
-

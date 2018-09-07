@@ -22,7 +22,7 @@ combine_scalar_distances(d1::Float64, d2::Float64) = combine_scalar_distances_su
 
 # compute supremum of differences between empirical cdfs.
 # Borrowed from JuliaStats/HypothesisTests.jl
-function ksstats{T<:Real, S<:Real}(x::AbstractVector{T}, y::AbstractVector{S})
+function ksstats(x::AbstractVector{T}, y::AbstractVector{S}) where {T<:Real, S<:Real}
     n_x, n_y = length(x), length(y)
     sort_idx = sortperm([x; y])
     pdf_diffs = [ones(n_x)/n_x; -ones(n_y)/n_y][sort_idx]
@@ -33,7 +33,7 @@ function ksstats{T<:Real, S<:Real}(x::AbstractVector{T}, y::AbstractVector{S})
     (n_x, n_y, deltap, deltan, delta)
 end
 # weighted version   # WARNING:  Function is untested
-function ksstats{T<:Real, S<:Real}(x::AbstractVector{T}, y::AbstractVector{S}, wx::AbstractVector{T}, wy::AbstractVector{T})
+function ksstats(x::AbstractVector{T}, y::AbstractVector{S}, wx::AbstractVector{T}, wy::AbstractVector{T}) where {T<:Real, S<:Real}
     n_x, n_y = length(x), length(y)
     wx .*= 1.0/sum(wx)
     wy .*= 1.0/sum(wy)
@@ -46,8 +46,8 @@ function ksstats{T<:Real, S<:Real}(x::AbstractVector{T}, y::AbstractVector{S}, w
     (n_x, n_y, deltap, deltan, delta)  # should the first two values returned here be sum(wx) and sum(wy) before normalizing?  For now, we ignore all but the final delta anyway.
 end
 
-dist_KS{T<:Real, S<:Real}(x::AbstractVector{T}, y::AbstractVector{S}) = ksstats(x,y)[5]
-dist_KS{T<:Real, S<:Real}(x::AbstractVector{T}, y::AbstractVector{S}, wx::AbstractVector{T}, wy::AbstractVector{T}) = ksstats(x,y,wx,wy)[5]
+dist_KS(x::AbstractVector{T}, y::AbstractVector{S}) where {T<:Real, S<:Real}  = ksstats(x,y)[5]
+dist_KS(x::AbstractVector{T}, y::AbstractVector{S}, wx::AbstractVector{T}, wy::AbstractVector{T}) where {T<:Real, S<:Real} = ksstats(x,y,wx,wy)[5]
 
 # lambda:  rate for Poisson process, i.e., expected value for number of events
 # k:  number of events observed

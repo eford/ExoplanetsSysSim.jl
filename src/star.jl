@@ -5,23 +5,23 @@
 
 @compat abstract type StarAbstract end               # Check does using StarAbstract cause a significant performance hit
 
-immutable Star <: StarAbstract                
+struct Star <: StarAbstract                
   radius::Float64
   mass::Float64
   flux::Float64                      # relevant once have multiple stars in one target
-  # ld::LimbDarkeningParamAbstract         # TODO SCI DETAIL: add limb darkening param?
+  #ld::LimbDarkeningParamAbstract         # TODO SCI DETAIL: add limb darkening param?
   id::Int64                          # id for looking up properties in stellar catalog
 end
 #typealias SingleStar Star
 SingleStar = Star
 
-immutable BinaryStar <: StarAbstract
+struct BinaryStar <: StarAbstract
   primary::Star
   secondary::Star
   orbit::Orbit
 end
 
-immutable MultipleStar <: StarAbstract                      # Will we want to handle triple, quad systems?
+struct MultipleStar <: StarAbstract                      # Will we want to handle triple, quad systems?
   component::Vector{StarAbstract}
   orbit::Vector{Orbit}
 end
@@ -38,7 +38,7 @@ mass(s::MultipleStar) = sum( mass, s.component)::Float64
 function generate_stars(sim_param::SimParam)
    generate_star = get_function(sim_param,"generate_star")
    num_target_stars = get_int(sim_param,"num_targets_sim_pass_one")
-   star_list = Array{StarAbstract}(num_target_stars)
+   star_list = Array{StarAbstract}(undef,num_target_stars)
    for i in 1:num_target_stars
      s =  generate_star(sim_param)
      star_list[i] = s
@@ -58,6 +58,7 @@ function generate_star_dumb(sim_param::SimParam)
     f = 1.0+0.1*randn()
   end
   # ld = LimbDarkeningParamQuadratic(0.4603,0.2291)   # TODO: Once we implement limb darkening
+  ld =  LimbDarkeningParam4thOrder(0.,0.,0.,0.)  # Equivalent to uniform surface brightness for testing
   #return SingleStar(r,m,f,0,ld) 
   return SingleStar(r,m,f,0) 
 end

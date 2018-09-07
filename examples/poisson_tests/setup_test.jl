@@ -129,7 +129,7 @@ for p_ind = 1:(length(p_lim)-1)
         end
         cd(dir_list[file_ind])
         f_param = open("param.in","w")
-        write(f_param,"""stellar_catalog = "q1q17_dr25_gaia_fgk.jld"\n""")
+        write(f_param,"""stellar_catalog = "q1q17_dr25_gaia_fgk.jld2"\n""")
         write(f_param,"""koi_catalog = "q1_q17_dr25_koi.csv"\n""")
         write(f_param,"num_targ_sim = 5000\n")
         write(f_param,string("p_bin_lim = [",p_lim[p_ind],", ",p_lim[p_ind+1],"]\n"))

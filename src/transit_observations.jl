@@ -5,7 +5,7 @@
 #include("constants.jl")
 
 #  Starting Section of Observables that are actually used
-immutable TransitPlanetObs
+struct TransitPlanetObs
   # ephem::ephemeris_type     # For now hardcode P and t0, see transit_observation_unused.jl to reinstate
   period::Float64             # days
   t0::Float64                 # days
@@ -15,7 +15,7 @@ immutable TransitPlanetObs
 end
 TransitPlanetObs() = TransitPlanetObs(0.0,0.0,0.0,0.0)
 
-immutable StarObs
+struct StarObs
   radius::Float64      # in Rsol
   mass::Float64        # in Msol
   id::Int64            # row number in stellar dataframe  
@@ -29,7 +29,7 @@ duration(obs::TransitPlanetObs) = obs.duration
 semimajor_axis(P::Float64, M::Float64) = (grav_const/(4pi^2)*M*P*P)^(1/3)
 
 function semimajor_axis(ps::PlanetarySystemAbstract, id::Integer)
-  M = mass(ps.star) + ps.planet[id].mass   # TODO SCI DETAIL: Replace with Jacobi mass?  Probably not important unless start including TTVs at some point
+  M = mass(ps.star) + ps.planet[id].mass   # TODO SCI DETAIL: Replace with Jacobi mass?  Not important unless start including TTVs, even then unlikely to matter
   @assert(M>0.0)
   @assert(ps.orbit[id].P>0.0)
   return semimajor_axis(ps.orbit[id].P,M)
@@ -256,12 +256,6 @@ calc_transit_duration(t::KeplerTarget, s::Integer, p::Integer ) = calc_transit_d
 function calc_expected_num_transits(t::KeplerTarget, s::Integer, p::Integer, sim_param::SimParam)  
  period = t.sys[s].orbit[p].P
  exp_num_transits = t.duty_cycle * t.data_span/period
- #= 
- if exp_num_transits <=6 
- end
- # TODO SCI DETAIL: Calculate more accurat number of transits, perhaps using star and specific window function or perhaps specific times of data gaps more given module
-  DARIN: Could your window function files help here?
- =#
  return exp_num_transits
 end
 
@@ -270,7 +264,7 @@ include("transit_prob_geometric.jl")
 
 const has_sc_bit_array_size = 7*8        # WARNING: Must be big enough given value of num_quarters (assumed to be <=17)
 
-type KeplerTargetObs                        # QUERY:  Do we want to make this type depend on whether the catalog is based on simulated or real data?
+mutable struct KeplerTargetObs                        # QUERY:  Do we want to make this type depend on whether the catalog is based on simulated or real data?
   obs::Vector{TransitPlanetObs}
   sigma::Vector{TransitPlanetObs}           # Simplistic approach to uncertainties for now.  QUERY: Should estimated uncertainties be part of Observations type?
   # phys_id::Vector{Tuple{Int32,Int32}}     # So we can lookup the system's properties # Commented out since Not used
@@ -280,25 +274,25 @@ type KeplerTargetObs                        # QUERY:  Do we want to make this ty
   #has_sc::Vector{Bool}                      # TODO OPT: Make Immutable Vector or BitArray to reduce memory use?  
   has_sc::BitArray{1}                        # WARNING: Changed from Array{Bool}.  Alternatively, we could try StaticArray{Bool} so fixed size?  Do we even need to keep this?
 
-  star::StarObs                             # TODO SCI DETAIL: Add more members to StarObs, so can used observed rather than actual star properties
+  star::StarObs                             
 end
 #KeplerTargetObs(n::Integer) = KeplerTargetObs( fill(TransitPlanetObs(),n), fill(TransitPlanetObs(),n), fill(tuple(0,0),n),  ObservedSystemDetectionProbsEmpty(),  fill(false,num_quarters), StarObs(0.0,0.0) )
 KeplerTargetObs(n::Integer) = KeplerTargetObs( fill(TransitPlanetObs(),n), fill(TransitPlanetObs(),n), ObservedSystemDetectionProbsEmpty(),  falses(has_sc_bit_array_size), StarObs(0.0,0.0,0) )
 num_planets(t::KeplerTargetObs) = length(t.obs)
 
 function calc_target_obs_sky_ave(t::KeplerTarget, sim_param::SimParam)
-  const max_tranets_in_sys = get_int(sim_param,"max_tranets_in_sys")
-  const transit_noise_model = get_function(sim_param,"transit_noise_model")
-  const min_detect_prob_to_be_included = 0.0  # get_real(sim_param,"min_detect_prob_to_be_included")
-  const num_observer_samples = 1 # get_int(sim_param,"num_viewing_geometry_samples")
+   max_tranets_in_sys = get_int(sim_param,"max_tranets_in_sys")
+   transit_noise_model = get_function(sim_param,"transit_noise_model")
+   min_detect_prob_to_be_included = 0.0  # get_real(sim_param,"min_detect_prob_to_be_included")
+   num_observer_samples = 1 # get_int(sim_param,"num_viewing_geometry_samples")
 
   np = num_planets(t)
-  obs = Array{TransitPlanetObs}(np)
-  sigma = Array{TransitPlanetObs}(np)
+  obs = Array{TransitPlanetObs}(undef,np)
+  sigma = Array{TransitPlanetObs}(undef,np)
   #id = Array{Tuple{Int32,Int32}}(np)
   #id = Array{Tuple{Int32,Int32}}(np)
   ns = length(t.sys)
-  sdp_sys = Array{SystemDetectionProbsAbstract}(ns)
+  sdp_sys = Array{SystemDetectionProbsAbstract}(undef,ns)
   i = 1
   for (s,sys) in enumerate(t.sys)
     pdet = zeros(num_planets(sys))
@@ -314,15 +308,14 @@ function calc_target_obs_sky_ave(t::KeplerTarget, sim_param::SimParam)
         duration_central = calc_transit_duration_central(t,s,p)
         cdpp_central = interpolate_cdpp_to_duration(t, duration_central)
 	snr_central = calc_snr_if_transit(t, depth, duration_central, cdpp_central, sim_param, num_transit=ntr)
-        pdet_ave = calc_ave_prob_detect_if_transit_from_snr(t, snr_central, duration_central, size_ratio, cdpp_central, sim_param, num_transit=ntr) 
+        pdet_ave = calc_ave_prob_detect_if_transit_from_snr(t, snr_central, period, duration_central, size_ratio, cdpp_central, sim_param, num_transit=ntr) 
  
 	add_to_catalog = pdet_ave > min_detect_prob_to_be_included  # Include all planets with sufficient detection probability
 
-
 	if add_to_catalog 
-           pdet_central = calc_prob_detect_if_transit(t, snr_central, sim_param, num_transit=ntr)
+           pdet_central = calc_prob_detect_if_transit(t, snr_central, period, duration_central, sim_param, num_transit=ntr)
            threshold_pdet_ratio = rand()
-	   const hard_max_num_b_tries = 100
+	   hard_max_num_b_tries = 100
 	   max_num_b_tries = min_detect_prob_to_be_included == 0. ? hard_max_num_b_tries : min(hard_max_num_b_tries,convert(Int64,1/min_detect_prob_to_be_included))
            # We compute measurement noise based on a single value of b.  We draw from a uniform distribution for b and then using rejection sampling to reduce probability of higher impact parameters
            pdet_this_b = 0.0
@@ -333,7 +326,7 @@ function calc_target_obs_sky_ave(t::KeplerTarget, sim_param::SimParam)
 	      duration = duration_central * transit_duration_factor   # WARNING:  Technically, this duration may be slightly reduced for grazing cases to account for reduction in SNR due to planet not being completely inscribed by star at mid-transit.  But this will be a smaller effect than limb-darkening for grazing transits.  Also, makes a variant of the small angle approximation
               cdpp = interpolate_cdpp_to_duration(t, duration)
 	      snr = snr_central * (cdpp_central/cdpp) * sqrt(transit_duration_factor) 
-              pdet_this_b = calc_prob_detect_if_transit(t, snr, sim_param, num_transit=ntr)
+              pdet_this_b = calc_prob_detect_if_transit(t, snr, period, duration, sim_param, num_transit=ntr)
 
               if pdet_this_b >= threshold_pdet_ratio * pdet_central
                   #println("# Adding pdet_this_b = ", pdet_this_b, " pdet_c = ", pdet_central, " snr= ",snr, " cdpp= ",cdpp, " duration= ",duration, " b=",b, " u01= ", threshold_pdet_ratio)
@@ -355,7 +348,7 @@ function calc_target_obs_sky_ave(t::KeplerTarget, sim_param::SimParam)
   end
   # TODO SCI DETAIL: Combine sdp_sys to allow for target to have multiple planetary systems
   s1 = findfirst(x->num_planets(x)>0,sdp_sys)  # WARNING IMPORTANT: For now just take first system with planets
-  if s1 == 0 
+  if s1 == nothing
      s1 = 1
   end
   sdp_target = sdp_sys[s1]
@@ -368,18 +361,18 @@ end
 
 
 function calc_target_obs_single_obs(t::KeplerTarget, sim_param::SimParam)
-  #const max_tranets_in_sys = get_int(sim_param,"max_tranets_in_sys")
-  const transit_noise_model = get_function(sim_param,"transit_noise_model")
-  const min_detect_prob_to_be_included = 0.0  # get_real(sim_param,"min_detect_prob_to_be_included")
+  # max_tranets_in_sys = get_int(sim_param,"max_tranets_in_sys")
+   transit_noise_model = get_function(sim_param,"transit_noise_model")
+   min_detect_prob_to_be_included = 0.0  # get_real(sim_param,"min_detect_prob_to_be_included")
 
   np = num_planets(t)
-  obs = Array{TransitPlanetObs}(np)
-  sigma = Array{TransitPlanetObs}(np)
+  obs = Array{TransitPlanetObs}(undef,np)
+  sigma = Array{TransitPlanetObs}(undef,np)
   #id = Array{Tuple{Int32,Int32}}(np)
   #id = Array{Tuple{Int32,Int32}}(np)
   ns = length(t.sys)
   #sdp_sys = Array{SystemDetectionProbsAbstract}(ns)
-  sdp_sys = Array{ObservedSystemDetectionProbs}(ns)
+  sdp_sys = Array{ObservedSystemDetectionProbs}(undef,ns)
   i = 1
   for (s,sys) in enumerate(t.sys)
     pdet = zeros(num_planets(sys))
@@ -403,7 +396,7 @@ function calc_target_obs_single_obs(t::KeplerTarget, sim_param::SimParam)
         depth *= snr_correction
         snr = calc_snr_if_transit(t, depth, duration, cdpp, sim_param, num_transit=ntr)
 
-        pdet[p] = calc_prob_detect_if_transit(t, depth, duration, cdpp, sim_param, num_transit=ntr)
+        pdet[p] = calc_prob_detect_if_transit(t, depth, period, duration, cdpp, sim_param, num_transit=ntr)
         #pdet[p] = calc_prob_detect_if_transit(t, snr, sim_param, num_transit=ntr)
 
 	if pdet[p] > min_detect_prob_to_be_included   
@@ -419,7 +412,7 @@ function calc_target_obs_single_obs(t::KeplerTarget, sim_param::SimParam)
   end
   # TODO SCI DETAIL: Combine sdp_sys to allow for target to have multiple planetary systems
   s1 = findfirst(x->num_planets(x)>0,sdp_sys)  # WARNING: For now just take first system with planets, assumes not two stars wht planets in one target
-  if s1 == 0 
+  if s1 == nothing
      s1 = 1
   end
   sdp_target = sdp_sys[s1]
@@ -433,7 +426,7 @@ end
 function test_transit_observations(sim_param::SimParam; verbose::Bool=false)  # TODO TEST: Add more tests
   #transit_param = TransitParameter( EphemerisLinear(10.0, 0.0), TransitShape(0.01, 3.0/24.0, 0.5) )
   generate_kepler_target = get_function(sim_param,"generate_kepler_target")
-  const max_it = 100000
+   max_it = 100000
   local obs
   for i in 1:max_it
     target = generate_kepler_target(sim_param)::KeplerTarget
