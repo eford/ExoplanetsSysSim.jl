@@ -6,6 +6,7 @@ module EvalSysSimModel
   export setup, get_param_vector, get_ss_obs #, evaluate_model
   export gen_data, calc_summary_stats, calc_distance, is_valid
   using ExoplanetsSysSim
+  using KahanSummation
   #include(joinpath(Pkg.dir(),"ExoplanetsSysSim","examples","hsu_etal_2018", "christiansen_func.jl"))
   include(joinpath(dirname(pathof(ExoplanetsSysSim)),"..","examples","hsu_etal_2018", "christiansen_func.jl"))
 
@@ -16,7 +17,8 @@ module EvalSysSimModel
       global sim_param_closure
       update_sim_param_from_vector!(param_vector,sim_param_closure)
       rate_tab::Array{Float64,2} = get_any(sim_param_closure, "obs_par", Array{Float64,2})
-      lambda = sum_kbn(rate_tab)
+      #lambda = sum_kbn(rate_tab)  # TODO: Restore KBN sums
+      lambda = sum(rate_tab)
       if lambda > 10. || any(x -> x < 0., rate_tab)
          return false
       end
@@ -93,23 +95,25 @@ include(joinpath(dirname(pathof(ABC)),"..","src/composite.jl"))
 
 module SysSimABC
   export setup_abc, run_abc
+  
+  import ExoplanetsSysSim
+  import Distributions
   if VERSION < v"0.7"
      import ABC
   else
      import ApproximateBayesianComputing
      ABC = ApproximateBayesianComputing
+     import ApproximateBayesianComputing.CompositeDistributions
+     import ..EvalSysSimModel
+     using Distributed
   end
-  import Distributions
-  import ApproximateBayesianComputing.CompositeDistributions
-  import ExoplanetsSysSim
-  import ..EvalSysSimModel
   #include(joinpath(Pkg.dir(),"ExoplanetsSysSim","examples","hsu_etal_2018", "christiansen_func.jl"))
   include(joinpath(dirname(pathof(ExoplanetsSysSim)),"..","examples","hsu_etal_2018", "christiansen_func.jl"))
 
   function setup_abc(num_dist::Integer = 0)
     EvalSysSimModel.setup()
     theta_true = EvalSysSimModel.get_param_vector()
-    param_prior = CompositeDist( Distributions.ContinuousDistribution[Distributions.Uniform(0., 5.) for x in 1:length(theta_true)] )
+    param_prior = CompositeDistributions.CompositeDist( Distributions.ContinuousDistribution[Distributions.Uniform(0., 5.) for x in 1:length(theta_true)] )
     in_parallel = nworkers() > 1 ? true : false
 
     calc_distance_ltd(sum_stat_obs::ExoplanetsSysSim.CatalogSummaryStatistics,sum_stat_sim::ExoplanetsSysSim.CatalogSummaryStatistics) = EvalSysSimModel.calc_distance(sum_stat_obs,sum_stat_sim,num_dist)
