@@ -32,7 +32,6 @@ export Orbit
 include("orbit.jl")
 export Planet
 include("planet.jl")
-include("limb_darkening.jl")
 export StarAbstract, Star, SingleStar, BinaryStar
 include("star.jl")
 export flux, mass

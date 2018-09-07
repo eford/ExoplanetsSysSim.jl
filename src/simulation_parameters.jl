@@ -51,7 +51,6 @@ function SimParam()
   end
   SimParam(d)
 end
->>>>>>> v1
 
 """
     add_param_fixed(sim::SimParam, key::String,val::Any)

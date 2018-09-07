@@ -301,7 +301,7 @@ function calc_target_obs_sky_ave(t::KeplerTarget, sim_param::SimParam)
          println("# s=",s, " p=",p," num_sys= ",length(t.sys), " num_pl= ",num_planets(sys) )
       end
         ntr = calc_expected_num_transits(t, s, p, sim_param)
-        # period = sys.orbit[p].P
+        period = sys.orbit[p].P
         # t0 = rand(Uniform(0.0,period))   # WARNING: Not being calculated from orbit
         size_ratio = t.sys[s].planet[p].radius/t.sys[s].star.radius
         depth = calc_transit_depth(t,s,p)
