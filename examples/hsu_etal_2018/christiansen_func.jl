@@ -5,7 +5,7 @@
 
 using ExoplanetsSysSim
 using StatsFuns
-using JLD
+using JLD2
 using CSV
 using DataFrames
 using Distributions
@@ -22,7 +22,7 @@ macro isdefinedlocal(var)
     end
 end
 
-function setup_sim_param_christiansen(args::Vector{String} = Array{String}(0) )   # allow this to take a list of parameter (e.g., from command line)
+function setup_sim_param_christiansen(args::Vector{String} = Array{String}("",0) )   # allow this to take a list of parameter (e.g., from command line)
     sim_param = ExoplanetsSysSim.SimParam()
 
     add_param_fixed(sim_param,"max_tranets_in_sys",7)
@@ -208,8 +208,8 @@ function setup_christiansen(filename::String; force_reread::Bool = false)
     is_usable = is_usable .& in_Q1Q12
   end
   # See options at: http://exoplanetarchive.ipac.caltech.edu/docs/API_keplerstellar_columns.html
-  symbols_to_keep = [ :kepid, :mass, :mass_err1, :mass_err2, :radius, :radius_err1, :radius_err2, :dens, :dens_err1, :dens_err2, :rrmscdpp01p5, :rrmscdpp02p0, :rrmscdpp02p5, :rrmscdpp03p0, :rrmscdpp03p5, :rrmscdpp04p5, :rrmscdpp05p0, :rrmscdpp06p0, :rrmscdpp07p5, :rrmscdpp09p0, :rrmscdpp10p5, :rrmscdpp12p0, :rrmscdpp12p5, :rrmscdpp15p0, :cdppslplong, :cdppslpshrt, :dataspan, :dutycycle ]
-  #symbols_to_keep = [ :kepid, :mass, :mass_err1, :mass_err2, :radius, :radius_err1, :radius_err2, :dens, :dens_err1, :dens_err2, :rrmscdpp01p5, :rrmscdpp02p0, :rrmscdpp02p5, :rrmscdpp03p0, :rrmscdpp03p5, :rrmscdpp04p5, :rrmscdpp05p0, :rrmscdpp06p0, :rrmscdpp07p5, :rrmscdpp09p0, :rrmscdpp10p5, :rrmscdpp12p0, :rrmscdpp12p5, :rrmscdpp15p0, :dataspan, :dutycycle ]
+  #symbols_to_keep = [ :kepid, :mass, :mass_err1, :mass_err2, :radius, :radius_err1, :radius_err2, :dens, :dens_err1, :dens_err2, :rrmscdpp01p5, :rrmscdpp02p0, :rrmscdpp02p5, :rrmscdpp03p0, :rrmscdpp03p5, :rrmscdpp04p5, :rrmscdpp05p0, :rrmscdpp06p0, :rrmscdpp07p5, :rrmscdpp09p0, :rrmscdpp10p5, :rrmscdpp12p0, :rrmscdpp12p5, :rrmscdpp15p0, :cdppslplong, :cdppslpshrt, :dataspan, :dutycycle ]
+  symbols_to_keep = [ :kepid, :mass, :mass_err1, :mass_err2, :radius, :radius_err1, :radius_err2, :dens, :dens_err1, :dens_err2, :rrmscdpp01p5, :rrmscdpp02p0, :rrmscdpp02p5, :rrmscdpp03p0, :rrmscdpp03p5, :rrmscdpp04p5, :rrmscdpp05p0, :rrmscdpp06p0, :rrmscdpp07p5, :rrmscdpp09p0, :rrmscdpp10p5, :rrmscdpp12p0, :rrmscdpp12p5, :rrmscdpp15p0, :dataspan, :dutycycle ]
 
   delete!(df, [~(x in symbols_to_keep) for x in names(df)])    # delete columns that we won't be using anyway
   usable = find(is_usable)

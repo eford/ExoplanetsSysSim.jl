@@ -7,7 +7,7 @@ include(joinpath(pwd(), "abc_setup.jl"))
 
 using SysSimABC
 using ExoplanetsSysSim
-using JLD
+using JLD2
 using StatsBase
 
 out2txt = false # Write occurrence rates & densities to text files

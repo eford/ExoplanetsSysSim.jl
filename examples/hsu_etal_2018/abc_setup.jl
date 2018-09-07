@@ -81,17 +81,28 @@ module EvalSysSimModel
 end  # module EvalSysSimModel
 
 #include(joinpath(Pkg.dir("ABC"),"src/composite.jl"))
-using ABC
+if VERSION < v"0.7"
+   using ABC
+else
+   using ApproximateBayesianComputing
+   ABC = ApproximateBayesianComputing
+end
+
 include(joinpath(dirname(pathof(ABC)),"..","src/composite.jl"))
 #using CompositeDistributions
 
 module SysSimABC
   export setup_abc, run_abc
-  import ABC
+  if VERSION < v"0.7"
+     import ABC
+  else
+     import ApproximateBayesianComputing
+     ABC = ApproximateBayesianComputing
+  end
   import Distributions
-  import CompositeDistributions
+  import ApproximateBayesianComputing.CompositeDistributions
   import ExoplanetsSysSim
-  import EvalSysSimModel
+  import ..EvalSysSimModel
   #include(joinpath(Pkg.dir(),"ExoplanetsSysSim","examples","hsu_etal_2018", "christiansen_func.jl"))
   include(joinpath(dirname(pathof(ExoplanetsSysSim)),"..","examples","hsu_etal_2018", "christiansen_func.jl"))
 
