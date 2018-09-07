@@ -14,11 +14,12 @@ out2txt = false # Write occurrence rates & densities to text files
 expandpart = true # Expand final generation for robust posteriors
 profile_code = false
 
+global output
 if profile_code
    println("Setting up simulation...")
    @time abc_plan = setup_abc(0,max_generations=1)
    println("Running simulation...")
-   @time global output = run_abc(abc_plan)
+   @time output = run_abc(abc_plan)
    println("Setting up simulation...")
    @time abc_plan = setup_abc(0,max_generations=5)
    Profile.init(n = 10^7, delay = 0.01)

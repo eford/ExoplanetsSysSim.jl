@@ -15,10 +15,10 @@ module EvalSysSimModel
       using Compat.Statistics
   else
       using ApproximateBayesianComputing
-      ABC = ApproximateBayesianComputing
+      const ABC = ApproximateBayesianComputing
       using Statistics
-      import ABC.CompositeDistributions.CompositeDist
-      import ABC.TransformedBetaDistributions.LinearTransformedBeta
+      import ApproximateBayesianComputing.CompositeDistributions.CompositeDist
+      import ApproximateBayesianComputing.TransformedBetaDistributions.LinearTransformedBeta
   end
   include(joinpath(dirname(pathof(ExoplanetsSysSim)),"..","examples","poisson_tests", "christiansen_func.jl"))
 
@@ -38,13 +38,11 @@ module EvalSysSimModel
       end
       return true
     end
-    return true
-end
 
 function normalize_dirch(param_vector::Vector{Float64})
     global sim_param_closure
-    const p_dim = length(get_any(sim_param_closure, "p_lim_arr", Array{Float64,1}))-1
-    const r_dim = length(get_any(sim_param_closure, "r_lim_arr", Array{Float64,1}))-1
+    p_dim = length(get_any(sim_param_closure, "p_lim_arr", Array{Float64,1}))-1
+    r_dim = length(get_any(sim_param_closure, "r_lim_arr", Array{Float64,1}))-1
     
     for i in 1:p_dim
         param_vector[((i-1)*(r_dim+1)+2):((i-1)*(r_dim+1)+(r_dim+1))] ./= sum(param_vector[((i-1)*(r_dim+1)+2):((i-1)*(r_dim+1)+(r_dim+1))])
@@ -77,9 +75,9 @@ end
 
 function make_proposal_dist_multidim_beta(theta::AbstractArray{Float64,2}, weights::AbstractArray{Float64,1},  tau_factor::Float64; verbose::Bool = false)
     global sim_param_closure
-    const p_dim = length(get_any(sim_param_closure, "p_lim_arr", Array{Float64,1}))-1
-    const r_dim = length(get_any(sim_param_closure, "r_lim_arr", Array{Float64,1}))-1
-    const max_col_rate = 3.0
+    p_dim = length(get_any(sim_param_closure, "p_lim_arr", Array{Float64,1}))-1
+    r_dim = length(get_any(sim_param_closure, "r_lim_arr", Array{Float64,1}))-1
+    max_col_rate = 3.0
 
     function mom_alpha(x_bar::T, v_bar::T) where T<: Real 
         x_bar * (((x_bar * (1 - x_bar)) / v_bar) - 1)
@@ -174,7 +172,7 @@ function make_proposal_dist_multidim_beta(theta::AbstractArray{Float64,2}, weigh
     dist = CompositeDist(dist_arr)
 end
 
-function make_proposal_dist_multidim_beta(pop::abc_population_type, tau_factor::Float64; verbose::Bool = false)
+function make_proposal_dist_multidim_beta(pop::ABC.abc_population_type, tau_factor::Float64; verbose::Bool = false)
     make_proposal_dist_multidim_beta(pop.theta, pop.weights, tau_factor, verbose=verbose)
 end
 
@@ -265,7 +263,7 @@ module SysSimABC
     theta_true = EvalSysSimModel.get_param_vector()
     #param_prior = CompositeDist( Distributions.ContinuousDistribution[Distributions.Uniform(0., 0.3) for x in 1:length(theta_true)] )
     limitP::Array{Float64,1} = get_any(EvalSysSimModel.sim_param_closure, "p_lim_arr", Array{Float64,1})
-    const r_dim = length(get_any(EvalSysSimModel.sim_param_closure, "r_lim_arr", Array{Float64,1}))-1
+    r_dim = length(get_any(EvalSysSimModel.sim_param_closure, "r_lim_arr", Array{Float64,1}))-1
     prior_arr = ContinuousDistribution[]
     for i in 1:(length(limitP)-1)
         max_in_col = floor(3*log(limitP[i+1]/limitP[i])/log(2))
@@ -290,7 +288,7 @@ function run_abc_largegen(pop::ABC.abc_population_type, ss_true::ExoplanetsSysSi
     theta_true = EvalSysSimModel.get_param_vector()
     #param_prior = CompositeDist( Distributions.ContinuousDistribution[Distributions.Uniform(0., 0.3) for x in 1:length(theta_true)] )
     limitP::Array{Float64,1} = get_any(EvalSysSimModel.sim_param_closure, "p_lim_arr", Array{Float64,1})
-    const r_dim = length(get_any(EvalSysSimModel.sim_param_closure, "r_lim_arr", Array{Float64,1}))-1
+    r_dim = length(get_any(EvalSysSimModel.sim_param_closure, "r_lim_arr", Array{Float64,1}))-1
     prior_arr = ContinuousDistribution[]
     for i in 1:(length(limitP)-1)
         max_in_col = floor(3*log(limitP[i+1]/limitP[i])/log(2))

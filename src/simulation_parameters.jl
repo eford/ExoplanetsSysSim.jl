@@ -316,6 +316,4 @@ end
 
 end
 
-end
-
 #test_sim_param_constructors()
