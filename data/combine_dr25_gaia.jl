@@ -15,7 +15,6 @@ deleterows!(gaia_df, dup_gaiaid)
 
 println("Total crossref target stars = ", length(gaia_df[:kepid]))
 
->>>>>>> v1
 mag_diff = gaia_df[:phot_g_mean_mag].-gaia_df[:kepmag]
 quant_arr = quantile(mag_diff, [0.067,0.933])   # 1.5-sigma cut
 mag_match = find(x->quant_arr[1]<=x<=quant_arr[2], mag_diff)
@@ -23,17 +22,16 @@ gaia_df = gaia_df[mag_match,:]
 
 gaia_col = [:kepid,:source_id,:parallax,:parallax_error,:astrometric_gof_al,:astrometric_excess_noise_sig,:bp_rp,:priam_flags,:teff_val,:teff_percentile_lower,:teff_percentile_upper,:radius_val,:radius_percentile_lower,:radius_percentile_upper,:lum_val,:lum_percentile_lower,:lum_percentile_upper]
 df = join(kep_df, gaia_df[:,gaia_col], on=:kepid)
+df = join(df, mast_df, on=:kepid)
 kep_df = nothing
 gaia_df = nothing
 
-=======
 df = join(df, mast_df, on=:kepid)
 kep_df = nothing
 gaia_df = nothing
 
 println("Total target stars (KOIs) matching magnitude = ", length(df[:kepid]), " (", sum(df[:nkoi]),")")
 
->>>>>>> v1
 df[:teff] = df[:teff_val]
 df[:teff_err1] = df[:teff_percentile_upper].-df[:teff_val]
 df[:teff_err2] = df[:teff_percentile_lower].-df[:teff_val]

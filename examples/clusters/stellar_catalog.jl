@@ -26,7 +26,7 @@ end
 
 function setup_star_table_christiansen(filename::String; force_reread::Bool = false)
   #global df
-   wf = WindowFunction.setup_window_function(sim_param)
+  wf = WindowFunction.setup_window_function(sim_param)
   df = ExoplanetsSysSim.StellarTable.df
   if ismatch(r".jld$",filename)
   try 

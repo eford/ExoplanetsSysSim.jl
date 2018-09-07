@@ -93,6 +93,7 @@ function get_window_function_id(kepid::Int64; use_default_for_unknown::Bool = tr
   idx = searchsortedfirst(win_func_data.allsortedkepids,kepid) # all Kepler kepids are in allsortedkepids
   wf_id = win_func_data.window_function_id_arr[idx]
 
+
   if wf_id == no_win_func_available && use_default_for_unknown
     # if a target is observed for less than 4 quarters, then it won't have a corresponding
     # window function in this list, so throw a warning and use the last window_function_id

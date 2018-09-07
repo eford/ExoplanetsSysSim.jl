@@ -9,6 +9,7 @@ using ExoplanetsSysSim
 
 export SimParam, add_param_fixed, add_param_active, update_param, set_active, set_inactive, is_active
 export get_any, get_real, get_int, get_bool, get_function
+
 export make_vector_of_active_param_keys, make_vector_of_sim_param, get_range_for_sim_param, update_sim_param_from_vector!
 export setup_sim_param_demo, test_sim_param_constructors
 #export preallocate_memory!
@@ -311,6 +312,8 @@ function test_sim_param_constructors()
   update_sim_param_from_vector!(sp_vec,sim_param)
   newval = get_real(sim_param,"log_eta_pl")
   isapprox(oldval+0.1,newval,atol=0.001)
+end
+
 end
 
 end

@@ -385,7 +385,7 @@ function calc_target_obs_single_obs(t::KeplerTarget, sim_param::SimParam)
 	   continue
 	end
         ntr = calc_expected_num_transits(t, s, p, sim_param)
-        # period = sys.orbit[p].P
+        period = sys.orbit[p].P
         # t0 = rand(Uniform(0.0,period))   # WARNING: Not being calculated from orbit
         depth = calc_transit_depth(t,s,p)
         cdpp = interpolate_cdpp_to_duration(t, duration)

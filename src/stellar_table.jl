@@ -32,7 +32,7 @@ function setup(sim_param::SimParam; force_reread::Bool = false)
 end
 
 function setup(filename::String; force_reread::Bool = false)
-  global df, usable
+  global df
   if occursin(r".jld2$",filename)
   #if ismatch(r".jld$",filename)
   try 
