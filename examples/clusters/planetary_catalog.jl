@@ -66,6 +66,11 @@ end
 in_stellar_catalog_indices = find(in_stellar_catalog)
 
 #=
+#If we want to write the stellar radii to a file:
+CSV.write("stellar_radii_q1_q17_dr25_gaia_fgk.txt", stellar_catalog[[:kepid, :radius]])
+=#
+
+#=
 #If we want to write the kep_oi's of the remaining koi catalog to a file:
 f = open("kepoi_names.txt", "w")
 println(f, table_confirmed[in_stellar_catalog_indices, :kepoi_name])
