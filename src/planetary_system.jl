@@ -3,10 +3,10 @@
 #include("orbit.jl")
 #include("planet.jl")
 
-if !isdefined(:PlanetarySystemAbstract)
+if !@isdefined PlanetarySystemAbstract
   @compat abstract type PlanetarySystemAbstract end
 
-  immutable PlanetarySystem{StarT<:StarAbstract} <: PlanetarySystemAbstract
+  struct PlanetarySystem{StarT<:StarAbstract} <: PlanetarySystemAbstract
     star::StarT                    
     planet::Vector{Planet}         # TODO OPT: If want to optimize, consider using  something like ImmmutableArrays?
     orbit::Vector{Orbit}           # TODO OPT: If want to optimize, consider using  something like ImmmutableArrays?
@@ -16,15 +16,14 @@ if !isdefined(:PlanetarySystemAbstract)
     #  new(s,p,o)
     #end
   end
-  #typealias PlanetarySystemSingleStar  PlanetarySystem{SingleStar}
   PlanetarySystemSingleStar = PlanetarySystem{SingleStar}
 
 end
-PlanetarySystem{StarT<:StarAbstract}(s::StarT) = PlanetarySystem(s,Array{Planet}(0),Array{Orbit}(0))  # Constructor for a Planetary System with no planets
+PlanetarySystem(s::StarT) where StarT<:StarAbstract = PlanetarySystem(s,Array{Planet}(undef,0),Array{Orbit}(undef,0))  # Constructor for a Planetary System with no planets
 
-PlanetarySystem{StarT<:StarAbstract}(s::StarT, p::Planet, o::Orbit) = PlanetarySystem(s,[p],[o])  # Constructor for a single Planet System
+PlanetarySystem(s::StarT, p::Planet, o::Orbit) where StarT<:StarAbstract = PlanetarySystem(s,[p],[o])  # Constructor for a single Planet System
 
-function PlanetarySystem{StarT}(ps::PlanetarySystem{StarT}, keep::Vector{Int64}) # Why doesn't this work?
+function PlanetarySystem(ps::PlanetarySystem{StarT}, keep::Vector{Int64})  where StarT<:StarAbstract # Why doesn't this work?
    PlanetarySystem{StarT}(ps.star,ps.planet[keep],ps.orbit[keep])
 end
 
@@ -44,9 +43,9 @@ function num_planets(s::PlanetarySystem{Star})
 end
 
 function generate_planet_mass_from_radius_powerlaw(r::Float64, sim_param::SimParam)
-  const mr_power_index::Float64 = get_real(sim_param,"mr_power_index")
-  const mr_const::Float64 = get_real(sim_param,"mr_const")
-  const mr_max_mass::Float64 = get_real(sim_param,"mr_max_mass")
+  mr_power_index::Float64 = get_real(sim_param,"mr_power_index")
+  mr_const::Float64 = get_real(sim_param,"mr_const")
+  mr_max_mass::Float64 = get_real(sim_param,"mr_max_mass")
   m = mr_const*earth_mass*(r/earth_radius)^mr_power_index
   if m > mr_max_mass
      m = mr_max_mass
@@ -62,7 +61,7 @@ function generate_num_planets_poisson(lambda::Real, max_planets::Integer; min_pl
   if lambda < min_planets*1e-3
       return min_planets
   end
-  bug_fixed = false # TODO: true case should work, but Danley found bug in Distributions package.  Revert once fixed for speed.
+  bug_fixed = false # TODO OPT: true case should work, but Danley found bug in Distributions package.  Revert once fixed for speed.
   local n
   if bug_fixed
      d = Distributions.Truncated(Distributions.Poisson(lambda),min_planets,max_planets)
@@ -84,31 +83,31 @@ function generate_num_planets_poisson(lambda::Real, max_planets::Integer; min_pl
 end
 
 function generate_num_planets_poisson(s::Star, sim_param::SimParam)
-  const lambda::Float64 = exp(get_real(sim_param,"log_eta_pl"))
-  const max_tranets_in_sys::Int64 = get_int(sim_param,"max_tranets_in_sys")
+  lambda::Float64 = exp(get_real(sim_param,"log_eta_pl"))
+  max_tranets_in_sys::Int64 = get_int(sim_param,"max_tranets_in_sys")
   generate_num_planets_poisson(lambda,max_tranets_in_sys)
 end
 
-function generate_period_and_sizes_log_normal(s::Star, sim_param::SimParam; num_pl::Integer = 1)  # TODO SCI:  IMPORTANT: Improve how periods and sizes are drawn
-    const mu_log_r::Float64 = get_real(sim_param,"mean_log_planet_radius")
-    const sigma_log_r::Float64 = get_real(sim_param,"sigma_log_planet_radius")
-    const mu_log_P::Float64 = get_real(sim_param,"mean_log_planet_period")
-    const sigma_log_P::Float64 = get_real(sim_param,"sigma_log_planet_period")
-    const min_period::Float64 = get_real(sim_param,"min_period")
-    const max_period::Float64 = get_real(sim_param,"max_period")
-    const min_radius::Float64 = get_real(sim_param,"min_radius")
-    const max_radius::Float64 = get_real(sim_param,"max_radius")
-    const max_draws::Int64 = 100
+function generate_period_and_sizes_log_normal(s::Star, sim_param::SimParam; num_pl::Integer = 1)  # TODO USER SCI:  User should make sure planetary properties are being drawn appropriately for their scientific purposes
+    mu_log_r::Float64 = get_real(sim_param,"mean_log_planet_radius")
+    sigma_log_r::Float64 = get_real(sim_param,"sigma_log_planet_radius")
+    mu_log_P::Float64 = get_real(sim_param,"mean_log_planet_period")
+    sigma_log_P::Float64 = get_real(sim_param,"sigma_log_planet_period")
+    min_period::Float64 = get_real(sim_param,"min_period")
+    max_period::Float64 = get_real(sim_param,"max_period")
+    min_radius::Float64 = get_real(sim_param,"min_radius")
+    max_radius::Float64 = get_real(sim_param,"max_radius")
+    max_draws::Int64 = 100
  
     if   sigma_log_r <= 0. || sigma_log_P<=0.
      println("# mu_log_r= ", mu_log_r, " sigma_log_r= ", sigma_log_r, " mu_log_P= ", mu_log_P, " sigma_log_P= ", sigma_log_P)
     end
-    const rdist = LogNormal(mu_log_r,sigma_log_r)
-    const Pdist = LogNormal(mu_log_P,sigma_log_P)
+    rdist = LogNormal(mu_log_r,sigma_log_r)
+    Pdist = LogNormal(mu_log_P,sigma_log_P)
     #Rlist = rand(rdist,num_pl)
     #Plist = rand(Pdist,num_pl)
     #idx_keep = find(i->(min_radius<=Rlist[i]<=max_radius) && (min_period<=Plist[i]<=max_period), 1:num_pl )
-    #return Plist[idx_keep], Rlist[idx_keep]  # replaced because want to return exactly num_pl
+    #return Plist[idx_keep], Rlist[idx_keep]  # replaced because want to return exactly num_pl.  Could use Truncated to restore above code.
     Rlist = zeros(num_pl)
     Plist = zeros(num_pl)
     for i in 1:num_pl
@@ -146,7 +145,7 @@ function draw_broken_power_law(n1::Real, n2::Real, x0::Real, x1::Real, xb::Real,
     x_draws = zeros(num_pl)
 
     if (n1 != -1) & (n2 != -1)
-        C1 = 1./(((xb^(n1+1) - x0^(n1+1))/(n1+1)) + ((xb^(n1-n2)*(x1^(n2+1) - xb^(n2+1)))/(n2+1))) #normalization constant
+        C1 = 1.0/(((xb^(n1+1) - x0^(n1+1))/(n1+1)) + ((xb^(n1-n2)*(x1^(n2+1) - xb^(n2+1)))/(n2+1))) #normalization constant
         ub = (C1*(xb^(n1+1) - x0^(n1+1)))/(n1+1) #break point in u, between 0 and 1
         for (i,u) in enumerate(u_draws)
             if u <= ub
@@ -156,7 +155,7 @@ function draw_broken_power_law(n1::Real, n2::Real, x0::Real, x1::Real, xb::Real,
             end
         end
     elseif (n1 == -1) & (n2 != -1)
-        C1 = 1./(log(xb/x0) + ((xb^(-1-n2))*(x1^(n2+1)) - 1)/(n2+1)) #normalization constant
+        C1 = 1.0/(log(xb/x0) + ((xb^(-1-n2))*(x1^(n2+1)) - 1)/(n2+1)) #normalization constant
         ub = C1*log(xb/x0) #break point in u, between 0 and 1
         for (i,u) in enumerate(u_draws)
             if u <= ub
@@ -166,7 +165,7 @@ function draw_broken_power_law(n1::Real, n2::Real, x0::Real, x1::Real, xb::Real,
             end
         end
     elseif (n1 != -1) & (n2 == -1)
-        C1 = 1./(((xb^(n1+1) - x0^(n1+1))/(n1+1)) + (xb^(n1+1))*log(x1/xb)) #normalization constant
+        C1 = 1.0/(((xb^(n1+1) - x0^(n1+1))/(n1+1)) + (xb^(n1+1))*log(x1/xb)) #normalization constant
         ub = (C1*(xb^(n1+1) - x0^(n1+1)))/(n1+1) #break point in u, between 0 and 1
         for (i,u) in enumerate(u_draws)
             if u <= ub
@@ -185,27 +184,27 @@ function draw_broken_power_law(n1::Real, n2::Real, x0::Real, x1::Real, xb::Real,
 end
 
 function generate_periods_power_law(s::Star, sim_param::SimParam; num_pl::Integer = 1) 
-    const power_law_P::Float64 = get_real(sim_param,"power_law_P")
-    const min_period::Float64 = get_real(sim_param,"min_period")
-    const max_period::Float64 = get_real(sim_param,"max_period")
+    power_law_P::Float64 = get_real(sim_param,"power_law_P")
+    min_period::Float64 = get_real(sim_param,"min_period")
+    max_period::Float64 = get_real(sim_param,"max_period")
     Plist = power_law_P!=-1.0 ? draw_power_law(power_law_P,min_period,max_period, num_pl) : exp(log(min_period).+rand()*log(max_period/min_period))
     return Plist
 end
 
 function generate_sizes_power_law(s::Star, sim_param::SimParam; num_pl::Integer = 1) 
-    const power_law_r::Float64 = get_real(sim_param,"power_law_r")
-    const min_radius::Float64 = get_real(sim_param,"min_radius")
-    const max_radius::Float64 = get_real(sim_param,"max_radius")
+    power_law_r::Float64 = get_real(sim_param,"power_law_r")
+    min_radius::Float64 = get_real(sim_param,"min_radius")
+    max_radius::Float64 = get_real(sim_param,"max_radius")
     Rlist = power_law_r!=-1.0 ? draw_power_law(power_law_r,min_radius,max_radius, num_pl) : exp(log(min_radius).+rand()*log(max_radius/min_radius))
     return Rlist
 end
 
 function generate_sizes_broken_power_law(s::Star, sim_param::SimParam; num_pl::Integer = 1)
-    const power_law_r1::Float64 = get_real(sim_param,"power_law_r1")
-    const power_law_r2::Float64 = get_real(sim_param,"power_law_r2")
-    const min_radius::Float64 = get_real(sim_param,"min_radius")
-    const max_radius::Float64 = get_real(sim_param,"max_radius")
-    const break_radius::Float64 = get_real(sim_param,"break_radius")
+    power_law_r1::Float64 = get_real(sim_param,"power_law_r1")
+    power_law_r2::Float64 = get_real(sim_param,"power_law_r2")
+    min_radius::Float64 = get_real(sim_param,"min_radius")
+    max_radius::Float64 = get_real(sim_param,"max_radius")
+    break_radius::Float64 = get_real(sim_param,"break_radius")
     Rlist = draw_broken_power_law(power_law_r1,power_law_r2,min_radius,max_radius,break_radius, num_pl)
     return Rlist
 end
@@ -215,51 +214,98 @@ function generate_period_and_sizes_power_law(s::Star, sim_param::SimParam; num_p
 end
 
 
-function generate_e_omega_rayleigh(sigma_hk::Float64)
-  h = k = 1.0
-  while h*h+k*k >= 1.0
-    h = sigma_hk*randn()
-    k = sigma_hk*randn()
-  end
-  ecc = sqrt(h*h+k*k)
-  w = atan2(k,h)
+function TruncatedUpper(d::Distributions.UnivariateDistribution, u::Float64)
+    zero(u) < u || error("lower bound should be less than upper bound.")
+    lcdf = zero(u)
+    ucdf = isinf(u) ? one(u) : cdf(d, u)
+    tp = ucdf - lcdf
+    Distributions.Truncated{typeof(d),Distributions.value_support(typeof(d))}(d, zero(u), u, lcdf, ucdf, tp, log(tp))
+end
+
+
+function generate_e_omega_rayleigh_direct(sigma_hk::Float64; max_e::Float64 = 1.0)
+  @assert(0<max_e<=1.0)
+  ecc::Float64 = rand( TruncatedUpper(Rayleigh(sigma_hk),max_e) )
+  w::Float64 = 2pi*rand()
   return ecc, w
 end
 
-function generate_e_omega_rayleigh(sim_param::SimParam)
+function generate_e_omega_rayleigh_two_gaussians(sigma_hk::Float64; max_e::Float64 = 1.0)
+  @assert(0<max_e<=1.0)
+  h = k = 1.0
+  while h*h+k*k >= max_e*max_e
+    h = sigma_hk*randn()
+    k = sigma_hk*randn()
+  end
+  ecc::Float64 = sqrt(h*h+k*k)
+  #w::Float64 = atan2(k,h)
+  w::Float64 = atan(k,h)
+  return ecc, w
+end
+
+function generate_e_omega_rayleigh(sigma_hk::Float64; max_e::Float64 = 1.0)
+   if max_e > sigma_hk
+      return generate_e_omega_rayleigh_two_gaussians(sigma_hk,max_e=max_e)
+   else
+      return generate_e_omega_rayleigh_direct(sigma_hk,max_e=max_e)
+   end
+end
+
+function generate_e_omega_rayleigh(sim_param::SimParam; max_e::Float64 = 1.0)
   sigma_hk::Float64 = get_real(sim_param,"sigma_hk")
-  generate_e_omega_rayleigh(sigma_hk)
+  generate_e_omega_rayleigh(sigma_hk, max_e=max_e)
 end
 
 function generate_planetary_system_hardcoded_example(star::StarAbstract, sim_param::SimParam; verbose::Bool = false)
   # in this version we specify fixed functions that are known at compile time, allowing for additional optimizations (~0.6 second faster per Kepler catalog out of ~3.6 sec on my laptop w/ 1 core)
-  const  generate_planet_mass_from_radius = generate_planet_mass_from_radius_powerlaw
-  const  generate_num_planets = generate_num_planets_poisson
-  const  generate_period_and_sizes = generate_period_and_sizes_log_normal
+  generate_planet_mass_from_radius = generate_planet_mass_from_radius_powerlaw
+  generate_num_planets = generate_num_planets_poisson
+  generate_period_and_sizes = generate_period_and_sizes_log_normal
 
-  const  generate_e_omega =  generate_e_omega_rayleigh
+  generate_e_omega =  generate_e_omega_rayleigh
 
-  # const  generate_star = get_function(sim_param,"generate_star")
-  # const star::StarAbstract = generate_star(sim_param)
-  const num_pl::Int64 = generate_num_planets(star, sim_param)
+  # generate_star = get_function(sim_param,"generate_star")
+  # star::StarAbstract = generate_star(sim_param)
+  num_pl::Int64 = generate_num_planets(star, sim_param)
 
   if( num_pl==0 )
     return PlanetarySystem(star)
   else
-     pl = Array{Planet}(num_pl)
-     orbit = Array{Orbit}(num_pl)
-     (Plist::Vector{Float64}, Rlist::Vector{Float64}) = generate_period_and_sizes(star, sim_param, num_pl=num_pl)
-     idx = sortperm(Plist)                   # TODO OPT: Check to see if sorting is significant time sink.  If so, it might could be deferred
+    (Plist::Vector{Float64}, Rlist::Vector{Float64}) = generate_period_and_sizes(star, sim_param, num_pl=num_pl)
+    idx = sortperm(Plist)                   # TODO OPT: Check to see if sorting is significant time sink.  If so, it might could be deferred
 
-    for i in 1:num_pl
+    min_a_in_rstar = 2.0
+    min_P_orbit = day_in_year*sqrt((min_a_in_rstar*star.radius*rsol_in_au)^3 / star.mass) # minimum semi-major axis of two stellar radii
+    idx = idx[Plist[idx] .> min_P_orbit]
+    if( length(idx)==0 )
+        return PlanetarySystem(star)
+    end
+
+    pl = Array{Planet}(length(idx))
+    orbit = Array{Orbit}(length(idx))
+    a = map(i->semimajor_axis(Plist[i],star.mass),idx)
+    max_e = ones(length(idx))
+    max_e_factor = 0.999 # A factor just less than 1 to prevent numerical issues with near-crossing orbits
+    if length(a)>=2
+       for i in 1:length(a)
+         if i==1
+           max_e[i] = max_e_factor*(1-a[i]/a[i+1])/(1+a[i]/a[i+1])
+         elseif i==length(a)
+           max_e[i] = max_e_factor*(1-a[i-1]/a[i])/(1+a[i-1]/a[i])
+         else
+           max_e[i] = max_e_factor*min( (1-a[i]/a[i+1])/(1+a[i]/a[i+1]), (1-a[i-1]/a[i])/(1+a[i-1]/a[i]) ) 
+         end
+       end
+    end
+    for i in 1:length(idx)
       # if verbose   println("i=",i," idx=",idx," Plist=",Plist[idx] );     end
       P = Plist[idx[i]]
-      (ecc::Float64,  omega::Float64) = generate_e_omega(sim_param)
+      Rpl = Rlist[idx[i]]
+      (ecc::Float64,  omega::Float64) = generate_e_omega(sim_param, max_e=max_e[i])
       incl::Float64 = acos(rand())
-      orbit[idx[i]] = Orbit(P,ecc,incl,omega,2pi*rand(),2pi*rand())
-      # set!(orbit[idx[i]],P,ecc,incl,omega,2pi*rand(),2pi*rand())
-      mass::Float64 = generate_planet_mass_from_radius(Rlist[idx[i]], star, orbit[idx[i]], sim_param)
-      pl[i] = Planet( Rlist[idx[i]],  mass )
+      orbit[i] = Orbit(P,ecc,incl,omega,2pi*rand(),2pi*rand())
+      mass::Float64 = generate_planet_mass_from_radius(Rpl, star, orbit[i], sim_param)
+      pl[i] = Planet( Rpl,  mass )
     end
   return PlanetarySystem(star,pl,orbit)
   end
@@ -267,36 +313,58 @@ end
 
 function generate_planetary_system_uncorrelated_incl(star::StarAbstract, sim_param::SimParam; verbose::Bool = false)
   # load functions to use for drawing parameters
-  const  generate_planet_mass_from_radius = get_function(sim_param,"generate_planet_mass_from_radius")
-  const  generate_num_planets = get_function(sim_param,"generate_num_planets")
-  const  generate_period_and_sizes = get_function(sim_param,"generate_period_and_sizes")
-  const  generate_e_omega = get_function(sim_param,"generate_e_omega")
+   generate_planet_mass_from_radius = get_function(sim_param,"generate_planet_mass_from_radius")
+   generate_num_planets = get_function(sim_param,"generate_num_planets")
+   generate_period_and_sizes = get_function(sim_param,"generate_period_and_sizes")
+   generate_e_omega = get_function(sim_param,"generate_e_omega")
 
-  # const  generate_star = get_function(sim_param,"generate_star")
-  # const star::StarAbstract = generate_star(sim_param)
-  const num_pl::Int64 = generate_num_planets(star, sim_param)::Int64
-  const sigma_ecc::Float64 = haskey(sim_param,"sigma_hk") ? get_real(sim_param,"sigma_hk") : 0.0
+  #  generate_star = get_function(sim_param,"generate_star")
+  # star::StarAbstract = generate_star(sim_param)
+  num_pl::Int64 = generate_num_planets(star, sim_param)::Int64
+  sigma_ecc::Float64 = haskey(sim_param,"sigma_hk") ? get_real(sim_param,"sigma_hk") : 0.0
 
   if( num_pl==0 )
     return PlanetarySystem(star)::PlanetarySystem
   else
-     pl = Array{Planet}(num_pl)
-     orbit = Array{Orbit}(num_pl)
      (Plist::Vector{Float64}, Rlist::Vector{Float64}) = generate_period_and_sizes(star, sim_param, num_pl=num_pl)
-     idx = sortperm(Plist)                   # TODO OPT: Check to see if sorting is significant time sink.  If so, it might could be deferred
+    idx = sortperm(Plist)                   # TODO OPT: Check to see if sorting is significant time sink.  If so, it might could be deferred
 
-    for i in 1:num_pl
+    min_a_in_rstar = 2.0
+    min_P_orbit = day_in_year*sqrt((min_a_in_rstar*star.radius*rsol_in_au)^3 / star.mass) # minimum semi-major axis of two stellar radii
+    idx = idx[Plist[idx] .> min_P_orbit]
+    if( length(idx)==0 )
+        return PlanetarySystem(star)
+    end
+
+    pl = Array{Planet}(undef,length(idx))
+    orbit = Array{Orbit}(undef,length(idx))
+    a = map(i->semimajor_axis(Plist[i],star.mass),idx)
+    max_e = ones(length(idx))
+    max_e_factor = 0.999 # A factor just less than 1 to prevent numerical issues with near-crossing orbits
+    if length(a)>=2
+       for i in 1:length(a)
+          if i==1 
+            max_e[i] = max_e_factor*(1-a[i]/a[i+1])/(1+a[i]/a[i+1])
+          elseif i==length(a)
+            max_e[i] = max_e_factor*(1-a[i-1]/a[i])/(1+a[i-1]/a[i])
+          else
+            max_e[i] = max_e_factor*min( (1-a[i]/a[i+1])/(1+a[i]/a[i+1]), (1-a[i-1]/a[i])/(1+a[i-1]/a[i]) ) 
+          end
+        end
+    end
+    for i in 1:length(idx)
       # if verbose   println("i=",i," idx=",idx," Plist=",Plist[idx] );     end
       P = Plist[idx[i]]
+      Rpl = Rlist[idx[i]]
       if haskey(sim_param,"sigma_hk_one") && haskey(sim_param,"sigma_hk_multi")
          sigma_ecc = num_pl == 1 ? get_real(sim_param,"sigma_hk_one") : get_real(sim_param,"sigma_hk_multi")
       end
-      (ecc::Float64,  omega::Float64) = generate_e_omega(sim_param)
+      (ecc::Float64,  omega::Float64) = generate_e_omega(sim_param, max_e=max_e[i])
       incl::Float64 = acos(rand())
-      orbit[idx[i]] = Orbit(P,ecc,incl,omega,2pi*rand(),2pi*rand())
+      orbit[i] = Orbit(P,ecc,incl,omega,2pi*rand(),2pi*rand())
       # set!(orbit[idx[i]],P,ecc,incl,omega,2pi*rand(),2pi*rand())
-      mass::Float64 = generate_planet_mass_from_radius(Rlist[idx[i]], star, orbit[idx[i]], sim_param)
-      pl[i] = Planet( Rlist[idx[i]],  mass )
+      mass::Float64 = generate_planet_mass_from_radius(Rpl, star, orbit[i], sim_param)
+      pl[i] = Planet( Rpl,  mass )
     end
   return PlanetarySystem(star,pl,orbit)
   end
@@ -305,31 +373,39 @@ end
 # This version generates more systems roughly near a common plane, but until incorporate CORBITS data, ABC can't match input param
 function generate_planetary_system_simple(star::StarAbstract, sim_param::SimParam; verbose::Bool = false)
   # load functions to use for drawing parameters
-  const  generate_planet_mass_from_radius = get_function(sim_param,"generate_planet_mass_from_radius")
-  const  generate_num_planets = get_function(sim_param,"generate_num_planets")
-  #const  generate_num_planets = generate_num_planets_christiansen
-  #const  generate_period_and_sizes = generate_period_and_sizes_christiansen
-  const  generate_period_and_sizes = get_function(sim_param,"generate_period_and_sizes")
-  const  generate_e_omega = get_function(sim_param,"generate_e_omega")
-  const  sigma_incl = deg2rad(get_real(sim_param,"sigma_incl"))
+    generate_planet_mass_from_radius = get_function(sim_param,"generate_planet_mass_from_radius")
+    generate_num_planets = get_function(sim_param,"generate_num_planets")
+  #  generate_num_planets = generate_num_planets_christiansen
+  #  generate_period_and_sizes = generate_period_and_sizes_christiansen
+    generate_period_and_sizes = get_function(sim_param,"generate_period_and_sizes")
+    generate_e_omega = get_function(sim_param,"generate_e_omega")
+    sigma_incl = deg2rad(get_real(sim_param,"sigma_incl"))
 
-  # const  generate_star = get_function(sim_param,"generate_star")
-  # const star::StarAbstract = generate_star(sim_param)
-  const num_pl = generate_num_planets(star, sim_param)::Int64
-  const sigma_ecc::Float64 = haskey(sim_param,"sigma_hk") ? get_real(sim_param,"sigma_hk") : 0.0
+  #   generate_star = get_function(sim_param,"generate_star")
+  #  star::StarAbstract = generate_star(sim_param)
+   num_pl = generate_num_planets(star, sim_param)::Int64
+   sigma_ecc::Float64 = haskey(sim_param,"sigma_hk") ? get_real(sim_param,"sigma_hk") : 0.0
 
   if( num_pl==0 )
     return PlanetarySystem(star)
   else
-     pl = Array{Planet}(num_pl)
-     orbit = Array{Orbit}(num_pl)
-     (Plist::Vector{Float64}, Rlist::Vector{Float64}) = generate_period_and_sizes(star, sim_param, num_pl=num_pl)
-     idx = sortperm(Plist)                   # TODO OPT: Check to see if sorting is significant time sink.  If so, it might could be deferred
-     incl_sys = acos(rand())
+    (Plist::Vector{Float64}, Rlist::Vector{Float64}) = generate_period_and_sizes(star, sim_param, num_pl=num_pl)
+    idx = sortperm(Plist)                   # TODO OPT: Check to see if sorting is significant time sink.  If so, it might could be deferred
+    incl_sys = acos(rand())
 
-    for i in 1:num_pl
+    min_a_in_rstar = 2.0
+    min_P_orbit = day_in_year*sqrt((min_a_in_rstar*star.radius*rsol_in_au)^3 / star.mass) # minimum semi-major axis of two stellar radii
+    idx = idx[Plist[idx] .> min_P_orbit]
+    if( length(idx)==0 )
+        return PlanetarySystem(star)
+    end
+
+    pl = Array{Planet}(undef,length(idx))
+    orbit = Array{Orbit}(undef,length(idx))
+    for i in 1:length(idx)
       # if verbose   println("i=",i," idx=",idx," Plist=",Plist[idx] );     end
       P = Plist[idx[i]]
+      Rpl = Rlist[idx[i]]
       if haskey(sim_param,"sigma_hk_one") && haskey(sim_param,"sigma_hk_multi")
          sigma_ecc = num_pl == 1 ? get_real(sim_param,"sigma_hk_one") : get_real(sim_param,"sigma_hk_multi")
       end
@@ -339,10 +415,9 @@ function generate_planetary_system_simple(star::StarAbstract, sim_param::SimPara
       mean_anom = 2pi*rand()
       #incl = incl_sys + sigma_incl*randn()
       incl =  incl_mut!=zero(incl_mut) ? acos( cos(incl_sys)*cos(incl_mut) + sin(incl_sys)*sin(incl_mut)*cos(asc_node) ) : incl_sys
-      orbit[idx[i]] = Orbit(P,ecc,incl,omega,asc_node,mean_anom)
-      # set!(orbit[idx[i]], P,ecc,incl,omega,asc_node,mean_anom) # if Orbit were mutable
-      mass = generate_planet_mass_from_radius(Rlist[idx[i]], star, orbit[idx[i]], sim_param)::Float64
-      pl[i] = Planet( Rlist[idx[i]],  mass )
+      orbit[i] = Orbit(P,ecc,incl,omega,asc_node,mean_anom)
+      mass = generate_planet_mass_from_radius(Rpl, star, orbit[i], sim_param)::Float64
+      pl[i] = Planet( Rpl,  mass )
     end
   return PlanetarySystem(star,pl,orbit)
   end

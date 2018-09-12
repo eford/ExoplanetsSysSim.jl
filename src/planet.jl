@@ -3,7 +3,7 @@
 
 # export Planet
 
-immutable Planet        
+struct Planet        
   radius::Float64       # solar radii
   mass::Float64         # solar masses
 end

@@ -6,7 +6,9 @@ module EvalSysSimModel
   export setup, get_param_vector, get_ss_obs #, evaluate_model
   export gen_data, calc_summary_stats, calc_distance, is_valid
   using ExoplanetsSysSim
-  include(joinpath(Pkg.dir(),"ExoplanetsSysSim","examples","hsu_etal_2018", "christiansen_func.jl"))
+  using KahanSummation
+  #include(joinpath(Pkg.dir(),"ExoplanetsSysSim","examples","hsu_etal_2018", "christiansen_func.jl"))
+  include(joinpath(dirname(pathof(ExoplanetsSysSim)),"..","examples","hsu_etal_2018", "christiansen_func.jl"))
 
   sim_param_closure = SimParam()
   summary_stat_ref_closure =  CatalogSummaryStatistics()
@@ -14,8 +16,9 @@ module EvalSysSimModel
     function is_valid(param_vector::Vector{Float64})
       global sim_param_closure
       update_sim_param_from_vector!(param_vector,sim_param_closure)
-      const rate_tab::Array{Float64,2} = get_any(sim_param_closure, "obs_par", Array{Float64,2})
-      const lambda = sum_kbn(rate_tab)
+      rate_tab::Array{Float64,2} = get_any(sim_param_closure, "obs_par", Array{Float64,2})
+      #lambda = sum_kbn(rate_tab)  # TODO: Restore KBN sums
+      lambda = sum(rate_tab)
       if lambda > 10. || any(x -> x < 0., rate_tab)
          return false
       end
@@ -55,6 +58,9 @@ module EvalSysSimModel
     #cat_obs = simulated_read_kepler_observations(sim_param_closure)
     ###
     
+    println("# Reading in window function data")
+    WindowFunction.setup(sim_param_closure)
+    println("# Finished reading in window function data")
     ### Use real planet candidate catalog data
     df_star = setup_star_table_christiansen(sim_param_closure)
     println("# Finished reading in stellar data")
@@ -76,21 +82,38 @@ module EvalSysSimModel
 
 end  # module EvalSysSimModel
 
-include(joinpath(Pkg.dir("ABC"),"src/composite.jl"))
+#include(joinpath(Pkg.dir("ABC"),"src/composite.jl"))
+if VERSION < v"0.7"
+   using ABC
+else
+   using ApproximateBayesianComputing
+   ABC = ApproximateBayesianComputing
+end
+
+include(joinpath(dirname(pathof(ABC)),"..","src/composite.jl"))
+#using CompositeDistributions
 
 module SysSimABC
   export setup_abc, run_abc
-  import ABC
-  import Distributions
-  using CompositeDistributions
+  
   import ExoplanetsSysSim
-  import EvalSysSimModel
-  include(joinpath(Pkg.dir(),"ExoplanetsSysSim","examples","hsu_etal_2018", "christiansen_func.jl"))
+  import Distributions
+  if VERSION < v"0.7"
+     import ABC
+  else
+     import ApproximateBayesianComputing
+     ABC = ApproximateBayesianComputing
+     import ApproximateBayesianComputing.CompositeDistributions
+     import ..EvalSysSimModel
+     using Distributed
+  end
+  #include(joinpath(Pkg.dir(),"ExoplanetsSysSim","examples","hsu_etal_2018", "christiansen_func.jl"))
+  include(joinpath(dirname(pathof(ExoplanetsSysSim)),"..","examples","hsu_etal_2018", "christiansen_func.jl"))
 
   function setup_abc(num_dist::Integer = 0)
     EvalSysSimModel.setup()
     theta_true = EvalSysSimModel.get_param_vector()
-    param_prior = CompositeDist( Distributions.ContinuousDistribution[Distributions.Uniform(0., 5.) for x in 1:length(theta_true)] )
+    param_prior = CompositeDistributions.CompositeDist( Distributions.ContinuousDistribution[Distributions.Uniform(0., 5.) for x in 1:length(theta_true)] )
     in_parallel = nworkers() > 1 ? true : false
 
     calc_distance_ltd(sum_stat_obs::ExoplanetsSysSim.CatalogSummaryStatistics,sum_stat_sim::ExoplanetsSysSim.CatalogSummaryStatistics) = EvalSysSimModel.calc_distance(sum_stat_obs,sum_stat_sim,num_dist)

@@ -22,7 +22,7 @@ combine_scalar_distances(d1::Float64, d2::Float64) = combine_scalar_distances_su
 
 # compute supremum of differences between empirical cdfs.
 # Borrowed from JuliaStats/HypothesisTests.jl
-function ksstats{T<:Real, S<:Real}(x::AbstractVector{T}, y::AbstractVector{S})
+function ksstats(x::AbstractVector{T}, y::AbstractVector{S}) where {T<:Real, S<:Real}
     n_x, n_y = length(x), length(y)
     sort_idx = sortperm([x; y])
     pdf_diffs = [ones(n_x)/n_x; -ones(n_y)/n_y][sort_idx]
@@ -33,7 +33,7 @@ function ksstats{T<:Real, S<:Real}(x::AbstractVector{T}, y::AbstractVector{S})
     (n_x, n_y, deltap, deltan, delta)
 end
 # weighted version   # WARNING:  Function is untested
-function ksstats{T<:Real, S<:Real}(x::AbstractVector{T}, y::AbstractVector{S}, wx::AbstractVector{T}, wy::AbstractVector{T})
+function ksstats(x::AbstractVector{T}, y::AbstractVector{S}, wx::AbstractVector{T}, wy::AbstractVector{T}) where {T<:Real, S<:Real}
     n_x, n_y = length(x), length(y)
     wx .*= 1.0/sum(wx)
     wy .*= 1.0/sum(wy)
@@ -46,8 +46,8 @@ function ksstats{T<:Real, S<:Real}(x::AbstractVector{T}, y::AbstractVector{S}, w
     (n_x, n_y, deltap, deltan, delta)  # should the first two values returned here be sum(wx) and sum(wy) before normalizing?  For now, we ignore all but the final delta anyway.
 end
 
-dist_KS{T<:Real, S<:Real}(x::AbstractVector{T}, y::AbstractVector{S}) = ksstats(x,y)[5]
-dist_KS{T<:Real, S<:Real}(x::AbstractVector{T}, y::AbstractVector{S}, wx::AbstractVector{T}, wy::AbstractVector{T}) = ksstats(x,y,wx,wy)[5]
+dist_KS(x::AbstractVector{T}, y::AbstractVector{S}) where {T<:Real, S<:Real}  = ksstats(x,y)[5]
+dist_KS(x::AbstractVector{T}, y::AbstractVector{S}, wx::AbstractVector{T}, wy::AbstractVector{T}) where {T<:Real, S<:Real} = ksstats(x,y,wx,wy)[5]
 
 # lambda:  rate for Poisson process, i.e., expected value for number of events
 # k:  number of events observed
@@ -88,7 +88,34 @@ function distance_poisson_draw(lambda::Real, k::Integer)
   abs( simulated_number_of_detections -k)
 end
 
-# TODO SCI: IMPORTANT:  Replace this distance function with something well thought out
+
+function distance_sum_of_bernoulli_draws(num_pl_obs::Integer, num_targets_obs::Integer, prob_detect_list::Vector{TReal}, num_targets_sim::Integer, bin_match_list::Vector{TInt}) where {TReal<:Real, TInt<:Integer}
+   @assert(0<=num_pl_obs<=num_targets_obs)
+   num_pl_match = length(bin_match_list)
+   @assert(0<=length(bin_match_list)) 
+
+   num_detect_sim = 0
+   if num_pl_match >= 1 
+      num_draws_all = min(max(1,floor(Int64, num_targets_obs/num_targets_sim)),100)
+      @assert(1<=num_draws_all<=100)
+      for i in 1:num_pl_match
+         pl_id = bin_match_list[i]
+         @assert(1<=pl_id<=length(prob_detect_list))
+         prob_detect = min(prob_detect_list[pl_id],1.0)
+         num_detect_sim += sum(rand(Bernoulli(prob_detect),num_draws_all))
+      end
+      # If number of targets observed is not a multiple of number of targets simulated, then pick a random set to make total number of draws equal (as long as there are some planets to choose from)
+      for i in (num_pl_match*num_draws_all+1):(floor(Int64,num_pl_match*num_targets_obs/num_targets_sim))
+          pl_id = bin_match_list[rand(1:num_pl_match)]
+          prob_detect = min(prob_detect_list[pl_id],1.0)
+          num_detect_sim += rand(Bernoulli(prob_detect))
+      end
+   end
+   distance = dist_L2_abs(num_pl_obs/num_targets_obs, num_detect_sim/num_targets_obs)
+end
+
+
+# TODO USER SCI: IMPORTANT:  Replace the distance function with something well thought out for your particular scientific application.  See examples
 function calc_distance_vector_demo(summary1::CatalogSummaryStatistics, summary2::CatalogSummaryStatistics, pass::Int64, sim_param::SimParam ; verbose::Bool = false)
   d = Array{Float64}(0)
   if pass == 1

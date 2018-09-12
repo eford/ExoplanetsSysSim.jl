@@ -4,15 +4,15 @@
 
 include(joinpath(pwd(), "abc_setup.jl"))
 
-using SysSimABC
+#using SysSimABC
 using ExoplanetsSysSim
-using JLD
+using JLD2
 using StatsBase
 
 out2txt = false # Write occurrence rates & densities to text files
 
-abc_plan = setup_abc()
-@time output = run_abc(abc_plan)
+abc_plan = SysSimABC.setup_abc()
+@time output = SysSimABC.run_abc(abc_plan)
 println("")
 
 if out2txt

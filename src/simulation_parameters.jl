@@ -1,20 +1,33 @@
 ## ExoplanetsSysSim.jl
 ## (c) 2015 Eric B. Ford
 
-const global version_id_str = "0.2.2"
+module SimulationParameters
+
+import Compat: @compat, readstring
+import Pkg, LibGit2
+using ExoplanetsSysSim
+
+export SimParam, add_param_fixed, add_param_active, update_param, set_active, set_inactive, is_active
+export get_any, get_real, get_int, get_bool, get_function
+
+export make_vector_of_active_param_keys, make_vector_of_sim_param, get_range_for_sim_param, update_sim_param_from_vector!
+export setup_sim_param_demo, test_sim_param_constructors
+#export preallocate_memory!
+
+const global version_id_str = "0.3.1"
 const global version_id_pair = ("version",version_id_str)
 const global julia_version_pair = ("version_julia",string(VERSION))
 
-type SimParam
+mutable struct SimParam
   param::Dict{String,Any}
   active::Dict{String,Bool}
 end
 copy(p::SimParam) = SimParam(copy(p.param),copy(p.active))
 
-@doc """
-### SimParam(p::Dict{String,Any})
+"""
+    SimParam(p::Dict{String,Any})
 Creates a SimParam object from the dictionary p, with all parameter defaulting to inactive.
-""" ->
+"""
 function SimParam(p::Dict{String,Any})   # By default all parameters are set as inactive (i.e., not allowed to be optimized)
   a = Dict{String,Bool}()
   for k in keys(p)
@@ -23,71 +36,82 @@ function SimParam(p::Dict{String,Any})   # By default all parameters are set as 
   return SimParam(p,a)
 end
 
-@doc """
-### SimParam()
+"""
+    SimParam()
 Creates a nearly empty SimParam object, with just the version id and potentially other information about the code, system, runtime, etc.
-""" ->
-SimParam() = SimParam( Dict{String,Any}([version_id_pair,julia_version_pair,("hostname",gethostname()), ("date",chomp(@compat readstring(`date`))),("time",time())]) )
+"""
+function SimParam() 
+  d = Dict{String,Any}([version_id_pair,julia_version_pair,("hostname",gethostname()), ("time",time())])
+  try 
+    d["ExoplanetsSysSim version"] = Pkg.installed()["ExoplanetsSysSim"]
+    #d["ExoplanetsSysSim directory"] = dirname(pathof(ExoplanetsSysSim))
+    #d["ExoplanetsSysSim branch"] = LibGit2.headname(LibGit2.GitRepo(dirname(pathof(ExoplanetsSysSim))))
+    #d["ExoplanetsSysSim head_oid"] = LibGit2.head_oid(LibGit2.GitRepo(dirname(pathof(ExoplanetsSysSim))))
+  catch
+    warn("# Couldn't add full information about version of SysSim to SimParam.")
+  end
+  SimParam(d)
+end
 
-@doc """
-### add_param_fixed(sim::SimParam, key::String,val::Any)
+"""
+    add_param_fixed(sim::SimParam, key::String,val::Any)
 Adds (or overwrites) key with value val to the SimParam object, sim, and sets the parameter set to inactive.
-""" ->
+"""
 function add_param_fixed(sim::SimParam, key::String,val::Any)
   sim.param[key] = val
   sim.active[key] = false
 end
 
-@doc """
+"""
 ### add_param_active(sim::SimParam, key::String,val::Any)
 Adds (or overwrites) key with value val to the SimParam object, sim, and sets the parameter set to active.
-""" ->
+"""
 function add_param_active(sim::SimParam, key::String,val::Any)
   sim.param[key] = val
   sim.active[key] = true
 end
 
-@doc """
+"""
 ### update_param(sim::SimParam, key::String,val::Any)
 Overwrites key with value val to the SimParam object, sim
-""" ->
+"""
 function update_param(sim::SimParam, key::String,val::Any)
   @assert haskey(sim.param,key)
   sim.param[key] = val
 end
 
-@doc """
+"""
 ### set_active(sim::SimParam, key::String)
 Sets the key parameter to be active in sim.
-""" ->
+"""
 function set_active(sim::SimParam,key::String)
   @assert haskey(sim.param,key)
   sim.active[key] = true
 end
 
-@doc """
+"""
 ### set_active(sim::SimParam, keys::Vector{String})
 Sets each of the key parameters to be active in sim.
-""" ->
+"""
 function set_active(sim::SimParam,keys::Vector{String})
   for k in keys
     set_active(sim,k)
   end
 end
 
-@doc """
+"""
 ### set_inactive(sim::SimParam, key::String)
 Sets the key parameter to be inactive in sim.
-""" ->
+""" 
 function set_inactive(sim::SimParam,key::String)
   @assert haskey(sim.param,key)
   sim.active[key] = false
 end
 
-@doc """
+"""
 ### set_inactive(sim::SimParam, keys::Vector{String})
 Sets each of the key parameters to be inactive in sim.
-""" ->
+""" 
 function set_inactive(sim::SimParam,keys::Vector{String})
   for k in keys
     set_inactive(sim,k)
@@ -100,7 +124,7 @@ function is_active(sim::SimParam,key::String)
 end
 
 import Base.get
-function get{T}(sim::SimParam, key::String, default_val::T) 
+function get(sim::SimParam, key::String, default_val::T) where T
   val::T = get(sim.param,key,default_val)::T
   return val
 end
@@ -123,8 +147,14 @@ function get_int(sim::SimParam, key::String)
   return val
 end
 
+function get_bool(sim::SimParam, key::String)
+  val::bool = get(sim.param,key,false)
+  return val
+end
+
 function noop() 
 end
+
 
 function get_function(sim::SimParam, key::String)
   val::Function = Base.get(sim.param,key,noop)::Function
@@ -210,12 +240,6 @@ function update_sim_param_from_vector!(param::Vector{Float64}, sim::SimParam)
         # println("# Replacing >",sim.param[sorted_keys[k]],"< with >",reshape(param[i:i+param_len-1], size(sim.param[sorted_keys[k]])),"<")
         sim.param[sorted_keys[k]] = reshape(param[i:i+param_len-1], size(sim.param[sorted_keys[k]]))
         i = i+param_len
-#=
-      elseif eltype( sorted_keys[i]) <: Real  # TODO:  Figure out when this should be true and add documentation (or fix if bug)
-        # println("# Replacing >",sorted_keys[k],"< with >",param[i:i+param_len-1],"<")
-        sim.param[sorted_keys[k]] = param[i:i+param_len-1]
-        i = i+param_len
-=#
       end
     else
       println("# Don't know what to do with empty simulation parameter: ",sorted_keys[k])
@@ -229,43 +253,43 @@ function preallocate_memory!(sim_param::SimParam)
   add_param_fixed(sim_param,"mem_kepler_target_obs", Array{KeplerTargetObs}(num_kepler_targets) )
 end
 
-function setup_sim_param_demo(args::Vector{String} = Array{String}(0) )   # allow this to take a list of parameter (e.g., from command line)
+function setup_sim_param_demo(args::Vector{String} = Array{String}(undef,0) )   # allow this to take a list of parameter (e.g., from command line)
   sim_param = SimParam()
   add_param_fixed(sim_param,"max_tranets_in_sys",7)
   add_param_fixed(sim_param,"num_targets_sim_pass_one",190000)                      # Note this is used for the number of stars in the simulations, not necessarily related to number of Kepler targets
   add_param_fixed(sim_param,"num_kepler_targets",190000)                           # Note this is used for the number of Kepler targets for the observational catalog
-  add_param_fixed(sim_param,"generate_star",generate_star_dumb)
-  #add_param_fixed(sim_param,"generate_planetary_system", generate_planetary_system_simple)
-  add_param_fixed(sim_param,"generate_planetary_system", generate_planetary_system_uncorrelated_incl)
+  add_param_fixed(sim_param,"generate_star",ExoplanetsSysSim.generate_star_dumb)
+  #add_param_fixed(sim_param,"generate_planetary_system", ExoplanetsSysSim.generate_planetary_system_simple)
+  add_param_fixed(sim_param,"generate_planetary_system", ExoplanetsSysSim.generate_planetary_system_uncorrelated_incl)
 
-  # add_param_fixed(sim_param,"generate_kepler_target",generate_kepler_target_simple)
-  add_param_fixed(sim_param,"generate_kepler_target",generate_kepler_target_from_table)
+  # add_param_fixed(sim_param,"generate_kepler_target",ExoplanetsSysSim.generate_kepler_target_simple)
+  add_param_fixed(sim_param,"generate_kepler_target",ExoplanetsSysSim.generate_kepler_target_from_table)
   add_param_fixed(sim_param,"star_table_setup",StellarTable.setup_star_table)
-  add_param_fixed(sim_param,"stellar_catalog","q1_q17_dr24_stellar.jld")
-  add_param_fixed(sim_param,"generate_num_planets",generate_num_planets_poisson)
+  add_param_fixed(sim_param,"stellar_catalog","q1q17_dr25_gaia_fgk.jld2")
+  add_param_fixed(sim_param,"generate_num_planets",ExoplanetsSysSim.generate_num_planets_poisson)
   add_param_active(sim_param,"log_eta_pl",log(2.0))
-  add_param_fixed(sim_param,"generate_planet_mass_from_radius",generate_planet_mass_from_radius_powerlaw)
+  add_param_fixed(sim_param,"generate_planet_mass_from_radius",ExoplanetsSysSim.generate_planet_mass_from_radius_powerlaw)
   add_param_fixed(sim_param,"mr_power_index",2.0)
   add_param_fixed(sim_param,"mr_const",1.0)
-  #add_param_fixed(sim_param,"generate_period_and_sizes",generate_period_and_sizes_log_normal)
+  #add_param_fixed(sim_param,"generate_period_and_sizes",ExoplanetsSysSim.generate_period_and_sizes_log_normal)
   #add_param_active(sim_param,"mean_log_planet_radius",log(2.0*earth_radius))
   #add_param_active(sim_param,"sigma_log_planet_radius",log(2.0))
   #add_param_active(sim_param,"mean_log_planet_period",log(5.0))
   #add_param_active(sim_param,"sigma_log_planet_period",log(2.0))
-  add_param_fixed(sim_param,"generate_period_and_sizes", generate_period_and_sizes_power_law)
+  add_param_fixed(sim_param,"generate_period_and_sizes", ExoplanetsSysSim.generate_period_and_sizes_power_law)
   add_param_active(sim_param,"power_law_P",0.3)
   add_param_active(sim_param,"power_law_r",-2.44)
   add_param_fixed(sim_param,"min_period",1.0)
   add_param_fixed(sim_param,"max_period",100.0)
-  add_param_fixed(sim_param,"min_radius",0.5*earth_radius)
-  add_param_fixed(sim_param,"max_radius",10.0*earth_radius)
-  add_param_fixed(sim_param,"generate_e_omega",generate_e_omega_rayleigh)
+  add_param_fixed(sim_param,"min_radius",0.5*ExoplanetsSysSim.earth_radius)
+  add_param_fixed(sim_param,"max_radius",10.0*ExoplanetsSysSim.earth_radius)
+  add_param_fixed(sim_param,"generate_e_omega",ExoplanetsSysSim.generate_e_omega_rayleigh)
   add_param_fixed(sim_param,"sigma_hk",0.03)
   add_param_fixed(sim_param,"sigma_incl",2.0)   # degrees 
-  add_param_fixed(sim_param,"calc_target_obs_sky_ave",calc_target_obs_sky_ave)
-  add_param_fixed(sim_param,"calc_target_obs_single_obs",calc_target_obs_single_obs)
-  add_param_fixed(sim_param,"read_target_obs",simulated_read_kepler_observations)
-  add_param_fixed(sim_param,"transit_noise_model",transit_noise_model_fixed_noise)
+  add_param_fixed(sim_param,"calc_target_obs_sky_ave",ExoplanetsSysSim.calc_target_obs_sky_ave)
+  add_param_fixed(sim_param,"calc_target_obs_single_obs",ExoplanetsSysSim.calc_target_obs_single_obs)
+  add_param_fixed(sim_param,"read_target_obs",ExoplanetsSysSim.simulated_read_kepler_observations)
+  add_param_fixed(sim_param,"transit_noise_model",ExoplanetsSysSim.transit_noise_model_fixed_noise)
   # add_param_fixed(sim_param,"transit_noise_model",transit_noise_model_diagonal)
   # add_param_fixed(sim_param,"rng_seed",1234)   # If you want to be able to reproduce simulations
    
@@ -287,7 +311,9 @@ function test_sim_param_constructors()
   sp_vec .+= 0.1
   update_sim_param_from_vector!(sp_vec,sim_param)
   newval = get_real(sim_param,"log_eta_pl")
-  isapprox(oldval,newval,atol=0.001)
+  isapprox(oldval+0.1,newval,atol=0.001)
+end
+
 end
 
 #test_sim_param_constructors()
