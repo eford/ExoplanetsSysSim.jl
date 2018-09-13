@@ -1,10 +1,17 @@
+#Pkg.add("ParallelDataTransfer")
+
+addprocs(3) #number of additional processors
+
+@everywhere using ParallelDataTransfer
+@everywhere using ExoplanetsSysSim
+
 import DataArrays.skipmissing
 
-include("clusters.jl")
-include("planetary_catalog.jl")
-include("optimization.jl")
+@everywhere include("clusters.jl")
+@everywhere include("planetary_catalog.jl")
+@everywhere include("optimization.jl")
 
-sim_param = setup_sim_param_model()
+@everywhere sim_param = setup_sim_param_model()
 
 
 
@@ -12,7 +19,7 @@ sim_param = setup_sim_param_model()
 
 ##### To start saving the model iterations in the optimization into a file:
 
-add_param_fixed(sim_param,"num_targets_sim_pass_one",78005)
+@everywhere add_param_fixed(sim_param,"num_targets_sim_pass_one",78005)
 
 model_name = "Clustered_P_R_broken_R_optimization"
 optimization_number = "_random"*ARGS[1] #if want to run on the cluster with random initial active parameters: "_random"*ARGS[1]
@@ -23,8 +30,11 @@ max_evals = 3000
 num_evals_weights = 20
 Pop_per_param = 4
 
-file_name = model_name*optimization_number*"_targs"*string(get_int(sim_param,"num_targets_sim_pass_one"))*"_evals"*string(max_evals)*".txt"
-f = open(file_name, "w")
+file_name = model_name*optimization_number*"_targs"*string(get_int(sim_param,"num_targets_sim_pass_one"))*"_evals"*string(max_evals)
+
+sendto(workers(), max_evals=max_evals, file_name=file_name)
+
+@everywhere f = open(file_name*"_worker"*string(myid())*".txt", "w")
 println(f, "# All initial parameters:")
 write_model_params(f, sim_param)
 
@@ -42,11 +52,12 @@ cat_phys_cut = ExoplanetsSysSim.generate_obs_targets(cat_phys,sim_param)
 cat_obs = observe_kepler_targets_single_obs(cat_phys_cut,sim_param)
 summary_stat_ref = calc_summary_stats_model(cat_obs,sim_param)
 
+@passobj 1 workers() summary_stat_ref #to send the 'summary_stat_ref' object to all workers
+
 #To simulate more observed planets for the subsequent model generations:
-add_param_fixed(sim_param,"max_incl_sys",80.0) #degrees; 0 (deg) for isotropic system inclinations; set closer to 90 (deg) for more transiting systems
+@everywhere add_param_fixed(sim_param,"max_incl_sys",80.0) #degrees; 0 (deg) for isotropic system inclinations; set closer to 90 (deg) for more transiting systems
 
 active_param_true, weights, target_fitness, target_fitness_std = compute_weights_target_fitness_std_perfect_model(num_evals_weights, use_KS_or_AD ; AD_mod=AD_mod, weight=true, save_dist=true)
-
 
 
 
@@ -75,7 +86,7 @@ println("# Active parameters: ", make_vector_of_active_param_keys(sim_param))
 println(f, "# Active parameters: ", make_vector_of_active_param_keys(sim_param))
 println(f, "# Starting active parameter values: ", active_param_start)
 println(f, "# Optimization active parameters search bounds: ", active_params_box)
-println(f, "# Method: adaptive_de_rand_1_bin_radiuslimited")
+println(f, "# Method: dxnes")
 println(f, "# PopulationSize: ", PopSize)
 println(f, "# Format: Active_params: [active parameter values]")
 println(f, "# Format: Dist: [distances][total distance]")
@@ -96,12 +107,12 @@ target_function(active_param_start, use_KS_or_AD, Kep_or_Sim ; AD_mod=AD_mod, we
 using BlackBoxOptim              # see https://github.com/robertfeldt/BlackBoxOptim.jl for documentation
 
 tic()
-opt_result = bboptimize(active_params -> target_function(active_params, use_KS_or_AD, Kep_or_Sim ; AD_mod=AD_mod, weights=weights, all_dist=false, save_dist=true); SearchRange = active_params_box, NumDimensions = length(active_param_true), Method = :adaptive_de_rand_1_bin_radiuslimited, PopulationSize = PopSize, MaxFuncEvals = max_evals, TargetFitness = target_fitness, FitnessTolerance = target_fitness_std, TraceMode = :verbose)
+opt_result = bboptimize(active_params -> target_function(active_params, use_KS_or_AD, Kep_or_Sim ; AD_mod=AD_mod, weights=weights, all_dist=false, save_dist=true); SearchRange = active_params_box, NumDimensions = length(active_param_true), Method = :dxnes, PopulationSize = PopSize, MaxFuncEvals = max_evals, TargetFitness = target_fitness, FitnessTolerance = target_fitness_std, TraceMode = :verbose, Workers = workers())
 t_elapsed = toc()
 
 println(f, "# best_candidate: ", best_candidate(opt_result))
 println(f, "# best_fitness: ", best_fitness(opt_result))
 println(f, "# elapsed time: ", t_elapsed, " seconds")
-close(f)
+@everywhere close(f)
 
 
