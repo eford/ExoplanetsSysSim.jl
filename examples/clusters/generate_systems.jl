@@ -14,6 +14,35 @@ toc()
 
 ##### For saving the underlying/true planets/systems:
 
+f = open("physical_catalog_planets.txt", "w")
+write_model_params(f, sim_param)
+println(f, "target_id star_id planet_mass planet_radius period ecc")
+for (i,targ) in enumerate(cat_phys.target)
+    if length(targ.sys) > 1 #this should never happen
+        println("There is more than one system for a given target? Check index: ", i)
+    end
+    if length(targ.sys[1].planet) > 0
+        for (j,planet) in enumerate(targ.sys[1].planet)
+            println(f, join([i, targ.sys[1].star.id, planet.mass, planet.radius, targ.sys[1].orbit[j].P, targ.sys[1].orbit[j].ecc], " "))
+        end
+    end
+end
+close(f)
+
+
+f = open("physical_catalog_stars.txt", "w")
+write_model_params(f, sim_param)
+println(f, "target_id star_id star_mass star_radius num_planets")
+for (i,targ) in enumerate(cat_phys.target)
+    if length(targ.sys) > 1 #this should never happen
+        println("There is more than one system for a given target? Check index: ", i)
+    end
+    println(f, join([i, targ.sys[1].star.id, targ.sys[1].star.mass, targ.sys[1].star.radius, length(targ.sys[1].planet)], " "))
+end
+close(f)
+
+
+
 f = open("periods_all.out", "w")
 write_model_params(f, sim_param)
 for (i,targ) in enumerate(cat_phys.target)
@@ -100,6 +129,33 @@ summary_stat = calc_summary_stats_model(cat_obs,sim_param)
 toc()
 
 ##### For saving the observed planets/systems:
+
+f = open("observed_catalog_planets.txt", "w")
+write_model_params(f, sim_param)
+println(f, "target_id star_id period depth duration")
+for num_pl_in_sys in 1:length(summary_stat.cache["idx_n_tranets"])
+    num_targets = length(summary_stat.cache["idx_n_tranets"][num_pl_in_sys])
+    for (i,j) in enumerate(summary_stat.cache["idx_n_tranets"][num_pl_in_sys])
+        for k in 1:num_pl_in_sys
+            println(f, join([j, cat_phys.target[j].sys[1].star.id, map(ExoplanetsSysSim.period, cat_obs.target[j].obs)[k], map(ExoplanetsSysSim.depth, cat_obs.target[j].obs)[k], map(ExoplanetsSysSim.duration, cat_obs.target[j].obs)[k]], " "))
+        end
+    end
+end
+close(f)
+
+
+f = open("observed_catalog_stars.txt", "w")
+write_model_params(f, sim_param)
+println(f, "target_id star_id star_mass star_radius num_obs_planets")
+for num_pl_in_sys in 1:length(summary_stat.cache["idx_n_tranets"])
+    num_targets = length(summary_stat.cache["idx_n_tranets"][num_pl_in_sys])
+    for (i,j) in enumerate(summary_stat.cache["idx_n_tranets"][num_pl_in_sys])
+        println(f, join([j, cat_phys.target[j].sys[1].star.id, cat_obs.target[j].star.mass, cat_obs.target[j].star.radius, length(cat_obs.target[j].obs)], " "))
+    end
+end
+close(f)
+
+
 
 f = open("periods.out", "w")
 write_model_params(f, sim_param)
