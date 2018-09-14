@@ -254,7 +254,7 @@ t_elapsed = toc()
 #Pkg.add("PyPlot")
 using PyPlot
 
-N_keep_array = [3025, 25, 15]
+N_keep_array = [3025, 19, 18]
 colors = ["blue", "green", "red"]
 Radii = 10.^(linspace(MR_param.Radius_min+0.01, MR_param.Radius_max-0.01, 1000))
 
@@ -279,5 +279,38 @@ end
 xlabel(L"$R_p (R_\oplus)$")
 ylabel(L"$M_p (M_\oplus)$")
 legend(loc="upper left")
+=#
+
+
+
+
+
+##### If we want to generate and save a pre-computed table of masses on a radius vs. quantile grid:
+#=
+N_keep = 3025
+indices_keep = sortperm(weights_mle, rev=true)[1:N_keep]
+weights = weights_mle[indices_keep]
+MR_param = MR_param_Ning2018(-1., 3.809597, -0.3, 1.357509, degrees, weights, indices_keep)
+
+N_radii = 1001
+N_quantiles = 1001
+log_Radii = collect(linspace(MR_param.Radius_min, MR_param.Radius_max, N_radii))
+Radii = 10.^log_Radii
+quantiles = collect(linspace(0., 1.0, N_quantiles))
+
+file_name = "MRpredict_table_weights"*string(N_keep)*"_R"*string(N_radii)*"_Q"*string(N_quantiles)*".txt"
+f = open(file_name, "w")
+println(f, "# All masses are in log10; weights used = ", N_keep)
+println(f, "# First uncommented line is the header with the column labels (first column contains the radii in log10 while the remaining columns correspond to the quantiles)")
+writedlm(f, reshape(append!(["log_R"], string.(quantiles)), (1,:)), ", ")
+
+log_Mass_table = zeros(N_radii, N_quantiles + 1)
+for (i,r) in enumerate(Radii)
+    log_Mass_quantiles = predict_mass_given_radius(r, MR_param; qtl=quantiles)[2]
+    log_Mass_table[i,:] = append!([log_Radii[i]], log_Mass_quantiles)
+    println(i, ", Radius = ", r)
+end
+writedlm(f, log_Mass_table, ", ")
+close(f)
 =#
 
