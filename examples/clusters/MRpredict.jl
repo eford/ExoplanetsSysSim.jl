@@ -13,8 +13,8 @@ struct MR_param_Ning2018
     deg::Int64
     weights_mle::Vector{Float64}
     indices_keep::Vector{Int64}
-    #indices_div::Vector{Int64}
-    #indices_rem::Vector{Int64}
+    indices_div::Vector{Int64}
+    indices_rem::Vector{Int64}
 end
 
 function pdfnorm_beta(x::Float64, x_obs::Float64, x_sd::Float64, x_max::Float64, x_min::Float64, shape1::Int64, shape2::Int64 ; log::Bool=true)
@@ -32,38 +32,42 @@ function fn_for_integrate(x_obs::Float64, x_sd::Float64, deg::Int, degree::Int, 
     return quadgk(x -> pdfnorm_beta(x, x_obs, x_sd, x_max, x_min, shape1, shape2; log=log), x_min, x_max, abstol=abs_tol)[1]
 end
 
-function conditional_density(y::Float64, y_max::Float64, y_min::Float64, x_max::Float64, x_min::Float64, deg::Int64, w_hat::Vector{Float64}, indices_keep::Vector{Int64}; y_sd::Union{Void,Float64}=nothing, qtl::Vector{Float64}=[0.16, 0.84])
+function conditional_density(y::Float64, y_max::Float64, y_min::Float64, x_max::Float64, x_min::Float64, deg::Int64, w_hat::Vector{Float64}, indices_keep::Vector{Int64}, indices_div::Vector{Int64}, indices_rem::Vector{Int64}; y_sd::Union{Void,Float64}=nothing, qtl::Vector{Float64}=[0.16, 0.84])
     deg_vec = 1:deg
 
     #To compute conditional mean, variance, quantile, distribution:
-    y_beta_indv = zeros(deg)
+    y_beta_indv = zeros(length(indices_rem))
     if y_sd == nothing
         #y_stdardize = (y-y_min)/(y_max-y_min)
         #y_beta_indv = map(degree -> pdf.(Beta(degree, deg-degree+1), (y-y_min)/(y_max-y_min)), deg_vec)::Array{Float64,1} / (y_max-y_min)
-        map!(degree -> pdf.(Beta(degree, deg-degree+1), (y-y_min)/(y_max-y_min)), y_beta_indv, deg_vec)
+        map!(degree -> pdf.(Beta(degree, deg-degree+1), (y-y_min)/(y_max-y_min)), y_beta_indv, deg_vec[indices_rem])
         y_beta_indv /= (y_max-y_min)
     else
         #y_beta_indv = map(degree -> fn_for_integrate(y, y_sd, deg, degree, y_max, y_min), deg_vec)::Array{Float64,1}
-        map!(degree -> fn_for_integrate(y, y_sd, deg, degree, y_max, y_min), y_beta_indv, deg_vec)
+        map!(degree -> fn_for_integrate(y, y_sd, deg, degree, y_max, y_min), y_beta_indv, deg_vec[indices_rem])
     end
-    y_beta_pdf = kron(ones(deg), y_beta_indv)[indices_keep]
-    ###y_beta_pdf = y_beta_indv[indices_rem]
-    denominator = sum(w_hat .* y_beta_pdf::Vector{Float64})
+    #y_beta_pdf = kron(ones(deg), y_beta_indv)[indices_keep]
+    #y_beta_pdf = y_beta_indv[indices_rem]
+    denominator = sum(w_hat .* y_beta_indv)
+
+    #y_beta_indv = y_beta_indv[indices_rem]
 
     #Mean:
-    mean_beta_indv = deg_vec/(deg+1)*(x_max-x_min)+x_min
-    mean_beta = kron(mean_beta_indv, y_beta_indv)[indices_keep]
-    ###mean_beta = mean_beta_indv[indices_div] .* y_beta_indv[indices_rem]
-    mean_numerator = sum(w_hat .* mean_beta::Vector{Float64})
-    mean = mean_numerator / denominator
+#mean_beta_indv = deg_vec/(deg+1)*(x_max-x_min)+x_min
+    #mean_beta = kron(mean_beta_indv, y_beta_indv)[indices_keep]
+#mean_beta = mean_beta_indv[indices_div] .* y_beta_indv
+#mean_numerator = sum(w_hat .* mean_beta::Vector{Float64})
+#mean = mean_numerator / denominator
+    mean = sum(w_hat::Vector{Float64} .* (((deg_vec::UnitRange{Int64})/(deg+1)*(x_max-x_min)+x_min)[indices_div] .* y_beta_indv::Vector{Float64})::Vector{Float64}) / denominator::Float64
     #mean = sum(w_hat .* kron(deg_vec/(deg+1)*(x_max-x_min)+x_min, y_beta_indv)) / denominator
 
     #Variance:
-    var_beta_indv = deg_vec .* (deg-deg_vec+1) / ((deg+1)^2*(deg+2))*(x_max-x_min)^2
-    var_beta = kron(var_beta_indv, y_beta_indv)[indices_keep]
-    ###var_beta = var_beta_indv[indices_div] .* y_beta_indv[indices_rem]
-    var_numerator = sum(w_hat .* var_beta::Vector{Float64})
-    var = var_numerator /denominator
+#var_beta_indv = deg_vec .* (deg-deg_vec+1) / ((deg+1)^2*(deg+2))*(x_max-x_min)^2
+    #var_beta = kron(var_beta_indv, y_beta_indv)[indices_keep]
+#var_beta = var_beta_indv[indices_div] .* y_beta_indv
+#var_numerator = sum(w_hat .* var_beta::Vector{Float64})
+#var = var_numerator /denominator
+    var = sum(w_hat::Vector{Float64} .* (((deg_vec::UnitRange{Int64}) .* (deg-deg_vec+1) / ((deg+1)^2*(deg+2))*(x_max-x_min)^2)[indices_div] .* y_beta_indv::Vector{Float64})::Vector{Float64}) / denominator::Float64
     #var = sum(w_hat .* kron(deg_vec .* (deg-deg_vec+1) / ((deg+1)^2*(deg+2))*(x_max-x_min)^2, y_beta_indv)) / denominator
 
     #Quantile:
@@ -73,7 +77,8 @@ function conditional_density(y::Float64, y_max::Float64, y_min::Float64, x_max::
             ###quantile_beta = x_indv_cdf[indices_div] .* y_beta_indv[indices_rem]
             #quantile_numerator = sum(w_hat .* kron(x_indv_cdf, y_beta_indv)::Vector{Float64})
             #return quantile_numerator/denominator
-            return sum(w_hat .* kron(map(degree -> cdf.(Beta(degree, deg-degree+1), (j-x_min)/(x_max-x_min)), deg_vec), y_beta_indv)[indices_keep]::Vector{Float64}) / denominator
+            #return sum(w_hat .* kron(map(degree -> cdf.(Beta(degree, deg-degree+1), (j-x_min)/(x_max-x_min)), deg_vec), y_beta_indv::Vector{Float64})[indices_keep]) / denominator
+            @fastmath @inbounds @views return sum(w_hat::Vector{Float64} .* (map(degree -> cdf.(Beta(degree, deg::Int64-degree+1), (j-x_min)/(x_max-x_min)), (deg_vec::UnitRange{Int64})[indices_div]) .* y_beta_indv::Vector{Float64})) / denominator::Float64
         end
 
         return mix_density(x)
@@ -111,7 +116,7 @@ function predict_mass_given_radius(Radius::Float64, param::MR_param_Ning2018 ; R
     #Case I: if input data do not have measurement errors
     #Case II: if input data have measurement error
     if posterior_sample == false
-        predicted_value = conditional_density(l_radius, param.Radius_max, param.Radius_min, param.Mass_max, param.Mass_min, param.deg, param.weights_mle, param.indices_keep; y_sd=R_sigma, qtl=qtl)
+        predicted_value = conditional_density(l_radius, param.Radius_max, param.Radius_min, param.Mass_max, param.Mass_min, param.deg, param.weights_mle, param.indices_keep, param.indices_div, param.indices_rem; y_sd=R_sigma, qtl=qtl)
         predicted_mean = predicted_value[1]
         predicted_quantiles = predicted_value[3]
         #predicted_lower_quantile = predicted_value[3][1]
@@ -193,10 +198,10 @@ degrees = 55
 
 N_keep = 25
 indices_keep = sortperm(weights_mle, rev=true)[1:N_keep]
-#indices_div = 1+div.(indices_keep .- 1, degrees)
-#indices_rem = 1+rem.(indices_keep .- 1, degrees)
+indices_div = 1+div.(indices_keep .- 1, degrees)
+indices_rem = 1+rem.(indices_keep .- 1, degrees)
 weights = weights_mle[indices_keep]
-MR_param = MR_param_Ning2018(-1., 3.809597, -0.302, 1.357509, degrees, weights, indices_keep) #(-1., 3.809597, -0.3, 1.357509, 55, weights_mle)
+MR_param = MR_param_Ning2018(-1., 3.809597, -0.302, 1.357509, degrees, weights, indices_keep, indices_div, indices_rem) #(-1., 3.809597, -0.3, 1.357509, 55, weights_mle)
 
 
 
@@ -204,7 +209,7 @@ MR_param = MR_param_Ning2018(-1., 3.809597, -0.302, 1.357509, degrees, weights, 
 
 ##### Examples:
 
-#=
+
 #Observation without measurement errors:
 
 Radius = 5. #original scale, not log scale
@@ -223,7 +228,7 @@ println(predict_result)
 Radius = 5. #original scale, not log scale
 predict_result = predict_mass_given_radius(Radius, MR_param; qtl=[0.05, 0.95])
 println(predict_result)
-=#
+
 
 #Input are posterior samples: ###currently broken because the function 'cond_density_estimation' is undefined
 #=
@@ -238,14 +243,14 @@ println(predict_result)
 
 
 ##### For timing the function:
-#=
+
 sim_param = setup_sim_param_model()
 #Radii = ones(10000)*ExoplanetsSysSim.earth_radius
 Radii = (10.^(linspace(MR_param.Radius_min+0.01, MR_param.Radius_max-0.01, 10000)))*ExoplanetsSysSim.earth_radius
 tic()
 Masses = map(r -> generate_planet_mass_from_radius_Ning2018(r, sim_param), Radii)
 t_elapsed = toc()
-=#
+
 
 
 
