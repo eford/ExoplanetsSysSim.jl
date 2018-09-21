@@ -209,7 +209,7 @@ MR_param = MR_param_Ning2018(-1., 3.809597, -0.302, 1.357509, degrees, weights, 
 
 ##### Examples:
 
-
+#=
 #Observation without measurement errors:
 
 Radius = 5. #original scale, not log scale
@@ -228,7 +228,7 @@ println(predict_result)
 Radius = 5. #original scale, not log scale
 predict_result = predict_mass_given_radius(Radius, MR_param; qtl=[0.05, 0.95])
 println(predict_result)
-
+=#
 
 #Input are posterior samples: ###currently broken because the function 'cond_density_estimation' is undefined
 #=
@@ -243,14 +243,14 @@ println(predict_result)
 
 
 ##### For timing the function:
-
+#=
 sim_param = setup_sim_param_model()
 #Radii = ones(10000)*ExoplanetsSysSim.earth_radius
 Radii = (10.^(linspace(MR_param.Radius_min+0.01, MR_param.Radius_max-0.01, 10000)))*ExoplanetsSysSim.earth_radius
 tic()
 Masses = map(r -> generate_planet_mass_from_radius_Ning2018(r, sim_param), Radii)
 t_elapsed = toc()
-
+=#
 
 
 
