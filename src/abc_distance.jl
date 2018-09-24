@@ -112,8 +112,38 @@ function distance_sum_of_bernoulli_draws(num_pl_obs::Integer, num_targets_obs::I
       end
    end
    distance = dist_L2_abs(num_pl_obs/num_targets_obs, num_detect_sim/num_targets_obs)
+   return distance, num_detect_sim 
 end
 
+# compute Canberra distance.
+function distance_canberra{T<:Real, S<:Real}(x::AbstractVector{T}, y::AbstractVector{S})
+    @assert length(x) == length(y)
+    dist_sum = 0.0
+    for i in 1:length(x)
+        numer = abs(x[i]-y[i])
+        denom = sqrt(x[i] + y[i])
+        if denom == 0.0
+            continue
+        else
+            dist_sum += numer/denom
+        end
+    end
+    return dist_sum
+end
+
+# compute Cosine distance.
+function distance_cosine{T<:Real, S<:Real}(x::AbstractVector{T}, y::AbstractVector{S})
+    @assert length(x) == length(y)
+    numer = 0.0
+    denom_1 = 0.0
+    denom_2 = 0.0
+    for i in 1:length(x)
+        numer += x[i]*y[i]
+        denom_1 += x[i]^2
+        denom_2 += y[i]^2
+    end
+    return numer/(sqrt(denom_1)*sqrt(denom_2))
+end
 
 # TODO USER SCI: IMPORTANT:  Replace the distance function with something well thought out for your particular scientific application.  See examples
 function calc_distance_vector_demo(summary1::CatalogSummaryStatistics, summary2::CatalogSummaryStatistics, pass::Int64, sim_param::SimParam ; verbose::Bool = false)
