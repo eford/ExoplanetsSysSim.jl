@@ -79,29 +79,31 @@ function set_test_param(sim_param_closure::SimParam)
     p_dim = length(get_any(sim_param_closure, "p_lim_arr", Array{Float64,1}))-1
     r_dim = length(get_any(sim_param_closure, "r_lim_arr", Array{Float64,1}))-1
     n_bin = p_dim*r_dim
-    
+
     if @isdefinedlocal(rate_init)
         if typeof(rate_init) <: Real
             @assert (rate_init >= 0.0)
-            rate_init = fill(rate_init, n_bin)
+            rate_init_list = fill(rate_init, n_bin)
+        else
+            rate_init_list = rate_init
         end
         
-        @assert (ndims(rate_init) <= 2)
-        if ndims(rate_init) == 1
-            @assert (length(rate_init) == n_bin)
-            rate_tab_init = reshape(rate_init*0.01, (r_dim, p_dim))
+        @assert (ndims(rate_init_list) <= 2)
+        if ndims(rate_init_list) == 1
+            @assert (length(rate_init_list) == n_bin)
+            rate_tab_init = reshape(rate_init_list*0.01, (r_dim, p_dim))
         else
-            @assert (size(rate_init) == (r_dim, p_dim))
-            rate_tab_init = rate_init*0.01
+            @assert (size(rate_init_list) == (r_dim, p_dim))
+            rate_tab_init = rate_init_list*0.01
         end
-        lamb_col = sum(rate_tab_init, 1)
-        rate_tab_init = vcat(lamb_col, rate_tab_init)
+        # lamb_col = sum(rate_tab_init, 1)
+        # rate_tab_init = vcat(lamb_col, rate_tab_init)
         add_param_active(sim_param_closure, "obs_par", rate_tab_init)
     else
-        rate_init = fill(1.0, n_bin)
-        rate_tab_init = reshape(rate_init*0.01, (r_dim, p_dim))
-        lamb_col = sum(rate_tab_init, 1)
-        rate_tab_init = vcat(lamb_col, rate_tab_init)
+        rate_init_list = fill(1.0, n_bin)
+        rate_tab_init = reshape(rate_init_list*0.01, (r_dim, p_dim))
+        # lamb_col = sum(rate_tab_init, 1)
+        # rate_tab_init = vcat(lamb_col, rate_tab_init)
         add_param_active(sim_param_closure, "obs_par", rate_tab_init)
     end
     
@@ -151,7 +153,8 @@ function generate_num_planets_christiansen(s::Star, sim_param::SimParam)
   const r_dim = length(get_any(sim_param, "r_lim_arr", Array{Float64,1}))-1
   sum_lambda = 0
   for i in 1:p_dim
-      sum_lambda += ExoplanetsSysSim.generate_num_planets_poisson(rate_tab[1,i], convert(Int64, floor(3*log(limitP[i+1]/limitP[i])/log(2))))
+      # sum_lambda += ExoplanetsSysSim.generate_num_planets_poisson(rate_tab[1,i], convert(Int64, floor(3*log(limitP[i+1]/limitP[i])/log(2))))
+      sum_lambda += ExoplanetsSysSim.generate_num_planets_poisson(sum(rate_tab[:,i]), convert(Int64, floor(3*log(limitP[i+1]/limitP[i])/log(2))))
   end
   #println("# lambda= ", sum_lambda) 
   return min(sum_lambda, max_tranets_in_sys)
@@ -166,28 +169,27 @@ function generate_period_and_sizes_christiansen(s::Star, sim_param::SimParam; nu
   sepa_min = 0.05  # Minimum orbital separation in AU
   backup_sepa_factor_slightly_less_than_one = 0.95  
     
-  @assert ((length(limitP)-1) == size(rate_tab, 2))
-  @assert ((length(limitRp)-1) == (size(rate_tab, 1)-1))
+  #@assert ((length(limitP)-1) == size(rate_tab, 2))
+  @assert ((length(limitRp)-1) == size(rate_tab, 1))
+  #@assert ((length(limitRp)-1) == (size(rate_tab, 1)-1))
   Plist = zeros(num_pl)
   Rplist = zeros(num_pl)
-  #rate_tab_1d = reshape(rate_tab,length(rate_tab))
-  #logmaxcuml = logsumexp(rate_tab_1d)
-  #cuml = cumsum_kbn(exp(rate_tab_1d-logmaxcuml))
-  #maxcuml = sum(rate_tab_1d)
-  #cuml = cumsum_kbn(rate_tab_1d/maxcuml)
-  maxcuml = sum(rate_tab[1,:])
-  cuml = cumsum_kbn(rate_tab[1,:]/maxcuml)  
+  rate_tab_1d = reshape(rate_tab,length(rate_tab))
+  maxcuml = sum(rate_tab_1d)
+  cuml = cumsum_kbn(rate_tab_1d/maxcuml)
+  #maxcuml = sum(rate_tab[1,:])
+  #cuml = cumsum_kbn(rate_tab[1,:]/maxcuml)  
 
   # We assume uniform sampling in log P and log Rp within each bin
   j_idx = ones(Int64, num_pl)
     
   for n in 1:num_pl
     rollp = Base.rand()
-    #idx = findfirst(x -> x > rollp, cuml)
-    #i_idx = (idx-1)%size(rate_tab,1)+1
-    #j_idx[n] = floor(Int64,(idx-1)//size(rate_tab,1))+1
-    #Rplist[n] = exp(Base.rand()*(log(limitRp[i_idx+1])-log(limitRp[i_idx]))+log(limitRp[i_idx]))
-    j_idx[n] = findfirst(x -> x > rollp, cuml)
+    idx = findfirst(x -> x > rollp, cuml)
+    i_idx = (idx-1)%size(rate_tab,1)+1
+    j_idx[n] = floor(Int64,(idx-1)//size(rate_tab,1))+1
+    Rplist[n] = exp(Base.rand()*(log(limitRp[i_idx+1])-log(limitRp[i_idx]))+log(limitRp[i_idx]))
+    # j_idx[n] = findfirst(x -> x > rollp, cuml)
   end
     
   for j in 1:(length(limitP)-1)
@@ -200,11 +202,11 @@ function generate_period_and_sizes_christiansen(s::Star, sim_param::SimParam; nu
       logsepa_min = min(loga_min_ext-loga_min, (loga_max-loga_min)/n_range/2*backup_sepa_factor_slightly_less_than_one)  # Prevents minimum separations too large
       tmp_logalist = draw_uniform_selfavoiding(n_range,min_separation=logsepa_min,lower_bound=loga_min,upper_bound=loga_max)
       tmp_Plist = exp.((3*tmp_logalist - log(s.mass))/2)*ExoplanetsSysSim.day_in_year  # Convert from log a (in AU) back to P (in days)
-      rad_dist = Distributions.Categorical(rate_tab[((j-1)*(r_dim+1)+2):((j-1)*(r_dim+1)+(r_dim+1))]) # Distribution for fraction of times the next planet draw would be assigned to a given radius bin
+      #rad_dist = Distributions.Categorical(rate_tab[((j-1)*(r_dim+1)+2):((j-1)*(r_dim+1)+(r_dim+1))]) # Distribution for fraction of times the next planet draw would be assigned to a given radius bin
       for n in 1:n_range
         Plist[tmp_ind[n]] = tmp_Plist[n]
-        i_idx = rand(rad_dist)
-        Rplist[tmp_ind[n]] = exp(Base.rand()*(log(limitRp[i_idx+1])-log(limitRp[i_idx]))+log(limitRp[i_idx]))  
+        # i_idx = rand(rad_dist)
+        # Rplist[tmp_ind[n]] = exp(Base.rand()*(log(limitRp[i_idx+1])-log(limitRp[i_idx]))+log(limitRp[i_idx]))           
       end
     end
   end
@@ -411,6 +413,10 @@ end
 
 ## abc_distance
 function calc_distance_vector_binned(summary1::CatalogSummaryStatistics, summary2::CatalogSummaryStatistics, pass::Int64, sim_param::SimParam ; verbose::Bool = false)
+  p_dim = length(get_any(sim_param, "p_lim_arr", Array{Float64,1}))-1
+  r_dim = length(get_any(sim_param, "r_lim_arr", Array{Float64,1}))-1
+  #rate_tab::Array{Float64,2} = get_any(sim_param, "obs_par", Array{Float64,2})
+    
   d = Array{Float64}(0)
   if pass == 1
     if verbose
@@ -422,6 +428,7 @@ function calc_distance_vector_binned(summary1::CatalogSummaryStatistics, summary
     np1 = haskey(summary1.stat,"planets table") ? summary1.stat["planets table"] : summary1.stat["expected planets table"]
     np2 = haskey(summary2.stat,"planets table") ? summary2.stat["planets table"] : summary2.stat["expected planets table"]
     np_bin = zeros(length(np1))
+    num_detect_sim = zeros(length(np1))
 
     ### Bernoulli distance
     bin_match_list = summary2.cache["bin_match_list"]
@@ -429,22 +436,85 @@ function calc_distance_vector_binned(summary1::CatalogSummaryStatistics, summary
     np2 = zeros(Int64,length(np1))
     ###  
 
-    for n in 1:length(np1)
+      for n in 1:length(np1)
         #np_bin[n] = dist_L1_abs(np1[n]/summary1.stat["num targets"], np2[n]/summary2.stat["num targets"])
         #np_bin[n] = dist_L2_abs(np1[n]/summary1.stat["num targets"], np2[n]/summary2.stat["num targets"])
         #np_bin[n] = distance_poisson_draw(np2[n]/summary2.stat["num targets"]*summary1.stat["num targets"], convert(Int64, np1[n]))
-        np_bin[n] = distance_sum_of_bernoulli_draws(floor(Int64,np1[n]),summary1.stat["num targets"], summary2.stat["weight_list"], summary2.stat["num targets"], bin_match_list[n])
+        np_bin[n], num_detect_sim[n] = distance_sum_of_bernoulli_draws(floor(Int64,np1[n]),summary1.stat["num targets"], summary2.stat["weight_list"], summary2.stat["num targets"], bin_match_list[n])
 
       #println("True # [Bin ", n,"] = ",np1[n],", Expected # [Bin ", n,"] = ",np2[n])
     end
+
       #d[1] = maximum(np_bin)
-      d[1] = sum(np_bin)
+      #d[1] = sum(np_bin)
+      np1_ratio = np1 ./ summary1.stat["num targets"]
+      np2_ratio = num_detect_sim ./ summary1.stat["num targets"]
+      d[1] = distance_canberra(np1_ratio, np2_ratio)# + distance_cosine(np1_ratio, np2_ratio)
+      
+      #println("Total rate: ", rate_tab[1,1], " / Distance (radii): ", d[1], " / Sim. cat. ratio = ", sum(num_detect_sim[1:r_dim])/summary2.stat["num_targets"], " / Obs. cat. ratio = ", sum(np1[1:r_dim])/summary1.stat["num targets"], " / Distance (total): ", dist_L2_abs(sum(num_detect_sim[1:r_dim])/summary2.stat["num targets"], sum(np1[1:r_dim])/summary1.stat["num targets"])*r_dim)
+      
+       # for j in 1:p_dim
+       #     d[1] += dist_L2_abs(sum(num_detect_sim[(j-1)*r_dim+1:(j-1)*r_dim+r_dim])/summary1.stat["num targets"], sum(np1[(j-1)*r_dim+1:(j-1)*r_dim+r_dim])/summary1.stat["num targets"])*r_dim
+       # end
     else
     println("# calc_distance_vector_demo doesn't know what to do for pass= ", pass)
   end
   return d
 end
 
+#=
+function calc_distance_vector_relative_binned(summary1::CatalogSummaryStatistics, summary2::CatalogSummaryStatistics, pass::Int64, sim_param::SimParam ; verbose::Bool = false)
+  p_dim = length(get_any(sim_param, "p_lim_arr", Array{Float64,1}))-1
+  r_dim = length(get_any(sim_param, "r_lim_arr", Array{Float64,1}))-1
+  #rate_tab::Array{Float64,2} = get_any(sim_param, "obs_par", Array{Float64,2})
+    
+  d = Array{Float64}(0)
+  if pass == 1
+    if verbose
+      println("# Summary 1, pass 1: ",summary1)
+      println("# Summary 2, pass 1: ",summary2)
+    end
+    d = zeros(3)
+
+    np1 = haskey(summary1.stat,"planets table") ? summary1.stat["planets table"] : summary1.stat["expected planets table"]
+    np2 = haskey(summary2.stat,"planets table") ? summary2.stat["planets table"] : summary2.stat["expected planets table"]
+    np_bin = zeros(length(np1))
+    num_detect_sim = zeros(length(np1))
+
+    ### Bernoulli distance
+    bin_match_list = summary2.cache["bin_match_list"]
+    @assert length(bin_match_list) == length(np1) 
+    np2 = zeros(Int64,length(np1))
+    ###  
+
+      for n in 1:length(np1)
+        #np_bin[n] = dist_L1_abs(np1[n]/summary1.stat["num targets"], np2[n]/summary2.stat["num targets"])
+        #np_bin[n] = dist_L2_abs(np1[n]/summary1.stat["num targets"], np2[n]/summary2.stat["num targets"])
+        #np_bin[n] = distance_poisson_draw(np2[n]/summary2.stat["num targets"]*summary1.stat["num targets"], convert(Int64, np1[n]))
+        np_bin[n], num_detect_sim[n] = distance_sum_of_bernoulli_draws(floor(Int64,np1[n]),summary1.stat["num targets"], summary2.stat["weight_list"], summary2.stat["num targets"], bin_match_list[n])
+
+      #println("True # [Bin ", n,"] = ",np1[n],", Expected # [Bin ", n,"] = ",np2[n])
+    end
+      #d[1] = maximum(np_bin)
+      d[1] = 0.0
+      np1_col = 0
+      np2_col = 0
+      #println("Total rate: ", rate_tab[1,1], " / Distance (radii): ", d[1], " / Sim. cat. ratio = ", sum(num_detect_sim[1:r_dim])/summary2.stat["num_targets"], " / Obs. cat. ratio = ", sum(np1[1:r_dim])/summary1.stat["num targets"], " / Distance (total): ", dist_L2_abs(sum(num_detect_sim[1:r_dim])/summary2.stat["num targets"], sum(np1[1:r_dim])/summary1.stat["num targets"])*r_dim)
+      
+      for j in 1:p_dim
+          d[1] += dist_L2_abs(sum(num_detect_sim[(j-1)*r_dim+1:(j-1)*r_dim+r_dim])/summary1.stat["num targets"], sum(np1[(j-1)*r_dim+1:(j-1)*r_dim+r_dim])/summary1.stat["num targets"])*r_dim
+          np1_col = sum(np1[(j-1)*r_dim+1:(j-1)*r_dim+r_dim])
+          np2_col = sum(num_detect_sim[(j-1)*r_dim+1:(j-1)*r_dim+r_dim])
+          for i in 1:r_dim
+              d[1] += dist_L2_abs(num_detect_sim[(j-1)*r_dim+i]/np2_col, np1[(j-1)*r_dim+i]/np1_col)
+          end
+      end
+    else
+    println("# calc_distance_vector_demo doesn't know what to do for pass= ", pass)
+  end
+  return d
+end
+=#
 
 ## eval_model
 function test_christiansen()
