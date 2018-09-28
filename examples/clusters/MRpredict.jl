@@ -38,47 +38,77 @@ function conditional_density(y::Float64, y_max::Float64, y_min::Float64, x_max::
     #To compute conditional mean, variance, quantile, distribution:
     y_beta_indv = zeros(length(indices_rem))
     if y_sd == nothing
-        #y_stdardize = (y-y_min)/(y_max-y_min)
-        #y_beta_indv = map(degree -> pdf.(Beta(degree, deg-degree+1), (y-y_min)/(y_max-y_min)), deg_vec)::Array{Float64,1} / (y_max-y_min)
         map!(degree -> pdf.(Beta(degree, deg-degree+1), (y-y_min)/(y_max-y_min)), y_beta_indv, deg_vec[indices_rem])
         y_beta_indv /= (y_max-y_min)
     else
-        #y_beta_indv = map(degree -> fn_for_integrate(y, y_sd, deg, degree, y_max, y_min), deg_vec)::Array{Float64,1}
         map!(degree -> fn_for_integrate(y, y_sd, deg, degree, y_max, y_min), y_beta_indv, deg_vec[indices_rem])
     end
-    #y_beta_pdf = kron(ones(deg), y_beta_indv)[indices_keep]
-    #y_beta_pdf = y_beta_indv[indices_rem]
     denominator = sum(w_hat .* y_beta_indv)
 
-    #y_beta_indv = y_beta_indv[indices_rem]
-
     #Mean:
-#mean_beta_indv = deg_vec/(deg+1)*(x_max-x_min)+x_min
-    #mean_beta = kron(mean_beta_indv, y_beta_indv)[indices_keep]
-#mean_beta = mean_beta_indv[indices_div] .* y_beta_indv
-#mean_numerator = sum(w_hat .* mean_beta::Vector{Float64})
-#mean = mean_numerator / denominator
     mean = sum(w_hat::Vector{Float64} .* (((deg_vec::UnitRange{Int64})/(deg+1)*(x_max-x_min)+x_min)[indices_div] .* y_beta_indv::Vector{Float64})::Vector{Float64}) / denominator::Float64
-    #mean = sum(w_hat .* kron(deg_vec/(deg+1)*(x_max-x_min)+x_min, y_beta_indv)) / denominator
 
     #Variance:
-#var_beta_indv = deg_vec .* (deg-deg_vec+1) / ((deg+1)^2*(deg+2))*(x_max-x_min)^2
-    #var_beta = kron(var_beta_indv, y_beta_indv)[indices_keep]
-#var_beta = var_beta_indv[indices_div] .* y_beta_indv
-#var_numerator = sum(w_hat .* var_beta::Vector{Float64})
-#var = var_numerator /denominator
     var = sum(w_hat::Vector{Float64} .* (((deg_vec::UnitRange{Int64}) .* (deg-deg_vec+1) / ((deg+1)^2*(deg+2))*(x_max-x_min)^2)[indices_div] .* y_beta_indv::Vector{Float64})::Vector{Float64}) / denominator::Float64
-    #var = sum(w_hat .* kron(deg_vec .* (deg-deg_vec+1) / ((deg+1)^2*(deg+2))*(x_max-x_min)^2, y_beta_indv)) / denominator
 
     #Quantile:
     function pbeta_conditional_density(x::Float64)::Float64
         function mix_density(j::Float64)::Float64
-            #x_indv_cdf::Vector{Float64} = map(degree -> cdf.(Beta(degree, deg-degree+1), (j-x_min)/(x_max-x_min)), deg_vec)
-            ###quantile_beta = x_indv_cdf[indices_div] .* y_beta_indv[indices_rem]
-            #quantile_numerator = sum(w_hat .* kron(x_indv_cdf, y_beta_indv)::Vector{Float64})
-            #return quantile_numerator/denominator
-            #return sum(w_hat .* kron(map(degree -> cdf.(Beta(degree, deg-degree+1), (j-x_min)/(x_max-x_min)), deg_vec), y_beta_indv::Vector{Float64})[indices_keep]) / denominator
             @fastmath @inbounds @views return sum(w_hat::Vector{Float64} .* (map(degree -> cdf.(Beta(degree, deg::Int64-degree+1), (j-x_min)/(x_max-x_min)), (deg_vec::UnitRange{Int64})[indices_div]) .* y_beta_indv::Vector{Float64})) / denominator::Float64
+        end
+
+        return mix_density(x)
+    end
+
+    function conditional_quantile(q::Float64)::Float64
+        function g(x::Float64)::Float64
+            return pbeta_conditional_density(x) - q
+        end
+        function g2(x::Float64)::Float64
+            return (pbeta_conditional_density(x) - q)^2
+        end
+
+        #return find_zero(g, (x_min, x_max), FalsePosition())
+        #return find_zero(g, (x_min, x_max))::Float64 ###'find_zero' is from 'using Roots' (is this a good function to use?); Eric suggested brent's method in the Optim package
+
+        result = optimize(g2, x_min, x_max, Brent(), rel_tol=1e-3, abs_tol=1e-3) #Brent(); GoldenSection()
+        if Optim.converged(result)
+            return Optim.minimizer(result)::Float64
+        else
+            return find_zero(g, (x_min, x_max))::Float64
+        end
+    end
+
+    quantile = map(conditional_quantile, qtl)
+
+    return (mean, var, quantile, denominator, y_beta_indv)
+end
+
+function conditional_density(y::Float64, y_max::Float64, y_min::Float64, x_max::Float64, x_min::Float64, deg::Int64, w_hat::Vector{Float64}, indices_keep::Vector{Int64}; y_sd::Union{Void,Float64}=nothing, qtl::Vector{Float64}=[0.16, 0.84])
+    deg_vec = 1:deg
+
+    #To compute conditional mean, variance, quantile, distribution:
+    y_beta_indv = zeros(deg)
+    if y_sd == nothing
+        map!(degree -> pdf.(Beta(degree, deg-degree+1), (y-y_min)/(y_max-y_min)), y_beta_indv, deg_vec)
+        y_beta_indv /= (y_max-y_min)
+    else
+        map!(degree -> fn_for_integrate(y, y_sd, deg, degree, y_max, y_min), y_beta_indv, deg_vec)
+    end
+    y_beta_pdf = kron(ones(deg), y_beta_indv)[indices_keep]
+    denominator = sum(w_hat .* y_beta_pdf)
+
+    #Mean:
+    mean = sum(w_hat::Vector{Float64} .* kron(deg_vec::UnitRange{Int64}/(deg+1)*(x_max-x_min)+x_min, y_beta_indv::Vector{Float64})[indices_keep]) / denominator::Float64
+
+    #Variance:
+    var = sum(w_hat::Vector{Float64} .* kron(deg_vec::UnitRange{Int64} .* (deg-deg_vec+1) / ((deg+1)^2*(deg+2))*(x_max-x_min)^2, y_beta_indv::Vector{Float64})[indices_keep]) / denominator::Float64
+
+    #Quantile:
+    function pbeta_conditional_density(x::Float64)::Float64
+        function mix_density(j::Float64)::Float64
+            @fastmath @inbounds @views return sum(w_hat::Vector{Float64} .* kron(map(degree -> cdf.(Beta(degree, deg-degree+1), (j-x_min)/(x_max-x_min)), deg_vec::UnitRange{Int64}), y_beta_indv::Vector{Float64})[indices_keep]) / denominator::Float64
+            #@fastmath @inbounds @views return sum(w_hat::Vector{Float64} .* (map(degree -> cdf.(Beta(degree, deg::Int64-degree+1), (j-x_min)/(x_max-x_min)), (deg_vec::UnitRange{Int64})[indices_div]) .* y_beta_indv::Vector{Float64})) / denominator::Float64
         end
 
         return mix_density(x)
@@ -117,10 +147,9 @@ function predict_mass_given_radius(Radius::Float64, param::MR_param_Ning2018 ; R
     #Case II: if input data have measurement error
     if posterior_sample == false
         predicted_value = conditional_density(l_radius, param.Radius_max, param.Radius_min, param.Mass_max, param.Mass_min, param.deg, param.weights_mle, param.indices_keep, param.indices_div, param.indices_rem; y_sd=R_sigma, qtl=qtl)
+        ###predicted_value = conditional_density(l_radius, param.Radius_max, param.Radius_min, param.Mass_max, param.Mass_min, param.deg, param.weights_mle, param.indices_keep; y_sd=R_sigma, qtl=qtl)
         predicted_mean = predicted_value[1]
         predicted_quantiles = predicted_value[3]
-        #predicted_lower_quantile = predicted_value[3][1]
-        #predicted_upper_quantile = predicted_value[3][2]
     elseif posterior_sample == true
         #Case III: if the input are posterior samples
         radius_sample = log10(Radius)
@@ -165,26 +194,46 @@ function predict_mass_given_radius(Radius::Float64, param::MR_param_Ning2018 ; R
         end
 
         predicted_quantiles = map(q -> mixture_conditional_quantile(q, param.Mass_min, param.Mass_max), qtl)
-        #predicted_lower_quantile = predicted_quantiles[1]
-        #predicted_upper_quantile = predicted_quantiles[2]
     end
 
     #Return the output:
-return (predicted_mean, predicted_quantiles)::Tuple{Float64, Vector{Float64}}
+    return (predicted_mean, predicted_quantiles)::Tuple{Float64, Vector{Float64}}
 end
 
 function draw_planet_mass_from_radius_Ning2018(Radius::Float64, param::MR_param_Ning2018)
     #This function takes in a Radius (in solar radii) and draws a mass (returning in solar masses) probabilistically
     Radius_in_earths = Radius/ExoplanetsSysSim.earth_radius
-    @assert param.Radius_min < log10.(Radius_in_earths) < param.Radius_max
+    log_Radius_in_earths = log10.(Radius_in_earths)
+    @assert param.Radius_min < log_Radius_in_earths < param.Radius_max
     q::Float64 = rand()
-    l_mass = predict_mass_given_radius(Radius_in_earths, param; qtl=[q])[2][1]
-    return (10^l_mass)*ExoplanetsSysSim.earth_mass
+    log_Mass = predict_mass_given_radius(Radius_in_earths, param; qtl=[q])[2][1]
+    return (10^log_Mass)*ExoplanetsSysSim.earth_mass
 end
 
 function generate_planet_mass_from_radius_Ning2018(Radius::Float64, sim_param::SimParam)
     global MR_param
     return draw_planet_mass_from_radius_Ning2018(Radius, MR_param)
+end
+
+function interpolate_planet_mass_from_radius_quantile_Ning2018_table(log_Radius::Float64, quantile::Float64)
+    #If using "GridInterpolations" package (very slow for repeated use):
+    #=
+    global grid, gridData
+    x = [log_Radius, quantile]
+    return interpolate(grid, gridData, x)
+    =#
+
+    #If using "Interpolations" package (fastest):
+    global scaled_itp
+    return scaled_itp[log_Radius, quantile]
+end
+
+function generate_planet_mass_from_radius_Ning2018_table(Radius::Float64, sim_param::SimParam)
+    Radius_in_earths = Radius/ExoplanetsSysSim.earth_radius
+    log_Radius_in_earths = log10.(Radius_in_earths)
+    q::Float64 = rand()
+    log_Mass = interpolate_planet_mass_from_radius_quantile_Ning2018_table(log_Radius_in_earths, q)
+    return (10^log_Mass)*ExoplanetsSysSim.earth_mass
 end
 
 
@@ -209,7 +258,7 @@ MR_param = MR_param_Ning2018(-1., 3.809597, -0.302, 1.357509, degrees, weights, 
 
 ##### Examples:
 
-#=
+
 #Observation without measurement errors:
 
 Radius = 5. #original scale, not log scale
@@ -228,7 +277,7 @@ println(predict_result)
 Radius = 5. #original scale, not log scale
 predict_result = predict_mass_given_radius(Radius, MR_param; qtl=[0.05, 0.95])
 println(predict_result)
-=#
+
 
 #Input are posterior samples: ###currently broken because the function 'cond_density_estimation' is undefined
 #=
@@ -239,18 +288,6 @@ println(predict_result)
 =#
 
 
-
-
-
-##### For timing the function:
-#=
-sim_param = setup_sim_param_model()
-#Radii = ones(10000)*ExoplanetsSysSim.earth_radius
-Radii = (10.^(linspace(MR_param.Radius_min+0.01, MR_param.Radius_max-0.01, 10000)))*ExoplanetsSysSim.earth_radius
-tic()
-Masses = map(r -> generate_planet_mass_from_radius_Ning2018(r, sim_param), Radii)
-t_elapsed = toc()
-=#
 
 
 
@@ -266,8 +303,10 @@ Radii = 10.^(linspace(MR_param.Radius_min+0.01, MR_param.Radius_max-0.01, 1000))
 fig, ax = subplots()
 for (i,N_keep) in enumerate(N_keep_array)
     indices_keep = sortperm(weights_mle, rev=true)[1:N_keep]
+    indices_div = 1+div.(indices_keep .- 1, degrees)
+    indices_rem = 1+rem.(indices_keep .- 1, degrees)
     weights = weights_mle[indices_keep]
-    MR_param = MR_param_Ning2018(-1., 3.809597, -0.302, 1.357509, degrees, weights, indices_keep)
+    MR_param = MR_param_Ning2018(-1., 3.809597, -0.302, 1.357509, degrees, weights, indices_keep, indices_div, indices_rem)
 
     tic()
     Masses_predict = map(r -> predict_mass_given_radius(r, MR_param; qtl=[0.16, 0.84]), Radii)
@@ -294,8 +333,10 @@ legend(loc="upper left")
 #=
 N_keep = 3025
 indices_keep = sortperm(weights_mle, rev=true)[1:N_keep]
+indices_div = 1+div.(indices_keep .- 1, degrees)
+indices_rem = 1+rem.(indices_keep .- 1, degrees)
 weights = weights_mle[indices_keep]
-MR_param = MR_param_Ning2018(-1., 3.809597, -0.3, 1.357509, degrees, weights, indices_keep)
+MR_param = MR_param_Ning2018(-1., 3.809597, -0.3, 1.357509, degrees, weights, indices_keep, indices_div, indices_rem)
 
 N_radii = 1001
 N_quantiles = 1001
@@ -307,7 +348,7 @@ file_name = "MRpredict_table_weights"*string(N_keep)*"_R"*string(N_radii)*"_Q"*s
 f = open(file_name, "w")
 println(f, "# All masses are in log10; weights used = ", N_keep)
 println(f, "# First uncommented line is the header with the column labels (first column contains the radii in log10 while the remaining columns correspond to the quantiles)")
-writedlm(f, reshape(append!(["log_R"], string.(quantiles)), (1,:)), ", ")
+writedlm(f, reshape(append!(["log_R"], "q".*string.(quantiles)), (1,:)), ", ")
 
 log_Mass_table = zeros(N_radii, N_quantiles + 1)
 for (i,r) in enumerate(Radii)
@@ -319,3 +360,58 @@ writedlm(f, log_Mass_table, ", ")
 close(f)
 =#
 
+
+
+
+
+##### To load a pre-computed table for interpolating the mass radius relation:
+
+#log_Mass_table = CSV.read("MRpredict_table_weights3025_R1001_Q1001.txt", header=3)
+
+#One way to do the interpolation is to use "GridInterpolations" but this is very slow:
+#=
+#Pkg.add("GridInterpolations")
+using GridInterpolations
+
+N_quantiles = 1001
+quantiles = collect(linspace(0., 1.0, N_quantiles))
+grid = RectangleGrid(log_Mass_table[:,1], quantiles)
+gridData = convert(Array, log_Mass_table[:,2:end])
+
+#x = [0., 0.5] #an example data point to interpolate at
+#interpolate(grid, gridData, x) #interpolate at the example data point
+=#
+
+#A faster way to do the interpolation is to first construct an interpolation object:
+#=
+#Pkg.add("Interpolations") #NOTE: the README is somewhat out-dated so some of the examples/syntax do not actually work as the way they are shown
+using Interpolations
+
+N_radii = 1001
+N_quantiles = 1001
+log_Radii = linspace(MR_param.Radius_min, MR_param.Radius_max, N_radii)
+quantiles = linspace(0., 1.0, N_quantiles)
+
+table_data = convert(Array, log_Mass_table[:,2:end])
+itp = interpolate(table_data, BSpline(Cubic(Line())), OnGrid()) #interpolation object where the x and y axes are indices
+scaled_itp = Interpolations.scale(itp, log_Radii, quantiles) #scaled interpolation object where the x and y axes are scaled to their physical units
+
+#scaled_itp[0., 0.5] #calls the interpolation object to perform an interpolation at a given point
+=#
+
+
+
+
+##### For timing the functions:
+#=
+sim_param = setup_sim_param_model()
+#Radii = ones(10000)*ExoplanetsSysSim.earth_radius
+Radii = (10.^(linspace(MR_param.Radius_min+0.01, MR_param.Radius_max-0.01, 10000)))*ExoplanetsSysSim.earth_radius
+tic()
+Masses = map(r -> generate_planet_mass_from_radius_Ning2018(r, sim_param), Radii)
+t_elapsed = toc()
+
+tic()
+Masses = map(r -> generate_planet_mass_from_radius_Ning2018_table(r, sim_param), Radii)
+t_elapsed = toc()
+=#
