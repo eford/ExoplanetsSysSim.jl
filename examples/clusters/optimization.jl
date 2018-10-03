@@ -19,9 +19,9 @@ function calc_distance(ss1::ExoplanetsSysSim.CatalogSummaryStatistics, ss2::Exop
     end
 
     #To handle empty arrays:
-    if sum(M_cat_obs1 .>= 2) < 2 || sum(M_cat_obs2 .>= 2) < 2 #need at least 2 multi-systems per catalog in order to be able to compute AD distances for distributions of ratios of observables
+    if min(length(ss1.stat["radius_ratio_above_list"]), length(ss1.stat["radius_ratio_below_list"]), length(ss1.stat["radius_ratio_across_list"])) < 2 || min(length(ss2.stat["radius_ratio_above_list"]), length(ss2.stat["radius_ratio_below_list"]), length(ss2.stat["radius_ratio_across_list"])) < 2 #need at least 2 elements in each of these summary statistics per catalog in order to be able to compute AD distances
         println("Not enough observed multi-planet systems in one of the catalogs to compute the AD distance.")
-        d = ones(Int64,8)*1e6
+        d = ones(Int64,13)*1e6
 
         println("Distances: ", d, [sum(d)])
         if save_dist
@@ -40,7 +40,7 @@ function calc_distance(ss1::ExoplanetsSysSim.CatalogSummaryStatistics, ss2::Exop
     cos_factor = cos(max_incl_sys*pi/180) #factor to divide the number of targets in simulation by to get the actual number of targets needed (with an isotropic distribution of system inclinations) to produce as many transiting systems for a single observer
 
     #To compute the KS distances:
-    d_KS = Array{Float64}(8)
+    d_KS = Array{Float64}(13)
     d_KS[1] = abs(ss1.stat["num_tranets"]/(ss1.stat["num targets"]/cos_factor) - ss2.stat["num_tranets"]/(ss2.stat["num targets"]))
     d_KS[2] = ksstats_ints(M_cat_obs1, M_cat_obs2)[5]
     d_KS[3] = ksstats(ss1.stat["P list"], ss2.stat["P list"])[5]
@@ -49,6 +49,11 @@ function calc_distance(ss1::ExoplanetsSysSim.CatalogSummaryStatistics, ss2::Exop
     d_KS[6] = ksstats(ss1.stat["duration_ratio_list"], ss2.stat["duration_ratio_list"])[5]
     d_KS[7] = ksstats(ss1.stat["depth list"], ss2.stat["depth list"])[5]
     d_KS[8] = ksstats(ss1.stat["radius_ratio_list"], ss2.stat["radius_ratio_list"])[5]
+    d_KS[9] = ksstats(ss1.stat["depth above list"], ss2.stat["depth above list"])[5]
+    d_KS[10] = ksstats(ss1.stat["depth below list"], ss2.stat["depth below list"])[5]
+    d_KS[11] = ksstats(ss1.stat["radius_ratio_above_list"], ss2.stat["radius_ratio_above_list"])[5]
+    d_KS[12] = ksstats(ss1.stat["radius_ratio_below_list"], ss2.stat["radius_ratio_below_list"])[5]
+    d_KS[13] = ksstats(ss1.stat["radius_ratio_across_list"], ss2.stat["radius_ratio_across_list"])[5]
 
     #To compute the AD distances:
     if AD_mod
@@ -57,7 +62,7 @@ function calc_distance(ss1::ExoplanetsSysSim.CatalogSummaryStatistics, ss2::Exop
         ADdist = ADstats
     end
 
-    d_AD = Array{Float64}(8)
+    d_AD = Array{Float64}(13)
     d_AD[1] = abs(ss1.stat["num_tranets"]/(ss1.stat["num targets"]/cos_factor) - ss2.stat["num_tranets"]/(ss2.stat["num targets"]))
     d_AD[2] = ksstats_ints(M_cat_obs1, M_cat_obs2)[5]
     d_AD[3] = ADdist(ss1.stat["P list"], ss2.stat["P list"])
@@ -66,6 +71,11 @@ function calc_distance(ss1::ExoplanetsSysSim.CatalogSummaryStatistics, ss2::Exop
     d_AD[6] = ADdist(ss1.stat["duration_ratio_list"], ss2.stat["duration_ratio_list"])
     d_AD[7] = ADdist(ss1.stat["depth list"], ss2.stat["depth list"])
     d_AD[8] = ADdist(ss1.stat["radius_ratio_list"], ss2.stat["radius_ratio_list"])
+    d_AD[9] = ADdist(ss1.stat["depth above list"], ss2.stat["depth above list"])
+    d_AD[10] = ADdist(ss1.stat["depth below list"], ss2.stat["depth below list"])
+    d_AD[11] = ADdist(ss1.stat["radius_ratio_above_list"], ss2.stat["radius_ratio_above_list"])
+    d_AD[12] = ADdist(ss1.stat["radius_ratio_below_list"], ss2.stat["radius_ratio_below_list"])
+    d_AD[13] = ADdist(ss1.stat["radius_ratio_across_list"], ss2.stat["radius_ratio_across_list"])
 
     #To print and/or write the distances to file:
     println("KS Distances: ", d_KS, [sum(d_KS)])
@@ -101,9 +111,9 @@ function calc_distance_Kepler(ss1::ExoplanetsSysSim.CatalogSummaryStatistics, re
         append!(M_cat_obs, k*ones(Int64, ss1.stat["num n-tranet systems"][k]))
     end
 
-    if sum(M_cat_obs .>= 2) < 2 #need at least 2 observed multi-systems in order to be able to compute AD distances for distributions of ratios of observables
+    if min(length(ss1.stat["radius_ratio_above_list"]), length(ss1.stat["radius_ratio_below_list"]), length(ss1.stat["radius_ratio_across_list"])) < 2 #need at least 2 elements in each of these summary statistics in order to be able to compute AD distances
         println("Not enough observed multi-planet systems in the simulated catalog.")
-        d = ones(Int64,8)*1e6
+        d = ones(Int64,13)*1e6
 
         println("Distances: ", d, [sum(d)])
         if save_dist
@@ -122,7 +132,7 @@ function calc_distance_Kepler(ss1::ExoplanetsSysSim.CatalogSummaryStatistics, re
     cos_factor = cos(max_incl_sys*pi/180) #factor to divide the number of targets in simulation by to get the actual number of targets needed (with an isotropic distribution of system inclinations) to produce as many transiting systems for a single observer
 
     #To compute the KS distances:
-    d_KS = Array{Float64}(8)
+    d_KS = Array{Float64}(13)
     d_KS[1] = abs(ss1.stat["num_tranets"]/(ss1.stat["num targets"]/cos_factor) - length(P_confirmed)/N_Kepler_targets)
     d_KS[2] = ksstats_ints(M_cat_obs, M_confirmed)[5]
     d_KS[3] = ksstats(ss1.stat["P list"], P_confirmed)[5]
@@ -131,6 +141,11 @@ function calc_distance_Kepler(ss1::ExoplanetsSysSim.CatalogSummaryStatistics, re
     d_KS[6] = ksstats(ss1.stat["duration_ratio_list"], xi_confirmed)[5]
     d_KS[7] = ksstats(ss1.stat["depth list"], D_confirmed)[5]
     d_KS[8] = ksstats(ss1.stat["radius_ratio_list"].^2, D_ratio_confirmed)[5] #simulations save radius ratios while we computed transit duration ratios from the Kepler catalog
+    d_KS[9] = ksstats(ss1.stat["depth above list"], D_above_confirmed)[5]
+    d_KS[10] = ksstats(ss1.stat["depth below list"], D_below_confirmed)[5]
+    d_KS[11] = ksstats(ss1.stat["radius_ratio_above_list"].^2, D_ratio_above_confirmed)[5]
+    d_KS[12] = ksstats(ss1.stat["radius_ratio_below_list"].^2, D_ratio_below_confirmed)[5]
+    d_KS[13] = ksstats(ss1.stat["radius_ratio_across_list"].^2, D_ratio_across_confirmed)[5]
 
     #To compute the AD distances:
     if AD_mod
@@ -139,7 +154,7 @@ function calc_distance_Kepler(ss1::ExoplanetsSysSim.CatalogSummaryStatistics, re
         ADdist = ADstats
     end
 
-    d_AD = Array{Float64}(8)
+    d_AD = Array{Float64}(13)
     d_AD[1] = abs(ss1.stat["num_tranets"]/(ss1.stat["num targets"]/cos_factor) - length(P_confirmed)/N_Kepler_targets)
     d_AD[2] = ksstats_ints(M_cat_obs, M_confirmed)[5]
     d_AD[3] = ADdist(ss1.stat["P list"], P_confirmed)
@@ -148,6 +163,11 @@ function calc_distance_Kepler(ss1::ExoplanetsSysSim.CatalogSummaryStatistics, re
     d_AD[6] = ADdist(ss1.stat["duration_ratio_list"], xi_confirmed)
     d_AD[7] = ADdist(ss1.stat["depth list"], D_confirmed)
     d_AD[8] = ADdist(ss1.stat["radius_ratio_list"].^2, D_ratio_confirmed) #simulations save radius ratios while we computed transit duration ratios from the Kepler catalog
+    d_AD[9] = ADdist(ss1.stat["depth above list"], D_above_confirmed)
+    d_AD[10] = ADdist(ss1.stat["depth below list"], D_below_confirmed)
+    d_AD[11] = ADdist(ss1.stat["radius_ratio_above_list"].^2, D_ratio_above_confirmed)
+    d_AD[12] = ADdist(ss1.stat["radius_ratio_below_list"].^2, D_ratio_below_confirmed)
+    d_AD[13] = ADdist(ss1.stat["radius_ratio_across_list"].^2, D_ratio_across_confirmed)
 
     #To print and/or write the distances to file:
     println("KS Distances: ", d_KS, [sum(d_KS)])
@@ -173,7 +193,7 @@ function calc_distance_Kepler(ss1::ExoplanetsSysSim.CatalogSummaryStatistics, re
     end
 end
 
-function target_function(active_param::Vector{Float64}, use_KS_or_AD::String, Kep_or_Sim::String ; AD_mod::Bool=false, weights::Vector{Float64}=ones(8), all_dist::Bool=false, save_dist::Bool=true)
+function target_function(active_param::Vector{Float64}, use_KS_or_AD::String, Kep_or_Sim::String ; AD_mod::Bool=false, weights::Vector{Float64}=ones(13), all_dist::Bool=false, save_dist::Bool=true)
     #This function takes in the values of the active model parameters, generates a simulated observed catalog, and computes the distance function.
     #If 'all_dist=true', the function outputs the individual distances in the distance function.
     #If 'save_dist=true', the function also saves the distances (unweighted and weighted, individual and total) to a file (assuming file 'f' is open for writing).
@@ -198,10 +218,9 @@ function target_function(active_param::Vector{Float64}, use_KS_or_AD::String, Ke
         dist = calc_distance(summary_stat, summary_stat_ref, use_KS_or_AD; AD_mod=AD_mod, all_dist=true, save_dist=save_dist)
     end
 
-    weighted_dist = dist./weights
-    #used_dist = weighted_dist[1:6] #choose a subset of the distances to pass into the optimizer
+    weighted_dist = dist .* weights
 
-    if weights != ones(8)
+    if weights != ones(13)
         println("Weighted distances: ", weighted_dist, [sum(weighted_dist)])
         if save_dist
             println(f, "Dist_weighted: ", weighted_dist, [sum(weighted_dist)])
@@ -215,7 +234,7 @@ function target_function(active_param::Vector{Float64}, use_KS_or_AD::String, Ke
     end
 end
 
-function compute_weights_target_fitness_std_perfect_model(num_evals::Int64, use_KS_or_AD::String ; AD_mod::Bool=false, weight::Bool=true, save_dist::Bool=true)
+function compute_weights_target_fitness_std_perfect_model(num_evals::Int64, use_KS_or_AD::String ; AD_mod::Bool=false, weight::Bool=true, dists_exclude::Vector{Int64}=Int64[], save_dist::Bool=true)
     tic()
     active_param_true = make_vector_of_sim_param(sim_param)
     println("# True values: ", active_param_true)
@@ -223,7 +242,7 @@ function compute_weights_target_fitness_std_perfect_model(num_evals::Int64, use_
         println(f, "# Format: Dist: [distances][total distance]")
     end
 
-    dists_true = zeros(num_evals,8)
+    dists_true = zeros(num_evals,13)
     for i in 1:num_evals
         dists_true[i,:] = target_function(active_param_true, use_KS_or_AD, "Sim"; AD_mod=AD_mod, all_dist=true, save_dist=save_dist)
     end
@@ -235,14 +254,15 @@ function compute_weights_target_fitness_std_perfect_model(num_evals::Int64, use_
     rms_dist = sqrt(mean(sum(dists_true, 2).^2)) #rms (std around 0) of total distance; should be similar to the mean total distance
 
     if weight
-        weights = rms_dists #to use the array 'rms_dists' as the weights for the individual distances
+        weights = 1 ./ rms_dists #to use the array 'rms_dists' as the weights for the individual distances
     else
-        weights = ones(8)
+        weights = ones(13)
     end
+    weights[dists_exclude] = 0. #to exclude certain distances from being used in the total distance function (but still computing and saving them during the optimization) by setting their weights to zero
 
-    weighted_dists_true = zeros(num_evals,8)
+    weighted_dists_true = zeros(num_evals,13)
     for i in 1:num_evals
-        weighted_dists_true[i,:] = dists_true[i,:]./weights
+        weighted_dists_true[i,:] = dists_true[i,:] .* weights
     end
     mean_weighted_dists = transpose(mean(weighted_dists_true,1))[:,] #array of mean weighted distances for each individual distance
     mean_weighted_dist = mean(sum(weighted_dists_true,2)) #mean weighted total distance
@@ -251,12 +271,14 @@ function compute_weights_target_fitness_std_perfect_model(num_evals::Int64, use_
 
     println("Mean dists: ", mean_dists)
     println("Rms dists: ", rms_dists)
+    println("Weights (1/rms dists): ", weights)
     println("Mean weighted dists: ", mean_weighted_dists)
     println("Distance using true values: ", mean_dist, " +/- ", std_dist)
     println("Weighted distance using true values: ", mean_weighted_dist, " +/- ", std_weighted_dist)
     if save_dist
         println(f, "Mean: ", mean_dists, [mean_dist])
         println(f, "Rms: ", rms_dists, [rms_dist])
+        println(f, "Weights (1/rms dists): ", weights)
         println(f, "Mean weighted dists: ", mean_weighted_dists, [mean_weighted_dist])
         println(f, "# Distance using true values (default parameter values): ", mean_dist, " +/- ", std_dist)
         println(f, "# Weighted distance using true values (default parameter values): ", mean_weighted_dist, " +/- ", std_weighted_dist)

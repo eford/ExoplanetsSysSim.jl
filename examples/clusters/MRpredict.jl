@@ -336,7 +336,7 @@ indices_keep = sortperm(weights_mle, rev=true)[1:N_keep]
 indices_div = 1+div.(indices_keep .- 1, degrees)
 indices_rem = 1+rem.(indices_keep .- 1, degrees)
 weights = weights_mle[indices_keep]
-MR_param = MR_param_Ning2018(-1., 3.809597, -0.3, 1.357509, degrees, weights, indices_keep, indices_div, indices_rem)
+MR_param = MR_param_Ning2018(-1., 3.809597, -0.302, 1.357509, degrees, weights, indices_keep, indices_div, indices_rem)
 
 N_radii = 1001
 N_quantiles = 1001
@@ -366,7 +366,7 @@ close(f)
 
 ##### To load a pre-computed table for interpolating the mass radius relation:
 
-#log_Mass_table = CSV.read("MRpredict_table_weights3025_R1001_Q1001.txt", header=3)
+log_Mass_table = CSV.read("MRpredict_table_weights3025_R1001_Q1001.txt", header=3)
 
 #One way to do the interpolation is to use "GridInterpolations" but this is very slow:
 #=
@@ -383,7 +383,7 @@ gridData = convert(Array, log_Mass_table[:,2:end])
 =#
 
 #A faster way to do the interpolation is to first construct an interpolation object:
-#=
+
 #Pkg.add("Interpolations") #NOTE: the README is somewhat out-dated so some of the examples/syntax do not actually work as the way they are shown
 using Interpolations
 
@@ -397,13 +397,13 @@ itp = interpolate(table_data, BSpline(Cubic(Line())), OnGrid()) #interpolation o
 scaled_itp = Interpolations.scale(itp, log_Radii, quantiles) #scaled interpolation object where the x and y axes are scaled to their physical units
 
 #scaled_itp[0., 0.5] #calls the interpolation object to perform an interpolation at a given point
-=#
+
 
 
 
 
 ##### For timing the functions:
-#=
+
 sim_param = setup_sim_param_model()
 #Radii = ones(10000)*ExoplanetsSysSim.earth_radius
 Radii = (10.^(linspace(MR_param.Radius_min+0.01, MR_param.Radius_max-0.01, 10000)))*ExoplanetsSysSim.earth_radius
@@ -414,4 +414,3 @@ t_elapsed = toc()
 tic()
 Masses = map(r -> generate_planet_mass_from_radius_Ning2018_table(r, sim_param), Radii)
 t_elapsed = toc()
-=#

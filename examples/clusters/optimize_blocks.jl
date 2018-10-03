@@ -21,6 +21,7 @@ AD_mod = true
 Kep_or_Sim = "Sim" #'Kep' or 'Sim'
 max_evals = 300
 num_evals_weights = 20
+dists_exclude = [7,8,13] #Int64[] if want to include all distances
 cycles = 3
 Pop_per_param = 4
 
@@ -46,7 +47,7 @@ summary_stat_ref = calc_summary_stats_model(cat_obs,sim_param)
 #To simulate more observed planets for the subsequent model generations:
 add_param_fixed(sim_param,"max_incl_sys",80.0) #degrees; 0 (deg) for isotropic system inclinations; set closer to 90 (deg) for more transiting systems
 
-active_param_true, weights, target_fitness, target_fitness_std = compute_weights_target_fitness_std_perfect_model(num_evals_weights, use_KS_or_AD ; AD_mod=AD_mod, weight=true, save_dist=true)
+active_param_true, weights, target_fitness, target_fitness_std = compute_weights_target_fitness_std_perfect_model(num_evals_weights, use_KS_or_AD ; AD_mod=AD_mod, weight=true, dists_exclude=dists_exclude, save_dist=true)
 
 
 

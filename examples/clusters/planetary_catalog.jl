@@ -2,6 +2,8 @@ import DataArrays.skipmissing
 
 sim_param = setup_sim_param_model()
 
+include("misc_functions.jl")
+
 
 
 
@@ -52,9 +54,6 @@ N_Kepler_targets = get_int(sim_param,"num_kepler_targets")
 
 table_confirmed = Q1Q17_DR25[(Q1Q17_DR25[:koi_disposition] .== "CONFIRMED") .| (Q1Q17_DR25[:koi_disposition] .== "CANDIDATE"), :] #Table containing only the confirmed and candidate objects
 
-table_confirmed = table_confirmed[(table_confirmed[:koi_period] .> get_real(sim_param,"min_period")) .& (table_confirmed[:koi_period] .< get_real(sim_param,"max_period")), :] #to make additional cuts in period P to be comparable to our simulated sample
-table_confirmed = table_confirmed[(table_confirmed[:koi_prad] .> get_real(sim_param,"min_radius")/ExoplanetsSysSim.earth_radius) .& (table_confirmed[:koi_prad] .< get_real(sim_param,"max_radius")/ExoplanetsSysSim.earth_radius) .& (.~ismissing.(table_confirmed[:koi_prad])), :] #to make additional cuts in planetary radii to be comparable to our simulated sample
-
 in_stellar_catalog = [] #will be filled with booleans indicating whether each koi in 'table_confirmed' is found in the 'stellar_catalog' or not
 for i in 1:length(table_confirmed[:kepid])
     if any(x->x==table_confirmed[i,:kepid], stellar_catalog[:kepid])
@@ -65,6 +64,17 @@ for i in 1:length(table_confirmed[:kepid])
 end
 in_stellar_catalog_indices = find(in_stellar_catalog)
 
+table_confirmed = table_confirmed[in_stellar_catalog_indices, :]
+
+for (i,kepid) in enumerate(table_confirmed[:kepid]) #to replace the stellar and planetary radii in 'table_confirmed' with the more reliable values as derived from the stellar properties in 'stellar_catalog'
+    stellar_radii_new = stellar_catalog[stellar_catalog[:kepid] .== kepid, :radius][1]
+    table_confirmed[i, :koi_srad] = stellar_radii_new
+    table_confirmed[i, :koi_prad] = (1./ExoplanetsSysSim.earth_radius)*stellar_radii_new*sqrt(table_confirmed[i, :koi_depth]/(1e6))
+end
+
+table_confirmed = table_confirmed[(table_confirmed[:koi_period] .> get_real(sim_param,"min_period")) .& (table_confirmed[:koi_period] .< get_real(sim_param,"max_period")), :] #to make additional cuts in period P to be comparable to our simulated sample
+table_confirmed = table_confirmed[(table_confirmed[:koi_prad] .> get_real(sim_param,"min_radius")/ExoplanetsSysSim.earth_radius) .& (table_confirmed[:koi_prad] .< get_real(sim_param,"max_radius")/ExoplanetsSysSim.earth_radius) .& (.~ismissing.(table_confirmed[:koi_prad])), :] #to make additional cuts in planetary radii to be comparable to our simulated sample
+
 #=
 #If we want to write the stellar radii to a file:
 CSV.write("stellar_radii_q1_q17_dr25_gaia_fgk.txt", stellar_catalog[[:kepid, :radius]])
@@ -73,11 +83,9 @@ CSV.write("stellar_radii_q1_q17_dr25_gaia_fgk.txt", stellar_catalog[[:kepid, :ra
 #=
 #If we want to write the kep_oi's of the remaining koi catalog to a file:
 f = open("kepoi_names.txt", "w")
-println(f, table_confirmed[in_stellar_catalog_indices, :kepoi_name])
+println(f, table_confirmed[:kepoi_name])
 close(f)
 =#
-
-table_confirmed = table_confirmed[in_stellar_catalog_indices, :]
 
 
 
@@ -99,6 +107,12 @@ t_D_confirmed = collect(skipmissing(t_D_confirmed))
 D_confirmed = table_confirmed[:koi_depth]/(1e6) #array of the transit depths (fraction)
 D_confirmed = D_confirmed[ismissing.(D_confirmed) .== false] #to get rid of NA values
 
+D_above_confirmed = Float64[] #list to be filled with the transit depths of planets above the photoevaporation boundary in Carrera et al 2018
+D_below_confirmed = Float64[] #list to be filled with the transit depths of planets below the boundary
+D_ratio_above_confirmed = Float64[] #list to be filled with the transit depth ratios of adjacent planet pairs, both above the boundary
+D_ratio_below_confirmed = Float64[] #list to be filled with the transit depth ratios of adjacent planet pairs, both below the boundary
+D_ratio_across_confirmed = Float64[] #list to be filled with the transit depth ratios of adjacent planet pairs, across the boundary
+
 for i in 1:length(KOI_systems)
     if checked_bools[i] == 0 #if the KOI has not been checked (included while looking at another planet in the same system)
         system_i = (1:length(KOI_systems))[KOI_systems .== KOI_systems[i]]
@@ -108,10 +122,12 @@ for i in 1:length(KOI_systems)
         system_P = table_confirmed[:koi_period][system_i] #periods of all the planets in this system
         system_t_D = table_confirmed[:koi_duration][system_i] #transit durations of all the planets in this system
         system_D = table_confirmed[:koi_depth][system_i] #transit depths (in ppm) of all the planets in this system
+        system_radii = table_confirmed[:koi_prad][system_i] #radii of all the planets in this system
         system_sort_i = sortperm(system_P) #indices that would sort the periods of the planets in this system
         system_P = system_P[system_sort_i] #periods of all the planets in this system, sorted
         system_t_D = system_t_D[system_sort_i] #transit durations of all the planets in this system, sorted by period
-        system_D = system_D[system_sort_i] #transit depths of all the planets in this system, sorted by period
+        system_D = system_D[system_sort_i]/(1e6) #transit depths of all the planets in this system, sorted by period
+        system_radii = system_radii[system_sort_i] #radii of all the planets in this system, sorted by period
 
         #To count the total number of planets in this system:
         push!(M_confirmed, length(system_P))
@@ -124,6 +140,30 @@ for i in 1:length(KOI_systems)
         append!(R_confirmed, system_R)
         append!(D_ratio_confirmed, system_D_ratio)
         append!(xi_confirmed, system_xi)
+
+        #To separate the planets in the system as above and below the boundary:
+        system_above_bools = [photoevap_boundary_Carrera2018(system_radii[x], system_P[x]) for x in 1:length(system_P)]
+        #if length(system_above_bools) > 1 println(system_above_bools) end
+
+        #To record the transit depths of the planets above and below the boundary:
+        for (j,D) in enumerate(system_D)
+            if system_above_bools[j] == 1
+                append!(D_above_confirmed, D)
+            elseif system_above_bools[j] == 0
+                append!(D_below_confirmed, D)
+            end
+        end
+
+        #To record the transit depth ratios of the planets above, below, and across the boundary:
+        for (j,D_ratio) in enumerate(system_D_ratio)
+            if system_above_bools[j] + system_above_bools[j+1] == 2 #both planets are above the boundary
+                append!(D_ratio_above_confirmed, D_ratio)
+            elseif system_above_bools[j] + system_above_bools[j+1] == 1 #one planet is above, the other is below the boundary
+                append!(D_ratio_across_confirmed, D_ratio)
+            elseif system_above_bools[j] + system_above_bools[j+1] == 0 #both planets are below the boundary
+                append!(D_ratio_below_confirmed, D_ratio)
+            end
+        end
     end
 end
 

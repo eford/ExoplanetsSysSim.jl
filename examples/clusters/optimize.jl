@@ -18,9 +18,10 @@ model_name = "Clustered_P_R_broken_R_optimization"
 optimization_number = "_random"*ARGS[1] #if want to run on the cluster with random initial active parameters: "_random"*ARGS[1]
 use_KS_or_AD = "KS" #'KS' or 'AD'
 AD_mod = true
-Kep_or_Sim = "Sim" #'Kep' or 'Sim'
-max_evals = 3000
+Kep_or_Sim = "Kep" #'Kep' or 'Sim'
+max_evals = 10000
 num_evals_weights = 20
+dists_exclude = [7,8,13] #Int64[] if want to include all distances
 Pop_per_param = 4
 
 file_name = model_name*optimization_number*"_targs"*string(get_int(sim_param,"num_targets_sim_pass_one"))*"_evals"*string(max_evals)*".txt"
@@ -45,7 +46,7 @@ summary_stat_ref = calc_summary_stats_model(cat_obs,sim_param)
 #To simulate more observed planets for the subsequent model generations:
 add_param_fixed(sim_param,"max_incl_sys",80.0) #degrees; 0 (deg) for isotropic system inclinations; set closer to 90 (deg) for more transiting systems
 
-active_param_true, weights, target_fitness, target_fitness_std = compute_weights_target_fitness_std_perfect_model(num_evals_weights, use_KS_or_AD ; AD_mod=AD_mod, weight=true, save_dist=true)
+active_param_true, weights, target_fitness, target_fitness_std = compute_weights_target_fitness_std_perfect_model(num_evals_weights, use_KS_or_AD ; AD_mod=AD_mod, weight=true, dists_exclude=dists_exclude, save_dist=true)
 
 
 
@@ -54,9 +55,9 @@ active_param_true, weights, target_fitness, target_fitness_std = compute_weights
 
 ##### To draw the initial values of the active parameters randomly within a search range:
 
-active_param_keys = ["break_radius", "log_rate_clusters", "log_rate_planets_per_cluster", "power_law_P", "power_law_r1", "power_law_r2"]
+active_param_keys = ["log_rate_clusters", "log_rate_planets_per_cluster", "power_law_P", "power_law_r1", "power_law_r2", "sigma_hk", "sigma_incl", "sigma_incl_near_mmr", "sigma_log_radius_in_cluster", "sigma_logperiod_per_pl_in_cluster"]
     #["break_radius", "log_rate_clusters", "log_rate_planets_per_cluster", "mr_power_index", "num_mutual_hill_radii", "power_law_P", "power_law_r1", "power_law_r2", "sigma_hk", "sigma_incl", "sigma_incl_near_mmr", "sigma_log_radius_in_cluster", "sigma_logperiod_per_pl_in_cluster"]
-active_params_box = [(0.5*ExoplanetsSysSim.earth_radius, 10.*ExoplanetsSysSim.earth_radius), (log(1.), log(5.)), (log(1.), log(5.)), (-0.5, 1.5), (-6., 0.), (-6., 0.)] #search ranges for all of the active parameters
+active_params_box = [(log(1.), log(5.)), (log(1.), log(5.)), (-0.5, 1.5), (-6., 0.), (-6., 0.), (0., 0.1), (0., 5.), (0., 5.), (0.1, 1.0), (0., 0.3)] #search ranges for all of the active parameters
     #[(0.5*ExoplanetsSysSim.earth_radius, 10.*ExoplanetsSysSim.earth_radius), (log(1.), log(5.)), (log(1.), log(5.)), (1., 4.), (3., 20.), (-0.5, 1.5), (-6., 0.), (-6., 0.), (0., 0.1), (0., 5.), (0., 5.), (0.1, 1.0), (0., 0.3)] #search ranges for all of the active parameters
 
 #To randomly draw (uniformly) a value for each active model parameter within its search range:
