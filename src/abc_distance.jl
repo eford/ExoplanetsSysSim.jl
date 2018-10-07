@@ -96,8 +96,8 @@ function distance_sum_of_bernoulli_draws(num_pl_obs::Integer, num_targets_obs::I
 
    num_detect_sim = 0
    if num_pl_match >= 1 
-      num_draws_all = min(max(1,floor(Int64, num_targets_obs/num_targets_sim)),100)
-      @assert(1<=num_draws_all<=100)
+      num_draws_all = min(max(1,floor(Int64, num_targets_obs/num_targets_sim)),1000)
+      @assert(1<=num_draws_all<=1000)
       for i in 1:num_pl_match
          pl_id = bin_match_list[i]
          @assert(1<=pl_id<=length(prob_detect_list))

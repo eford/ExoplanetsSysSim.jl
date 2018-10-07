@@ -114,10 +114,10 @@ end
 # The following function is primarily left for debugging.  
 function simulated_read_kepler_observations(sim_param::SimParam )
    println("# WARNING: Using simulated_read_kepler_observations.")
-   if haskey(sim_param,"stellar_catalog")
-      star_tab_func = get_function(sim_param, "star_table_setup")
-      star_tab_func(sim_param)
-   end
+   # if haskey(sim_param,"stellar_catalog")
+   #    star_tab_func = get_function(sim_param, "star_table_setup")
+   #    star_tab_func(sim_param)
+   # end
    num_sys = get_int(sim_param,"num_kepler_targets")
    generate_kepler_target = get_function(sim_param,"generate_kepler_target")
    target_list = Array{KeplerTarget}(num_sys)
