@@ -4,6 +4,7 @@ using SpecialFunctions
 using Compat.Statistics
 import ABC.CompositeDistributions.CompositeDist
 import ABC.TransformedBetaDistributions.LinearTransformedBeta
+import EvalSysSimModel
 
 # https://en.wikipedia.org/wiki/Trigamma_function
 function trigamma_x_gr_4(x::T) where T<: Real
@@ -41,8 +42,8 @@ end
 
 function make_proposal_dist_multidim_beta(theta::AbstractArray{Float64,2}, weights::AbstractArray{Float64,1},  tau_factor::Float64; verbose::Bool = false)
     global sim_param_closure
-    const p_dim = length(get_any(sim_param_closure, "p_lim_arr", Array{Float64,1}))-1
-    const r_dim = length(get_any(sim_param_closure, "r_lim_arr", Array{Float64,1}))-1
+    const p_dim = length(get_any(EvalSysSimModel.sim_param_closure, "p_lim_arr", Array{Float64,1}))-1
+    const r_dim = length(get_any(EvalSysSimModel.sim_param_closure, "r_lim_arr", Array{Float64,1}))-1
     const max_col_rate = 3.0
 
     function mom_alpha(x_bar::T, v_bar::T) where T<: Real 
@@ -134,8 +135,8 @@ function make_proposal_dist_multidim_beta(theta::AbstractArray{Float64,2}, weigh
 
     dist_arr = ContinuousDistribution[]
     for j in 1:p_dim
-        col_startidx = (j-1)*r_dim+1
-        # col_startidx = (j-1)*(r_dim+1)+1
+        # col_startidx = (j-1)*r_dim+1
+        col_startidx = (j-1)*(r_dim+1)+1
         #tau_factor_indiv[col_startidx] = 2.0
 
         # if verbose
@@ -163,8 +164,8 @@ function make_proposal_dist_multidim_beta(theta::AbstractArray{Float64,2}, weigh
         end
         =#
         
-        #dist_arr = vcat(dist_arr, make_beta_transformed(theta[col_startidx,:], weights, xmin=0.0, xmax=max_col_rate, mean=theta_mean[col_startidx]/max_col_rate, var=theta_var[col_startidx]/max_col_rate^2, tau_factor=tau_factor_indiv[col_startidx]), ContinuousDistribution[ make_beta(theta[i,:], weights, mean=theta_mean[i], var=theta_var[i], tau_factor=tau_factor_indiv[i]) for i in (col_startidx+1):(col_startidx+r_dim)]   )
-        dist_arr = vcat(dist_arr, ContinuousDistribution[make_beta_transformed(theta[i,:], weights, xmin=0.0, xmax=max_col_rate, mean=theta_mean[i]/max_col_rate, var=theta_var[i]/max_col_rate^2, tau_factor=tau_factor_indiv[i]) for i in (col_startidx):(col_startidx+r_dim-1)]   )
+        dist_arr = vcat(dist_arr, make_beta_transformed(theta[col_startidx,:], weights, xmin=0.0, xmax=max_col_rate, mean=theta_mean[col_startidx]/max_col_rate, var=theta_var[col_startidx]/max_col_rate^2, tau_factor=tau_factor_indiv[col_startidx]), ContinuousDistribution[ make_beta(theta[i,:], weights, mean=theta_mean[i], var=theta_var[i], tau_factor=tau_factor_indiv[i]) for i in (col_startidx+1):(col_startidx+r_dim)]   )
+        # dist_arr = vcat(dist_arr, ContinuousDistribution[make_beta_transformed(theta[i,:], weights, xmin=0.0, xmax=max_col_rate, mean=theta_mean[i]/max_col_rate, var=theta_var[i]/max_col_rate^2, tau_factor=tau_factor_indiv[i]) for i in (col_startidx):(col_startidx+r_dim-1)]   )
     end
 
 dist = CompositeDist(dist_arr)

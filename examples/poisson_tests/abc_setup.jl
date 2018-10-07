@@ -4,7 +4,7 @@
 
 module EvalSysSimModel
 export setup, get_param_vector, get_ss_obs
-export gen_data, calc_summary_stats, calc_distance, is_valid#, normalize_dirch
+export gen_data, calc_summary_stats, calc_distance, is_valid, normalize_dirch
 using ExoplanetsSysSim
 using ABC
 include(joinpath(Pkg.dir(),"ExoplanetsSysSim","examples","poisson_tests", "christiansen_func.jl"))
@@ -18,26 +18,25 @@ function is_valid(param_vector::Vector{Float64})
     const rate_tab::Array{Float64,2} = get_any(sim_param_closure, "obs_par", Array{Float64,2})
     limitP::Array{Float64,1} = get_any(EvalSysSimModel.sim_param_closure, "p_lim_arr", Array{Float64,1})
     #const lambda = sum_kbn(rate_tab)
-    #if any(x -> x < 0., rate_tab) || any(x -> x > 3., rate_tab[1,:])
-    #println(rate_tab)
-    if any(x -> x < 0., rate_tab) || any([floor(3*log(limitP[i+1]/limitP[i])/log(2)) for i in 1:length(limitP)-1] .< sum(rate_tab, 1))
+    if any(x -> x < 0., rate_tab) || any([floor(3*log(limitP[i+1]/limitP[i])/log(2)) for i in 1:length(limitP)-1] .< rate_tab[1,:])
+    #if any(x -> x < 0., rate_tab) || any([floor(3*log(limitP[i+1]/limitP[i])/log(2)) for i in 1:length(limitP)-1] .< sum(rate_tab, 1))
         return false
     end
     return true
 end
 
-# function normalize_dirch(param_vector::Vector{Float64})
-#     global sim_param_closure
-#     const p_dim = length(get_any(sim_param_closure, "p_lim_arr", Array{Float64,1}))-1
-#     const r_dim = length(get_any(sim_param_closure, "r_lim_arr", Array{Float64,1}))-1
-    
-#     for i in 1:p_dim
-#         param_vector[((i-1)*(r_dim+1)+2):((i-1)*(r_dim+1)+(r_dim+1))] ./= sum(param_vector[((i-1)*(r_dim+1)+2):((i-1)*(r_dim+1)+(r_dim+1))])
-#     end
+function normalize_dirch(param_vector::Vector{Float64})
+    global sim_param_closure
+    const p_dim = length(get_any(sim_param_closure, "p_lim_arr", Array{Float64,1}))-1
+    const r_dim = length(get_any(sim_param_closure, "r_lim_arr", Array{Float64,1}))-1
 
-#     update_sim_param_from_vector!(param_vector,sim_param_closure)
-#     return param_vector
-# end
+    for i in 1:p_dim
+        param_vector[((i-1)*(r_dim+1)+2):((i-1)*(r_dim+1)+(r_dim+1))] ./= sum(param_vector[((i-1)*(r_dim+1)+2):((i-1)*(r_dim+1)+(r_dim+1))])
+    end
+
+    update_sim_param_from_vector!(param_vector,sim_param_closure)
+    return param_vector
+end
 
 function gen_data(param_vector::Vector{Float64})
     global sim_param_closure
@@ -67,16 +66,16 @@ end
 function setup()
     global sim_param_closure = setup_sim_param_christiansen()
     sim_param_closure = set_test_param(sim_param_closure)
+    df_star = setup_star_table_christiansen(sim_param_closure)
+    println("# Finished reading in stellar data")
     
     ### Use simulated planet candidate catalog data
-    # add_param_fixed(sim_param_closure,"num_kepler_targets",79928)  # For "observed" catalog
+    # add_param_fixed(sim_param_closure,"num_kepler_targets",1000000)  # For "observed" catalog
     # cat_obs = simulated_read_kepler_observations(sim_param_closure)
     # println("# Finished setting up simulated true catalog")
     ###
     
     ### Use real planet candidate catalog data
-    df_star = setup_star_table_christiansen(sim_param_closure)
-    println("# Finished reading in stellar data")
     df_koi,usable_koi = read_koi_catalog(sim_param_closure)
     println("# Finished reading in KOI data")  
     cat_obs = setup_actual_planet_candidate_catalog(df_star, df_koi, usable_koi, sim_param_closure)
@@ -117,23 +116,23 @@ function setup_abc(num_dist::Integer = 0)
 
     for i in 1:(length(limitP)-1)
         max_in_col = floor(3*log(limitP[i+1]/limitP[i])/log(2))
-        #lambda_col = Uniform(0.0, max_in_col)
-        #dirch = Dirichlet(ones(r_dim))
-        #prior_arr = vcat(prior_arr, [lambda_col, dirch])
-        for j in 1:r_dim
-            if j < 4 && limitP[i] > 20.0
-                push!(prior_arr, Distributions.Uniform(0., max_in_col))
-            else
-                push!(prior_arr, Distributions.Uniform(0., 0.2))
-            end
-        end
+        lambda_col = Uniform(0.0, max_in_col)
+        dirch = Dirichlet(ones(r_dim))
+        prior_arr = vcat(prior_arr, [lambda_col, dirch])
+        # for j in 1:r_dim
+        #     if j < 4 && limitP[i] > 20.0
+        #         push!(prior_arr, Distributions.Uniform(0., max_in_col))
+        #     else
+        #         push!(prior_arr, Distributions.Uniform(0., 0.2))
+        #     end
+        # end
     end
     param_prior = CompositeDist(prior_arr)
     in_parallel = nworkers() > 1 ? true : false
 
     calc_distance_ltd(sum_stat_obs::ExoplanetsSysSim.CatalogSummaryStatistics,sum_stat_sim::ExoplanetsSysSim.CatalogSummaryStatistics) = EvalSysSimModel.calc_distance(sum_stat_obs,sum_stat_sim,num_dist)
     
-    global abc_plan = ABC.abc_pmc_plan_type(EvalSysSimModel.gen_data,EvalSysSimModel.calc_summary_stats, calc_distance_ltd, param_prior, make_proposal_dist=make_proposal_dist_multidim_beta, is_valid=EvalSysSimModel.is_valid, num_part=500, num_max_attempt=200, num_max_times=15, epsilon_init=9.9e99, target_epsilon=1.0e-100, in_parallel=in_parallel, adaptive_quantiles = false, epsilon_reduction_factor=0.9, tau_factor=1.5);
+    global abc_plan = ABC.abc_pmc_plan_type(EvalSysSimModel.gen_data,EvalSysSimModel.calc_summary_stats, calc_distance_ltd, param_prior, make_proposal_dist=make_proposal_dist_multidim_beta, is_valid=EvalSysSimModel.is_valid, normalize=EvalSysSimModel.normalize_dirch, num_part=500, num_max_attempt=200, num_max_times=15, epsilon_init=9.9e99, target_epsilon=1.0e-100, in_parallel=in_parallel, adaptive_quantiles = false, epsilon_reduction_factor=0.9, tau_factor=1.5);
 end
 
 function setup_abc_p2(abc_plan::ABC.abc_pmc_plan_type)
