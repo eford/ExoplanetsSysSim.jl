@@ -327,14 +327,15 @@ function calc_target_obs_sky_ave(t::KeplerTarget, sim_param::SimParam)
               cdpp = interpolate_cdpp_to_duration(t, duration)
 	      snr = snr_central * (cdpp_central/cdpp) * sqrt(transit_duration_factor) 
               pdet_this_b = calc_prob_detect_if_transit(t, snr, period, duration, sim_param, num_transit=ntr)
+              pvet = vetting_efficiency_dr25_mulders(t.sys[s].planet[p].radius, period) 
 
               if pdet_this_b >= threshold_pdet_ratio * pdet_central
                   #println("# Adding pdet_this_b = ", pdet_this_b, " pdet_c = ", pdet_central, " snr= ",snr, " cdpp= ",cdpp, " duration= ",duration, " b=",b, " u01= ", threshold_pdet_ratio)
-	         pdet[p] = pdet_ave  
+	         pdet[p] = pdet_ave#*pvet  
                  obs[i], sigma[i] = transit_noise_model(t, s, p, depth, duration, snr, ntr, b=b)  
                  #id[i] = tuple(convert(Int32,s),convert(Int32,p))
       	         i += 1
-                 break 
+                 break
               end # if add to obs and sigma lists
            end # for j
 	else # add_to_catalog
