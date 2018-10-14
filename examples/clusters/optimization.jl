@@ -289,4 +289,23 @@ function compute_weights_target_fitness_std_perfect_model(num_evals::Int64, use_
     return (active_param_true, weights, mean_weighted_dist, std_weighted_dist)
 end
 
+function map_square_to_triangle(r1::Float64, r2::Float64, A::Vector{Float64}, B::Vector{Float64}, C::Vector{Float64})
+    #This function takes in a point (r1,r2) in the unit square (i.e. r1,r2 in [0,1]) and maps it to a point P=(x,y) in the triangle defined by vertices A,B,C
+    #If r1,r2 are uniformly drawn in [0,1], then the point P=(x,y) is also uniformly drawn in the triangle; see http://www.cs.princeton.edu/~funk/tog02.pdf (Section 4.2) for a reference
 
+    @assert 0. <= r1 <= 1.
+    @assert 0. <= r2 <= 1.
+    P = (1. - sqrt(r1)) .* A + (sqrt(r1)*(1. - r2)) .* B + (sqrt(r1)*r2) .* C
+    return P
+end
+
+function target_function_transformed_params(active_param_transformed::Vector{Float64}, transformed_indices::Vector{Int64}, A::Vector{Float64}, B::Vector{Float64}, C::Vector{Float64}, use_KS_or_AD::String, Kep_or_Sim::String ; AD_mod::Bool=false, weights::Vector{Float64}=ones(13), all_dist::Bool=false, save_dist::Bool=true)
+
+    r1, r2 = active_param_transformed[transformed_indices]
+    @assert 0. <= r1 <= 1.
+    @assert 0. <= r2 <= 1.
+    active_param = deepcopy(active_param_transformed)
+    active_param[transformed_indices] = map_square_to_triangle(r1, r2, A, B, C)
+
+    return target_function(active_param, use_KS_or_AD, Kep_or_Sim ; AD_mod=AD_mod, weights=weights, all_dist=all_dist, save_dist=save_dist)
+end
