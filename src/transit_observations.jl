@@ -110,7 +110,7 @@ function calc_transit_duration_factor_for_impact_parameter_b(b::T, p::T)  where 
         duration_ratio = sqrt((1-b)*(1+b))  # Approximation to (sqrt((1+p)^2-b^2)+sqrt((1-p)^2-b^2))/2, which is itself an approximation
     elseif b < 1-p            # Planet is fully inscribed at mid-transit
         #duration_ratio = (sqrt((1+p)^2-b^2)+sqrt((1-p)^2-b^2))/2 # Average of full and flat transit durations approximates to duration between center of planet being over limb of star
-        duration_ratio = (sqrt(((1+p)+b)*((1+p)-b))+sqrt(((1-p)-b)*((1-p)-b)))/2 # Average of full and flat transit durations approximates to duration between center of planet being over limb of star
+        duration_ratio = (sqrt(((1+p)+b)*((1+p)-b))+sqrt(((1-p)+b)*((1-p)-b)))/2 # Average of full and flat transit durations approximates to duration between center of planet being over limb of star
     elseif b < 1+p            # Planet never fully inscribed by star
         #duration_ratio = sqrt((1+p)^2-b^2)/2  # /2 since now triangular
         duration_ratio = sqrt(((1+p)+b)*((1+p)-b))/2  # /2 since now triangular
@@ -129,7 +129,7 @@ function calc_effective_transit_duration_factor_for_impact_parameter_b(b::T, p::
         area_ratio = one(p)
     elseif b < 1-p            # Planet is fully inscribed at mid-transit
         #duration_ratio = (sqrt((1+p)^2-b^2)+sqrt((1-p)^2-b^2))/2 # Average of full and flat transit durations approximates to duration between center of planet being over limb of star
-        duration_ratio = (sqrt(((1+p)+b)*((1+p)-b))+sqrt(((1-p)-b)*((1-p)-b)))/2 # Average of full and flat transit durations approximates to duration between center of planet being over limb of star
+        duration_ratio = (sqrt(((1+p)+b)*((1+p)-b))+sqrt(((1-p)+b)*((1-p)-b)))/2 # Average of full and flat transit durations approximates to duration between center of planet being over limb of star
         area_ratio = one(p)   
     elseif b < 1+p            # Planet never fully inscribed by star
         #duration_ratio = sqrt((1+p)^2-b^2)/2  # /2 since now triangular
