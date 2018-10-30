@@ -83,7 +83,8 @@ function generate_kepler_target_from_table(sim_param::SimParam)
     #dens   = star_table(star_id,:dens)
     dens   = (mass*sun_mass_in_kg_IAU2010*1000.)/(4//3*pi*(radius*sun_radius_in_m_IAU2015*100.)^3)  # Self-consistent density (gm/cm^3)
   end
-  star = SingleStar(radius,mass,1.0, star_id)     # TODO SCI: Allow for blends, binaries, etc.
+  ld = LimbDarkeningParam4thOrder(star_table(id,:limbdark_coeff1), star_table(id,:limbdark_coeff2), star_table(id,:limbdark_coeff3), star_table(id,:limbdark_coeff4) ) 
+  star = SingleStar(radius,mass,1.0,star_id,ld)     # TODO SCI: Allow for blends, binaries, etc.
   cdpp_arr = make_cdpp_array(star_id)
   contam = 0.0 # rand(LogNormal(1.0e-3,1.0))      # TODO SCI: Come up with better description of Kepler targets, maybe draw from real contaminations
   data_span = star_table(star_id, :dataspan)

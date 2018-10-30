@@ -99,6 +99,10 @@ function detection_efficiency_dr25_simple(mes::Float64; min_pdet_nonzero::Float6
    return pdet
 end
 
+function vetting_efficiency_none(R_p::Real, P::Real)
+    return 1.0
+end
+
 # From Mulders et al. 2018 (arXiv 1805.08211)
 # WARNING: Assumes inputs are in R_sol and days
 function vetting_efficiency_dr25_mulders(R_p::Real, P::Real)
@@ -139,8 +143,9 @@ end
 
 
 function calc_snr_if_transit(t::KeplerTarget, depth::Float64, duration::Float64, cdpp::Float64, sim_param::SimParam; num_transit::Float64 = 1)
-   depth_tps = frac_depth_to_tps_depth(depth)                  # TODO SCI:  WARNING: Hardcoded this conversion.  Remove once depth calculated using limb darkening model
-   snr = depth_tps*sqrt(num_transit*duration*LC_rate)/cdpp     # WARNING: Assumes measurement uncertainties are uncorrelated & CDPP based on LC
+  # depth_tps = frac_depth_to_tps_depth(depth)                  # TODO SCI:  WARNING: Hardcoded this conversion.  Remove once depth calculated using limb darkening model 
+  # snr = depth_tps*sqrt(num_transit*duration*LC_rate)/cdpp     # WARNING: Assumes measurement uncertainties are uncorrelated & CDPP based on LC
+  snr = depth*sqrt(num_transit*duration*LC_rate)/cdpp     # WARNING: Assumes measurement uncertainties are uncorrelated & CDPP based on LC 
 end
 
 function calc_snr_if_transit_central(t::KeplerTarget, s::Integer, p::Integer, sim_param::SimParam)

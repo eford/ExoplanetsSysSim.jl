@@ -35,11 +35,11 @@ function semimajor_axis(ps::PlanetarySystemAbstract, id::Integer)
   return semimajor_axis(ps.orbit[id].P,M)
 end
 
-function calc_transit_depth(t::KeplerTarget, s::Integer, p::Integer)  # WARNING: IMPORTANT: Assumes non-grazing transit & no limb darkening
+function calc_transit_depth(t::KeplerTarget, s::Integer, p::Integer)  # WARNING: IMPORTANT: Assumes non-grazing transit
   radius_ratio = t.sys[s].planet[p].radius/t.sys[s].star.radius
-  depth = radius_ratio^2 # TODO SCI DETAIL: Include limb darkening?
-  # depth = depth_at_midpoint(radius_ratio, t.sys[s].star.ld)   # TODO Add limb darkening here .  When limb darkening is implemented, then we should update calc_snr_if_transit in transit_detection_model to not convert transit depth to tps deth.
-  depth *=  flux(t.sys[s].star)/flux(t)                      # Flux ratio accounts for dillution
+  # depth = radius_ratio^2 # TODO SCI DETAIL: Include limb darkening?
+  depth = depth_at_midpoint(radius_ratio, t.sys[s].star.ld)   # TODO Add limb darkening here.  When limb darkening is implemented, then we should update calc_snr_if_transit in transit_detection_model to not convert transit depth to tps deth.
+  depth *=  flux(t.sys[s].star)/flux(t)                      # Flux ratio accounts for dilution
 end
 
 function calc_transit_duration_central_circ_small_angle_approx(ps::PlanetarySystemAbstract, pl::Integer)
@@ -282,6 +282,7 @@ num_planets(t::KeplerTargetObs) = length(t.obs)
 function calc_target_obs_sky_ave(t::KeplerTarget, sim_param::SimParam)
   const max_tranets_in_sys = get_int(sim_param,"max_tranets_in_sys")
   const transit_noise_model = get_function(sim_param,"transit_noise_model")
+  const vetting_efficiency = get_function(sim_param,"vetting_efficiency")
   const min_detect_prob_to_be_included = 0.0  # get_real(sim_param,"min_detect_prob_to_be_included")
   const num_observer_samples = 1 # get_int(sim_param,"num_viewing_geometry_samples")
 
@@ -327,11 +328,11 @@ function calc_target_obs_sky_ave(t::KeplerTarget, sim_param::SimParam)
               cdpp = interpolate_cdpp_to_duration(t, duration)
 	      snr = snr_central * (cdpp_central/cdpp) * sqrt(transit_duration_factor) 
               pdet_this_b = calc_prob_detect_if_transit(t, snr, period, duration, sim_param, num_transit=ntr)
-              pvet = vetting_efficiency_dr25_mulders(t.sys[s].planet[p].radius, period) 
+              pvet = vetting_efficiency(t.sys[s].planet[p].radius, period) 
 
               if pdet_this_b >= threshold_pdet_ratio * pdet_central
                   #println("# Adding pdet_this_b = ", pdet_this_b, " pdet_c = ", pdet_central, " snr= ",snr, " cdpp= ",cdpp, " duration= ",duration, " b=",b, " u01= ", threshold_pdet_ratio)
-	         pdet[p] = pdet_ave#*pvet  
+	         pdet[p] = pdet_ave*pvet  
                  obs[i], sigma[i] = transit_noise_model(t, s, p, depth, duration, snr, ntr, b=b)  
                  #id[i] = tuple(convert(Int32,s),convert(Int32,p))
       	         i += 1
@@ -364,6 +365,7 @@ end
 function calc_target_obs_single_obs(t::KeplerTarget, sim_param::SimParam)
   #const max_tranets_in_sys = get_int(sim_param,"max_tranets_in_sys")
   const transit_noise_model = get_function(sim_param,"transit_noise_model")
+  const vetting_efficiency = get_function(sim_param,"vetting_efficiency")
   const min_detect_prob_to_be_included = 0.0  # get_real(sim_param,"min_detect_prob_to_be_included")
 
   np = num_planets(t)
@@ -397,10 +399,12 @@ function calc_target_obs_single_obs(t::KeplerTarget, sim_param::SimParam)
         depth *= snr_correction
         snr = calc_snr_if_transit(t, depth, duration, cdpp, sim_param, num_transit=ntr)
 
+        pvet = vetting_efficiency(t.sys[s].planet[p].radius, period)
         pdet[p] = calc_prob_detect_if_transit(t, depth, period, duration, cdpp, sim_param, num_transit=ntr)
         #pdet[p] = calc_prob_detect_if_transit(t, snr, sim_param, num_transit=ntr)
 
-	if pdet[p] > min_detect_prob_to_be_included   
+	if pdet[p] > min_detect_prob_to_be_included
+           pdet[p] *= pvet
            obs[i], sigma[i] = transit_noise_model(t, s, p, depth, duration, snr, ntr) 
            #id[i] = tuple(convert(Int32,s),convert(Int32,p))
       	   i += 1
