@@ -58,7 +58,7 @@ function generate_star_dumb(sim_param::SimParam)
     f = 1.0+0.1*randn()
   end
   ld = LimbDarkeningParamQuadratic(0.4603,0.2291)   # TODO: Once we implement limb darkening
-  return SingleStar(r,m,f,0,ld) 
+  return SingleStar(r,m,f,ld,0) 
   #return SingleStar(r,m,f,0) 
 end
 
