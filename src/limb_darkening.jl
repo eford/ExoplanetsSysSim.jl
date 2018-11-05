@@ -2,12 +2,11 @@
 ## (c) 2018 Eric B. Ford
 
 @compat abstract type LimbDarkeningParamAbstract end
-# Note this file is currently not used by SysSim.
 
 struct LimbDarkeningParamLinear <: LimbDarkeningParamAbstract
   coeff::Tuple{Float64}
-  # TODO SCI DETAIL: Repalce with sensible limits on LD params
-  LimbDarkeningParamLinear(_u1::Real ) = (!( (-2.0<=_u1<=2.0) )) ? error(string("Invalid quadratic limb darkening parameters: ",_u1," & ", _u2)) : new((_u1,))
+  # TODO SCI DETAIL: Replace with sensible limits on LD params
+  LimbDarkeningParamLinear(_u1::Real ) = (!( (-2.5<=_u1<=2.5) )) ? error(string("Invalid quadratic limb darkening parameters: ",_u1," & ", _u2)) : new((_u1,))
 end
 
 function depth_at_midpoint(radius_ratio::Float64, ld::LimbDarkeningParamLinear)
@@ -21,8 +20,8 @@ end
 
 struct LimbDarkeningParamQuadratic <: LimbDarkeningParamAbstract
   coeff::Tuple{Float64,Float64}
-  # TODO SCI DETAIL: Repalce with sensible limits on LD params
-  LimbDarkeningParamQuadratic(_u1::Real, _u2::Real ) = (!( (-2.0<=_u1<=2.0) && (-2.0<=_u2<=2.0) )) ? error(string("Invalid quadratic limb darkening parameters: ",_u1," & ", _u2)) : new((_u1,_u2))
+  # TODO SCI DETAIL: Replace with sensible limits on LD params
+  LimbDarkeningParamQuadratic(_u1::Real, _u2::Real ) = (!( (-2.5<=_u1<=2.5) && (-2.5<=_u2<=2.5) )) ? error(string("Invalid quadratic limb darkening parameters: ",_u1," & ", _u2)) : new((_u1,_u2))
 end
 
 function depth_at_midpoint(radius_ratio::Float64, ld::LimbDarkeningParamQuadratic)
@@ -37,8 +36,8 @@ end
 
 struct LimbDarkeningParam4thOrder <: LimbDarkeningParamAbstract
   coeff::Tuple{Float64,Float64,Float64,Float64}
-  # TODO SCI DETAIL: Repalce with sensible limits on LD params
-  LimbDarkeningParam4thOrder(_c1::Real, _c2::Real, _c3::Real, _c4::Real ) = (!( (-2.0<=_c1<=2.0) && (-2.0<=_c2<=2.0)  && (-2.0<=_c3<=2.0) && (-2.0<=_c4<=2.0) )) ? error(string("Invalid limb darkening parameters: ",_c1," , ", _c2, ", ",_c3," , ",_c4)) : new((_c1,_c2,_c3,_c4))
+  # TODO SCI DETAIL: Replace with sensible limits on LD params
+  LimbDarkeningParam4thOrder(_c1::Real, _c2::Real, _c3::Real, _c4::Real ) = (!( (-2.5<=_c1<=2.5) && (-2.5<=_c2<=2.5)  && (-2.5<=_c3<=2.5) && (-2.5<=_c4<=2.5) )) ? error(string("Invalid limb darkening parameters: ",_c1," , ", _c2, ", ",_c3," , ",_c4)) : new((_c1,_c2,_c3,_c4))
 end
 
 function depth_at_midpoint(radius_ratio::Float64, ld::LimbDarkeningParam4thOrder)
