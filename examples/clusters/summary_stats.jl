@@ -101,7 +101,6 @@ function calc_summary_stats_duration_ratios_neighbors!(css::CatalogSummaryStatis
 end
 
 function calc_summary_stats_period_radius_ratios_neighbors_internal!(css::CatalogSummaryStatistics, cat_obs::KeplerObsCatalog, param::SimParam)
-  ##### What is the point of the following if/elseif loop?
   #=
   if haskey(css.stat,"period_ratio_list") && haskey(css.stat,"radius_ratio_list")
      return (css.stat["period_ratio_list"], css.stat["radius_ratio_list"])
@@ -172,16 +171,19 @@ function calc_summary_stats_period_radius_ratios_neighbors!(css::CatalogSummaryS
   css.stat["radius_ratio_list"] = radius_ratio_list
   return (period_ratio_list, radius_ratio_list)
 end
+
 function calc_summary_stats_period_ratios_neighbors!(css::CatalogSummaryStatistics, cat_obs::KeplerObsCatalog, param::SimParam)
   period_ratio_list = calc_summary_stats_period_radius_ratios_neighbors_internal!(css,cat_obs,param)[1]
   css.stat["period_ratio_list"] = period_ratio_list
   return period_ratio_list
 end
+
 function calc_summary_stats_radius_ratios_neighbors!(css::CatalogSummaryStatistics, cat_obs::KeplerObsCatalog, param::SimParam)
   radius_ratio_list = calc_summary_stats_period_radius_ratios_neighbors_internal!(css,cat_obs,param)[2]
   css.stat["radius_ratio_list"] = radius_ratio_list
   return radius_ratio_list
 end
+
 function calc_summary_stats_radius_ratios_neighbors_photoevap_boundary_Carrera2018!(css::CatalogSummaryStatistics, cat_obs::KeplerObsCatalog, param::SimParam)
     (radius_ratio_above_list, radius_ratio_below_list, radius_ratio_across_list) = calc_summary_stats_period_radius_ratios_neighbors_internal!(css,cat_obs,param)[3:5]
     css.stat["radius_ratio_above_list"] = radius_ratio_above_list
@@ -242,22 +244,22 @@ function calc_summary_stats_cuml_period_depth_duration!(css::CatalogSummaryStati
   @assert max_tranets_in_sys >= 1
   i = 0   # tranet id
   for targ in cat_obs.target                        # For each target
-     for j in 1:min(length(targ.obs),max_tranets_in_sys)          # For each tranet around that target (but truncated if too many tranets in one system)
-         i = i+1
-         #println("# i= ",i," j= ",j)
-         period_list[i] = targ.obs[j].period
-         depth_list[i] = targ.obs[j].depth
-         duration_list[i] = targ.obs[j].duration
-         #weight_list[i] = 1.0
+      for j in 1:min(length(targ.obs),max_tranets_in_sys)          # For each tranet around that target (but truncated if too many tranets in one system)
+          i = i+1
+          #println("# i= ",i," j= ",j)
+          period_list[i] = targ.obs[j].period
+          depth_list[i] = targ.obs[j].depth
+          duration_list[i] = targ.obs[j].duration
+          #weight_list[i] = 1.0
 
-         radius_earths, period = (sqrt(targ.obs[j].depth)*targ.star.radius)/ExoplanetsSysSim.earth_radius, targ.obs[j].period
-         if photoevap_boundary_Carrera2018(radius_earths, period) == 1
-             append!(depth_above_list, targ.obs[j].depth)
-         elseif photoevap_boundary_Carrera2018(radius_earths, period) == 0
-             append!(depth_below_list, targ.obs[j].depth)
-         end
+          radius_earths, period = (sqrt(targ.obs[j].depth)*targ.star.radius)/ExoplanetsSysSim.earth_radius, targ.obs[j].period
+          if photoevap_boundary_Carrera2018(radius_earths, period) == 1
+              append!(depth_above_list, targ.obs[j].depth)
+          elseif photoevap_boundary_Carrera2018(radius_earths, period) == 0
+              append!(depth_below_list, targ.obs[j].depth)
+          end
       end
-   end
+  end
   resize!(period_list,i)
   resize!(depth_list,i)
   resize!(duration_list,i)
@@ -376,5 +378,3 @@ function test_summary_stats()
   cat_obs = observe_kepler_targets_single_obs(cat_phys,sim_param)
   summary_stat = calc_summary_stats_model(cat_obs,sim_param)
 end
-
-

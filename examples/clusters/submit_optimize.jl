@@ -13,7 +13,7 @@ function write_pbs(job_basename, run_number)
     println(f, "")
     println(f, "cd \$PBS_O_WORKDIR")
     println(f, "")
-    println(f, "/gpfs/group/ebf11/default/julia/bin/julia optimize_parallel.jl "*string(run_number))
+    println(f, "/gpfs/group/ebf11/default/julia/bin/julia optimize.jl "*string(run_number))
     close(f)
 end
 

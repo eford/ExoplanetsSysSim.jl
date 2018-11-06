@@ -130,7 +130,3 @@ t_optim = toc()
 println(f, "#")
 println(f, "# Total elapsed time: ", t_optim, " seconds")
 close(f)
-
-
-
-

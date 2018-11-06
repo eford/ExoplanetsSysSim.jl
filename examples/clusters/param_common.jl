@@ -1,4 +1,7 @@
-if !isdefined(:ExoplanetsSysSim) using ExoplanetsSysSim end 
+if !isdefined(:ExoplanetsSysSim)
+    using ExoplanetsSysSim
+end
+
 import Compat: UTF8String, ASCIIString
 
 ## simulation_parameters
@@ -30,23 +33,23 @@ function setup_sim_param_model(args::Vector{String} = Array{String}(0) )   # all
   add_param_fixed(sim_param,"generate_sizes",ExoplanetsSysSim.generate_sizes_broken_power_law) # To choose the way we draw planetary radii; if "generate_sizes_power_law", then takes "power_law_r"; if "generate_sizes_broken_power_law", then takes "power_law_r1", "power_law_r2", and "break_radius"
   add_param_active(sim_param,"power_law_P",0.5)
   add_param_fixed(sim_param,"power_law_r",-2.5)
-  add_param_active(sim_param,"power_law_r1",-2.0)
-  add_param_active(sim_param,"power_law_r2",-4.0)
+  add_param_active(sim_param,"power_law_r1",-1.5)
+  add_param_active(sim_param,"power_law_r2",-6.0)
   add_param_fixed(sim_param,"min_period",3.0)
   add_param_fixed(sim_param,"max_period",300.0)
   add_param_fixed(sim_param,"min_radius",0.5*ExoplanetsSysSim.earth_radius)
   add_param_fixed(sim_param,"max_radius",10.*ExoplanetsSysSim.earth_radius)
-  add_param_active(sim_param,"break_radius",3.0*ExoplanetsSysSim.earth_radius)
+  add_param_fixed(sim_param,"break_radius",3.0*ExoplanetsSysSim.earth_radius)
 
   # generate_num_planets_in_cluster currently use these for the Inclination distribution
-  add_param_fixed(sim_param,"sigma_incl",1.5) # degrees; 0 = coplanar w/ generate_kepler_target_simple; ignored by generate_planetary_system_uncorrelated_incl
-  add_param_fixed(sim_param,"sigma_incl_near_mmr",1.5)
+  add_param_active(sim_param,"sigma_incl",1.5) # degrees; 0 = coplanar w/ generate_kepler_target_simple; ignored by generate_planetary_system_uncorrelated_incl
+  add_param_active(sim_param,"sigma_incl_near_mmr",1.5)
 
   add_param_fixed(sim_param,"max_incl_sys",0.0) #degrees; gives system inclinations from "max_incl_sys" (deg) to 90 (deg), so set to 0 for isotropic distribution of system inclinations; NOTE: make sure the difference between this and 90 (deg) is at least greater than "sigma_incl" and "sigma_incl_near_mmr"!
 
   # generate_num_planets_in_cluster currently use these for the Eccentricity distribution
   add_param_fixed(sim_param,"generate_e_omega",ExoplanetsSysSim.generate_e_omega_rayleigh)
-  add_param_fixed(sim_param,"sigma_hk",0.05)
+  add_param_active(sim_param,"sigma_hk",0.05)
   #add_param_fixed(sim_param,"sigma_hk_one",0.1)
   #add_param_fixed(sim_param,"sigma_hk_multi",0.03)
 
@@ -56,8 +59,8 @@ function setup_sim_param_model(args::Vector{String} = Array{String}(0) )   # all
   add_param_fixed(sim_param,"mr_power_index",2.0)
   add_param_fixed(sim_param,"mr_const",1.0)
   add_param_fixed(sim_param,"mr_max_mass",1e3*ExoplanetsSysSim.earth_mass)
-  add_param_fixed(sim_param,"sigma_log_radius_in_cluster",0.25)
-  add_param_fixed(sim_param,"sigma_logperiod_per_pl_in_cluster",0.15)
+  add_param_active(sim_param,"sigma_log_radius_in_cluster",0.25)
+  add_param_active(sim_param,"sigma_logperiod_per_pl_in_cluster",0.15)
 
   # Functions to calculate observables from physical system properties
   add_param_fixed(sim_param,"calc_target_obs_single_obs",ExoplanetsSysSim.calc_target_obs_single_obs)   
@@ -124,5 +127,3 @@ function write_model_params(f, sim_param::SimParam)
     println(f, "# sigma_logperiod_per_pl_in_cluster: ", get_real(sim_param,"sigma_logperiod_per_pl_in_cluster"))
     println(f, "#")
 end
-
-

@@ -1,7 +1,7 @@
 include("clusters.jl")
 
 sim_param = setup_sim_param_model()
-add_param_fixed(sim_param,"num_targets_sim_pass_one",150060)
+add_param_fixed(sim_param,"num_targets_sim_pass_one",78005)
 add_param_fixed(sim_param,"max_incl_sys",80.0) #degrees; 0 (deg) for isotropic system inclinations; set closer to 90 (deg) for more transiting systems
 
 
@@ -10,8 +10,7 @@ add_param_fixed(sim_param,"max_incl_sys",80.0) #degrees; 0 (deg) for isotropic s
 
 ##### To load a file with all the best active parameters from a set of optimization runs:
 
-files_directory = "ACI/Model_Optimization/Clustered_P_R/All_params_random_weighted_targs150060_maxincl80/"
-#files_directory = "ACI/Model_Optimization/Non_clustered/Some9_params1_random_weighted_targs150060_maxincl80/"
+files_directory = "Sims/"
 file_name = "Active_params_best_weighted_all.txt"
 
 active_params_best_all = CSV.read(files_directory*file_name, delim=" ")

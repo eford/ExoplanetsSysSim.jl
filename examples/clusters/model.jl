@@ -1,4 +1,6 @@
-if !isdefined(:ExoplanetsSysSim) using ExoplanetsSysSim end
+if !isdefined(:ExoplanetsSysSim)
+    using ExoplanetsSysSim
+end
 
 # Code for generating clustered planetary systems (once stable can move to src/planetary_system.jl)
 
@@ -150,15 +152,15 @@ function generate_planet_periods_sizes_masses_eccs_in_cluster( star::StarAbstrac
 end
 
 function generate_num_planets_in_cluster_poisson(s::Star, sim_param::SimParam)
-  const lambda::Float64 = exp(get_real(sim_param,"log_rate_planets_per_cluster"))
-  const max_planets_in_cluster::Int64 = get_int(sim_param,"max_planets_in_cluster")
-  ExoplanetsSysSim.generate_num_planets_poisson(lambda,max_planets_in_cluster,min_planets=1)
+    const lambda::Float64 = exp(get_real(sim_param,"log_rate_planets_per_cluster"))
+    const max_planets_in_cluster::Int64 = get_int(sim_param,"max_planets_in_cluster")
+    return ExoplanetsSysSim.draw_truncated_poisson(lambda, min=1, max=max_planets_in_cluster, n=1)[1]
 end
 
 function generate_num_clusters_poisson(s::Star, sim_param::SimParam)
-  const lambda::Float64 = exp(get_real(sim_param,"log_rate_clusters"))
-  const max_clusters_in_sys::Int64 = get_int(sim_param,"max_clusters_in_sys")
-  ExoplanetsSysSim.generate_num_planets_poisson(lambda,max_clusters_in_sys)
+    const lambda::Float64 = exp(get_real(sim_param,"log_rate_clusters"))
+    const max_clusters_in_sys::Int64 = get_int(sim_param,"max_clusters_in_sys")
+    return ExoplanetsSysSim.draw_truncated_poisson(lambda, min=0, max=max_clusters_in_sys, n=1)[1]
 end
 
 # This version generates clustered planetary systems, adaptation of python code from Matthias He
@@ -185,7 +187,6 @@ function generate_planetary_system_clustered(star::StarAbstract, sim_param::SimP
 
      # First, generate number of clusters (to attempt) and planets (to attempt) in each cluster
      num_clusters = generate_num_clusters(star,sim_param)::Int64
-     #num_clusters = 1 # If we want to test singly-clustered model
      num_pl_in_cluster = map(x->generate_num_planets_in_cluster(star, sim_param)::Int64, 1:num_clusters)
      #num_pl_in_cluster = ones(Int64, num_clusters) ##### If we want a non-clustered model, setting each cluster to have 1 planet is equivalent to having no clusters
      num_pl = sum(num_pl_in_cluster)
@@ -214,7 +215,7 @@ function generate_planetary_system_clustered(star::StarAbstract, sim_param::SimP
              attempt_period_scale += 1
 
              #period_scale::Array{Float64,1} = ExoplanetsSysSim.generate_periods_power_law(star,sim_param)
-             period_scale::Array{Float64,1} = power_law_P!=-1.0 ? ExoplanetsSysSim.draw_power_law(power_law_P, min_period/min(Plist_tmp...), max_period/max(Plist_tmp...), 1) : exp(log(min_period/min(Plist_tmp...)).+rand()*log((max_period/max(Plist_tmp...))/(min_period/min(Plist_tmp...))))
+             period_scale::Array{Float64,1} = ExoplanetsSysSim.draw_power_law(power_law_P, min_period/min(Plist_tmp...), max_period/max(Plist_tmp...), 1)
              #Note: this ensures that the minimum and maximum periods will be in the range [min_period, max_period]
              #Warning: not sure about the behaviour when min_period/min(Plist_tmp...) > max_period/max(Plist_tmp...) (i.e. when the cluster cannot fit in the given range)?
              #TODO OPT: could draw period_scale more efficiently by computing the allowed regions in [min_period, max_period] given the previous cluster draws
@@ -334,4 +335,3 @@ function test_generate_planetary_system_clustered() # TODO: Update to test to no
   sim_param = setup_sim_param_model()
   cat_phys = generate_kepler_physical_catalog(sim_param)
 end
-

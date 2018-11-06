@@ -166,5 +166,3 @@ for i in 1:length(KOI_systems)
         end
     end
 end
-
-

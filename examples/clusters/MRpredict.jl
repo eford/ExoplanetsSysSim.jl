@@ -1,4 +1,6 @@
-if !isdefined(:ExoplanetsSysSim) using ExoplanetsSysSim end
+if !isdefined(:ExoplanetsSysSim)
+    using ExoplanetsSysSim
+end
 using Distributions
 using Roots #if we want to use the 'find_zero()' function
 using Optim
