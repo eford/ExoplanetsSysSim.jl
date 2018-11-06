@@ -1,8 +1,11 @@
-if !isdefined(:ExoplanetsSysSim) using ExoplanetsSysSim end 
+if !@isdefined ExoplanetsSysSim
+    using ExoplanetsSysSim
+end
+
 import Compat: UTF8String, ASCIIString
 
 ## simulation_parameters
-function setup_sim_param_model(args::Vector{String} = Array{String}(0) )   # allow this to take a list of parameter (e.g., from command line)
+function setup_sim_param_model(args::Vector{String} = Array{String}(undef, 0) )   # allow this to take a list of parameter (e.g., from command line)
   sim_param = SimParam()
   # How many tatrges to generate
   #add_param_fixed(sim_param,"num_targets_sim_pass_one",150061)                      # Note this is used for the number of stars in the simulations, not necessarily related to number of Kepler targets
@@ -12,9 +15,10 @@ function setup_sim_param_model(args::Vector{String} = Array{String}(0) )   # all
   # For generating target star properties
   add_param_fixed(sim_param,"generate_kepler_target",generate_kepler_target_from_table)
   add_param_fixed(sim_param,"star_table_setup",setup_star_table_christiansen)
-  #add_param_fixed(sim_param,"stellar_catalog","q1_q17_dr25_stellar.jld") #currently the JLD files do not have all the necessary fields
-  add_param_fixed(sim_param,"stellar_catalog","q1q17_dr25_gaia_fgk.jld") #"q1_q17_dr25_stellar.csv"
+  #add_param_fixed(sim_param,"stellar_catalog","q1_q17_dr25_stellar.jld") #"q1_q17_dr25_stellar.csv"
+  add_param_fixed(sim_param,"stellar_catalog","q1q17_dr25_gaia_fgk.csv") #"q1q17_dr25_gaia_fgk.csv"
   #add_param_fixed(sim_param,"generate_kepler_target",ExoplanetsSysSim.generate_kepler_target_simple)  # An alternative that alternative can be used for testing if above breaks
+  add_param_fixed(sim_param,"window_function","DR25topwinfuncs.jld2")
 
   # For generating planetary system properties
   add_param_fixed(sim_param,"generate_planetary_system", generate_planetary_system_clustered)
@@ -30,13 +34,13 @@ function setup_sim_param_model(args::Vector{String} = Array{String}(0) )   # all
   add_param_fixed(sim_param,"generate_sizes",ExoplanetsSysSim.generate_sizes_broken_power_law) # To choose the way we draw planetary radii; if "generate_sizes_power_law", then takes "power_law_r"; if "generate_sizes_broken_power_law", then takes "power_law_r1", "power_law_r2", and "break_radius"
   add_param_active(sim_param,"power_law_P",0.5)
   add_param_fixed(sim_param,"power_law_r",-2.5)
-  add_param_active(sim_param,"power_law_r1",-2.0)
-  add_param_active(sim_param,"power_law_r2",-4.0)
+  add_param_active(sim_param,"power_law_r1",-1.5)
+  add_param_active(sim_param,"power_law_r2",-6.0)
   add_param_fixed(sim_param,"min_period",3.0)
   add_param_fixed(sim_param,"max_period",300.0)
   add_param_fixed(sim_param,"min_radius",0.5*ExoplanetsSysSim.earth_radius)
-  add_param_fixed(sim_param,"max_radius",10.*ExoplanetsSysSim.earth_radius)
-  add_param_active(sim_param,"break_radius",3.0*ExoplanetsSysSim.earth_radius)
+  add_param_fixed(sim_param,"max_radius",10.0*ExoplanetsSysSim.earth_radius)
+  add_param_fixed(sim_param,"break_radius",3.0*ExoplanetsSysSim.earth_radius)
 
   # generate_num_planets_in_cluster currently use these for the Inclination distribution
   add_param_active(sim_param,"sigma_incl",1.5) # degrees; 0 = coplanar w/ generate_kepler_target_simple; ignored by generate_planetary_system_uncorrelated_incl
@@ -51,8 +55,8 @@ function setup_sim_param_model(args::Vector{String} = Array{String}(0) )   # all
   #add_param_fixed(sim_param,"sigma_hk_multi",0.03)
 
   # generate_num_planets_in_cluster currently use these for the Stability tests
-  add_param_active(sim_param,"num_mutual_hill_radii",8.0) #10.0
-  add_param_fixed(sim_param,"generate_planet_mass_from_radius",generate_planet_mass_from_radius_Ning2018) # "ExoplanetsSysSim.generate_planet_mass_from_radius_powerlaw" or "generate_planet_mass_from_radius_Ning2018"
+  add_param_fixed(sim_param,"num_mutual_hill_radii",8.0) #10.0
+  add_param_fixed(sim_param,"generate_planet_mass_from_radius",generate_planet_mass_from_radius_Ning2018_table) # "ExoplanetsSysSim.generate_planet_mass_from_radius_powerlaw" or "generate_planet_mass_from_radius_Ning2018" or "generate_planet_mass_from_radius_Ning2018_table"
   add_param_fixed(sim_param,"mr_power_index",2.0)
   add_param_fixed(sim_param,"mr_const",1.0)
   add_param_fixed(sim_param,"mr_max_mass",1e3*ExoplanetsSysSim.earth_mass)
@@ -72,7 +76,7 @@ function setup_sim_param_model(args::Vector{String} = Array{String}(0) )   # all
      include("param_custom.jl")
   end
   =#
-  if isdefined(:add_param_custom)
+  if @isdefined add_param_custom
      sim_param = add_param_custom(sim_param)
   end
   return sim_param
@@ -116,11 +120,11 @@ function write_model_params(f, sim_param::SimParam)
         println(f, "# mr_max_mass (M_earth): ", get_real(sim_param,"mr_max_mass")/ExoplanetsSysSim.earth_mass)
     elseif string(get_function(sim_param,"generate_planet_mass_from_radius")) == "generate_planet_mass_from_radius_Ning2018"
         println(f, "# mr_model: Ning2018")
+    elseif string(get_function(sim_param,"generate_planet_mass_from_radius")) == "generate_planet_mass_from_radius_Ning2018_table"
+        println(f, "# mr_model: Ning2018_table")
     end
 
     println(f, "# sigma_log_radius_in_cluster: ", get_real(sim_param,"sigma_log_radius_in_cluster"))
     println(f, "# sigma_logperiod_per_pl_in_cluster: ", get_real(sim_param,"sigma_logperiod_per_pl_in_cluster"))
     println(f, "#")
 end
-
-
