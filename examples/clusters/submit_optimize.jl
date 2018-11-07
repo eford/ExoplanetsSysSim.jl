@@ -6,14 +6,14 @@ function write_pbs(job_basename, run_number)
     println(f, "#PBS -A ebf11_a_g_sc_default")
     println(f, "#PBS -l nodes=1:ppn=1")
     println(f, "#PBS -l walltime=48:00:00")
-    println(f, "#PBS -l pmem=1gb")
+    println(f, "#PBS -l pmem=8gb")
     println(f, "#PBS -j oe")
-    println(f, "#PBS -m abe")
-    println(f, "#PBS -M myh7@psu.edu")
+    #println(f, "#PBS -m abe")
+    #println(f, "#PBS -M myh7@psu.edu")
     println(f, "")
     println(f, "cd \$PBS_O_WORKDIR")
     println(f, "")
-    println(f, "/gpfs/group/ebf11/default/julia/bin/julia clusters/optimize.jl "*string(run_number))
+    println(f, "/gpfs/group/ebf11/default/julia/bin/julia optimize.jl "*string(run_number))
     close(f)
 end
 
@@ -26,7 +26,7 @@ end
 ##### To actually write a number of PBS scripts and submit them:
 
 job_basename = "optimize_job" #base name for the job to be submitted
-n_submits = 4 #total number of jobs to submit
+n_submits = 20 #total number of jobs to submit
 
 for i in 1:n_submits
     write_pbs(job_basename, i)

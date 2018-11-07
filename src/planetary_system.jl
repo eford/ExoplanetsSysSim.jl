@@ -58,6 +58,7 @@ function generate_planet_mass_from_radius_powerlaw(r::Float64, s::Star, o::Orbit
 end
 
 function generate_num_planets_poisson(lambda::Real, max_planets::Integer; min_planets::Integer = 0)
+  ##### Note: this function produces odd behaviour if lambda < min_planets due to bugs in Distributions.Truncated(); for example, Distributions.Truncated(Distributions.Poisson(lambda),min_planets,max_planets) returns only values >=2 if min_planets=1 and lambda<~0.95
   if lambda < min_planets*1e-3
       return min_planets
   end
@@ -80,6 +81,23 @@ function generate_num_planets_poisson(lambda::Real, max_planets::Integer; min_pl
      =#
   end
   return n
+end
+
+function draw_truncated_poisson(lambda::Real; min::Integer=0, max::Integer=20, n::Integer=1)
+    pmf = [(lambda^k*exp(-lambda))/factorial(k) for k in min:max]
+    pmf ./= sum(pmf)
+    cmf = zeros(Float64,length(pmf))
+    for i in 1:length(pmf)
+        for j in i:-1:1
+            cmf[i] += pmf[j]
+        end
+    end
+    result = Array{Int64}(n)
+    for i in 1:n
+        u = rand()
+        result[i] = findfirst(x-> x>=u,cmf) + min -1
+    end
+    return result
 end
 
 function generate_num_planets_poisson(s::Star, sim_param::SimParam)
@@ -132,7 +150,11 @@ function generate_period_and_sizes_log_normal(s::Star, sim_param::SimParam; num_
 end
 
 function draw_power_law(n::Real, x0::Real, x1::Real, num_pl::Integer)
-     ((x1^(n+1) - x0^(n+1)).*rand(num_pl) .+ x0^(n+1)).^(1/(n+1))
+    if n != -1
+        return ((x1^(n+1) - x0^(n+1)).*rand(num_pl) .+ x0^(n+1)).^(1/(n+1))
+    else #if n == -1
+        return exp(log(x0) .+ rand(num_pl).*log(x1/x0))
+    end
 end
 
 function draw_broken_power_law(n1::Real, n2::Real, x0::Real, x1::Real, xb::Real, num_pl::Integer)
@@ -187,7 +209,7 @@ function generate_periods_power_law(s::Star, sim_param::SimParam; num_pl::Intege
     const power_law_P::Float64 = get_real(sim_param,"power_law_P")
     const min_period::Float64 = get_real(sim_param,"min_period")
     const max_period::Float64 = get_real(sim_param,"max_period")
-    Plist = power_law_P!=-1.0 ? draw_power_law(power_law_P,min_period,max_period, num_pl) : exp(log(min_period).+rand()*log(max_period/min_period))
+    Plist = draw_power_law(power_law_P,min_period,max_period, num_pl)
     return Plist
 end
 
@@ -195,7 +217,7 @@ function generate_sizes_power_law(s::Star, sim_param::SimParam; num_pl::Integer 
     const power_law_r::Float64 = get_real(sim_param,"power_law_r")
     const min_radius::Float64 = get_real(sim_param,"min_radius")
     const max_radius::Float64 = get_real(sim_param,"max_radius")
-    Rlist = power_law_r!=-1.0 ? draw_power_law(power_law_r,min_radius,max_radius, num_pl) : exp(log(min_radius).+rand()*log(max_radius/min_radius))
+    Rlist = draw_power_law(power_law_r,min_radius,max_radius, num_pl)
     return Rlist
 end
 
