@@ -1,12 +1,12 @@
 using Distributions
 using QuadGK
 
-function kde_kth_neighbor_1d{T<:Real}(xout::Vector{T}, xin::Vector{T}; k::Integer = 10, sigma::Real = 2.0)
+function kde_kth_neighbor_1d(xout::Vector{T}, xin::Vector{T}; k::Integer = 10, sigma::Real = 2.0) where T <: Real
    issorted(xin) ? kde_kth_neighbor_1d_sorted(xout,xin,k=k,sigma=sigma)  :
                    kde_kth_neighbor_1d_unsorted(xout,xin,k=k,sigma=sigma)  
 end
 
-function kde_kth_neighbor_1d_unsorted{T<:Real}(xout::Vector{T}, xin::Vector{T}; k::Integer = 10, sigma::Real = 2.0)
+function kde_kth_neighbor_1d_unsorted(xout::Vector{T}, xin::Vector{T}; k::Integer = 10, sigma::Real = 2) where T <: Real
    @assert(length(xin)>=k+1)
    @assert issorted(xout)
    yout = similar(xout)
@@ -36,7 +36,7 @@ function kde_kth_neighbor_1d_unsorted{T<:Real}(xout::Vector{T}, xin::Vector{T}; 
    return yout
 end
 
-function kde_kth_neighbor_1d_sorted{T<:Real}(xout::Vector{T}, xin::Vector{T}; k::Integer = 10, sigma::Real = 2.0)
+function kde_kth_neighbor_1d_sorted(xout::Vector{T}, xin::Vector{T}; k::Integer = 10, sigma::Real = 2) where T <: Real
    @assert(length(xin)>=k+1)
    #@assert issorted(xin)
    yout = similar(xout)
@@ -63,7 +63,7 @@ function kde_kth_neighbor_1d_sorted{T<:Real}(xout::Vector{T}, xin::Vector{T}; k:
    return yout
 end
 
-function kl_integral_arg{T<:Real}(q::T, p::T; epsilon::T = 1e-10)
+function kl_integral_arg(q::T, p::T; epsilon::T = 1e-10) where T <: Real
   if q > epsilon
      return p*log(p/q)
   else
@@ -71,12 +71,12 @@ function kl_integral_arg{T<:Real}(q::T, p::T; epsilon::T = 1e-10)
   end
 end
 
-function hellinger_integral_arg{T<:Real}(p::T, q::T)
+function hellinger_integral_arg(p::T, q::T) where T <: Real
   sqrt(p*q)
 end
 
 
-function calc_kl_distance_ab{T<:Real}(x1::Vector{T}, x2::Vector{T}, a::T, b::T; n::Integer = 100, k::Integer=max(min(length(x1)-1,length(x2)-1,20),1) )
+function calc_kl_distance_ab(x1::Vector{T}, x2::Vector{T}, a::T, b::T; n::Integer = 100, k::Integer = max(min((length(x1) - 1), (length(x2) - 1), 20), 1)) where T <: Real
   @assert b>a
   @assert n>=2
   if(length(x1)<3 || length(x2)<3) return 0.0  end
@@ -88,7 +88,7 @@ function calc_kl_distance_ab{T<:Real}(x1::Vector{T}, x2::Vector{T}, a::T, b::T; 
   integral /= n
 end
 
-function calc_kl_distance{T<:Real}(x1::Vector{T}, x2::Vector{T}; n::Integer = 100, k::Integer=max(min(length(x1)-1,length(x2)-1,20),1) )
+function calc_kl_distance(x1::Vector{T}, x2::Vector{T}; n::Integer = 100, k::Integer = max(min((length(x1) - 1), (length(x2) - 1), 20), 1)) where T <: Real
   @assert b>a
   @assert n>=2
   n1 = length(x1)

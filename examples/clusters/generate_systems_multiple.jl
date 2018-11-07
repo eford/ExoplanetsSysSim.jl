@@ -1,7 +1,7 @@
 include("clusters.jl")
 
 sim_param = setup_sim_param_model()
-add_param_fixed(sim_param,"num_targets_sim_pass_one",150060)
+add_param_fixed(sim_param,"num_targets_sim_pass_one",78005)
 add_param_fixed(sim_param,"max_incl_sys",80.0) #degrees; 0 (deg) for isotropic system inclinations; set closer to 90 (deg) for more transiting systems
 
 
@@ -10,8 +10,7 @@ add_param_fixed(sim_param,"max_incl_sys",80.0) #degrees; 0 (deg) for isotropic s
 
 ##### To load a file with all the best active parameters from a set of optimization runs:
 
-files_directory = "ACI/Model_Optimization/Clustered_P_R/All_params_random_weighted_targs150060_maxincl80/"
-#files_directory = "ACI/Model_Optimization/Non_clustered/Some9_params1_random_weighted_targs150060_maxincl80/"
+files_directory = "Sims/"
 file_name = "Active_params_best_weighted_all.txt"
 
 active_params_best_all = CSV.read(files_directory*file_name, delim=" ")
@@ -43,7 +42,7 @@ for num_cat in 1:size(active_params_best_all)[1] #1:size(active_params_best_all)
     write_model_params(f, sim_param)
     for (i,targ) in enumerate(cat_phys.target)
         if length(targ.sys[1].orbit) > 0
-            periods_sys = Array{Float64}(length(targ.sys[1].orbit))
+            periods_sys = Array{Float64}(undef, length(targ.sys[1].orbit))
             for (j,planet) in enumerate(targ.sys[1].orbit)
                 periods_sys[j] = planet.P #days
             end
@@ -56,7 +55,7 @@ for num_cat in 1:size(active_params_best_all)[1] #1:size(active_params_best_all)
     write_model_params(f, sim_param)
     for (i,targ) in enumerate(cat_phys.target)
         if length(targ.sys[1].orbit) > 0
-            ecc_sys = Array{Float64}(length(targ.sys[1].orbit))
+            ecc_sys = Array{Float64}(undef, length(targ.sys[1].orbit))
             for (j,planet) in enumerate(targ.sys[1].orbit)
                 ecc_sys[j] = planet.ecc
             end
@@ -69,7 +68,7 @@ for num_cat in 1:size(active_params_best_all)[1] #1:size(active_params_best_all)
     write_model_params(f, sim_param)
     for (i,targ) in enumerate(cat_phys.target)
         if length(targ.sys[1].planet) > 0
-            radii_sys = Array{Float64}(length(targ.sys[1].planet))
+            radii_sys = Array{Float64}(undef, length(targ.sys[1].planet))
             for (j,planet) in enumerate(targ.sys[1].planet)
                 radii_sys[j] = planet.radius #solar radii
             end
@@ -82,7 +81,7 @@ for num_cat in 1:size(active_params_best_all)[1] #1:size(active_params_best_all)
     write_model_params(f, sim_param)
     for (i,targ) in enumerate(cat_phys.target)
         if length(targ.sys[1].planet) > 0
-            masses_sys = Array{Float64}(length(targ.sys[1].planet))
+            masses_sys = Array{Float64}(undef, length(targ.sys[1].planet))
             for (j,planet) in enumerate(targ.sys[1].planet)
                 masses_sys[j] = planet.mass #solar masses
             end
@@ -124,7 +123,7 @@ for num_cat in 1:size(active_params_best_all)[1] #1:size(active_params_best_all)
     write_model_params(f, sim_param)
     for num_pl_in_sys in 1:length(summary_stat.cache["idx_n_tranets"])
         num_targets = length(summary_stat.cache["idx_n_tranets"][num_pl_in_sys])
-        period_array = Array{Float64}(num_pl_in_sys,num_targets)
+        period_array = Array{Float64}(undef, num_pl_in_sys, num_targets)
         for (i,j) in enumerate(summary_stat.cache["idx_n_tranets"][num_pl_in_sys])
             period_array[:,i] = map(ExoplanetsSysSim.period, cat_obs.target[j].obs)[1:num_pl_in_sys]
         end
@@ -139,7 +138,7 @@ for num_cat in 1:size(active_params_best_all)[1] #1:size(active_params_best_all)
     write_model_params(f, sim_param)
     for num_pl_in_sys in 1:length(summary_stat.cache["idx_n_tranets"])
         num_targets = length(summary_stat.cache["idx_n_tranets"][num_pl_in_sys])
-        depths_array = Array{Float64}(num_pl_in_sys,num_targets)
+        depths_array = Array{Float64}(undef, num_pl_in_sys, num_targets)
         for (i,j) in enumerate(summary_stat.cache["idx_n_tranets"][num_pl_in_sys])
             depths_array[:,i] = map(ExoplanetsSysSim.depth, cat_obs.target[j].obs)[1:num_pl_in_sys]
         end
@@ -154,7 +153,7 @@ for num_cat in 1:size(active_params_best_all)[1] #1:size(active_params_best_all)
     write_model_params(f, sim_param)
     for num_pl_in_sys in 1:length(summary_stat.cache["idx_n_tranets"])
         num_targets = length(summary_stat.cache["idx_n_tranets"][num_pl_in_sys])
-        duration_array = Array{Float64}(num_pl_in_sys,num_targets)
+        duration_array = Array{Float64}(undef, num_pl_in_sys, num_targets)
         for (i,j) in enumerate(summary_stat.cache["idx_n_tranets"][num_pl_in_sys])
             duration_array[:,i] = map(ExoplanetsSysSim.duration, cat_obs.target[j].obs)[1:num_pl_in_sys]
         end
@@ -170,7 +169,7 @@ for num_cat in 1:size(active_params_best_all)[1] #1:size(active_params_best_all)
     write_model_params(f, sim_param)
     for num_pl_in_sys in 1:length(summary_stat.cache["idx_n_tranets"])
         num_targets = length(summary_stat.cache["idx_n_tranets"][num_pl_in_sys])
-        stellar_mass_array = Array{Float64}(num_targets)
+        stellar_mass_array = Array{Float64}(undef, num_targets)
         for (i,j) in enumerate(summary_stat.cache["idx_n_tranets"][num_pl_in_sys])
             stellar_mass_array[i] = cat_obs.target[j].star.mass
         end
@@ -185,7 +184,7 @@ for num_cat in 1:size(active_params_best_all)[1] #1:size(active_params_best_all)
     write_model_params(f, sim_param)
     for num_pl_in_sys in 1:length(summary_stat.cache["idx_n_tranets"])
         num_targets = length(summary_stat.cache["idx_n_tranets"][num_pl_in_sys])
-        stellar_radius_array = Array{Float64}(num_targets)
+        stellar_radius_array = Array{Float64}(undef, num_targets)
         for (i,j) in enumerate(summary_stat.cache["idx_n_tranets"][num_pl_in_sys])
             stellar_radius_array[i] = cat_obs.target[j].star.radius
         end

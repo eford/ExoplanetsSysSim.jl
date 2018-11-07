@@ -127,8 +127,8 @@ end
 
 function calc_duration_idx(D::Float64)::Int64 
   # NOTE IMPORTANT: Currently assumes we left wf data in hours, so deal with that conversion here
-  @assert(D>zero(D))
-  hours_in_day = 24 
+  @assert(D>=zero(D)) ##### Make sure this function is still doing the right thing if D = 0!
+  hours_in_day = 24
   idx = searchsortedlast(win_func_data.wf_durations_in_hrs,D*hours_in_day)
   if idx == 0
      return 1
