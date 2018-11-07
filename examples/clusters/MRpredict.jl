@@ -227,7 +227,7 @@ function interpolate_planet_mass_from_radius_quantile_Ning2018_table(log_Radius:
 
     #If using "Interpolations" package (fastest):
     global scaled_itp
-    return scaled_itp[log_Radius, quantile]
+    return scaled_itp(log_Radius, quantile)
 end
 
 function generate_planet_mass_from_radius_Ning2018_table(Radius::Float64, sim_param::SimParam)
@@ -396,7 +396,7 @@ table_data = convert(Array, log_Mass_table[:,2:end])
 itp = interpolate(table_data, BSpline(Cubic(Line(OnGrid())))) #interpolation object where the x and y axes are indices
 scaled_itp = Interpolations.scale(itp, log_Radii, quantiles) #scaled interpolation object where the x and y axes are scaled to their physical units
 
-#scaled_itp[0., 0.5] #calls the interpolation object to perform an interpolation at a given point
+#scaled_itp(0., 0.5) #calls the interpolation object to perform an interpolation at a given point
 
 
 
