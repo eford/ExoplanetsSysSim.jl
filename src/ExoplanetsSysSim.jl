@@ -29,7 +29,7 @@ export Planet
 include("planet.jl")
 export LimbDarkeningParamAbstract, LimbDarkeningParamLinear, LimbDarkeningParamQuadratic, LimbDarkeningParam4thOrder
 include("limb_darkening.jl")
-export depth_at_midpoint
+export depth_at_midpoint, ratio_from_depth
 export StarAbstract, Star, SingleStar, BinaryStar
 include("star.jl")
 export flux, mass
