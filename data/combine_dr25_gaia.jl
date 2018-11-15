@@ -3,7 +3,7 @@ using StatsBase, Polynomials, CurveFit
 
 kep_filename = joinpath(Pkg.dir("ExoplanetsSysSim"), "data", "q1_q17_dr25_stellar.csv")
 gaia_filename = joinpath(Pkg.dir("ExoplanetsSysSim"), "data", "gaiadr2_keplerdr25_crossref.csv")
-mast_filename = joinpath(Pkg.dir("ExoplanetsSysSim"), "data", "KeplerMAST_TargetProperties.csv")
+mast_filename = joinpath(Pkg.dir("ExoplanetsSysSim"), "data", "KeplerMAST_TargetProperties_nocontam.csv")
 stellar_catalog_file_out = joinpath(Pkg.dir("ExoplanetsSysSim"), "data", "q1q17_dr25_gaia_fgk.jld")
 
 kep_df = CSV.read(kep_filename)
