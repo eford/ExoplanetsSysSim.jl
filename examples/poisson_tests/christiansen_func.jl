@@ -371,8 +371,9 @@ function calc_summary_stats_obs_binned_rates(cat_obs::KeplerObsCatalog, param::S
         else
           weight_list[n] = 1.0
         end
+        flux_ratio = (1.0+ExoplanetsSysSim.StellarTable.star_table(cat_obs.target[i].star.id, :contam))/1.0 # WARNING: Assumes flux = 1
         #radius_list[n] = sqrt(cat_obs.target[i].obs[j].depth)*cat_obs.target[i].star.radius
-        radius_ratio = ExoplanetsSysSim.ratio_from_depth(cat_obs.target[i].obs[j].depth, ld)
+        radius_ratio = ExoplanetsSysSim.ratio_from_depth(cat_obs.target[i].obs[j].depth*flux_ratio, ld)
         radius_list[n] = radius_ratio*ExoplanetsSysSim.StellarTable.star_table(cat_obs.target[i].star.id, :radius)
         #radius_list[n] = sqrt(cat_obs.target[i].obs[j].depth)*Rstar
         n = n+1
@@ -384,7 +385,8 @@ function calc_summary_stats_obs_binned_rates(cat_obs::KeplerObsCatalog, param::S
       for j in 1:num_planets(cat_obs.target[i])
         period_list[n] = cat_obs.target[i].obs[j].period
         weight_list[n] = 1.0
-        radius_ratio = ExoplanetsSysSim.ratio_from_depth(cat_obs.target[i].obs[j].depth, ld)
+        flux_ratio = (1.0+ExoplanetsSysSim.StellarTable.star_table(cat_obs.target[i].star.id, :contam))/1.0 # WARNING: Assumes flux = 1
+        radius_ratio = ExoplanetsSysSim.ratio_from_depth(cat_obs.target[i].obs[j].depth*flux_ratio, ld)
         radius_list[n] = radius_ratio*cat_obs.target[i].star.radius
         n = n+1
       end
