@@ -42,7 +42,7 @@ function setup(filename::String)
   else
   try 
     #df = readtable(filename)
-    df = CSV.read(filename,nullable=true)
+    df = CSV.read(filename,allowmissing=:all)
   catch
     error(string("# Failed to read stellar catalog >",filename,"< in ascii format."))
   end
@@ -56,6 +56,9 @@ function setup(filename::String)
   usable = find(is_usable)
   df = df[usable, symbols_to_keep]
   end
+    mast_df = CSV.read(convert(String,joinpath(Pkg.dir("ExoplanetsSysSim"), "data", "KeplerMAST_TargetProperties.csv")))
+    delete!(mast_df, [~(x in [:kepid, :contam]) for x in names(mast_df)])
+    df = join(df, mast_df, on=:kepid)
     df[:wf_id] = map(x->ExoplanetsSysSim.WindowFunction.get_window_function_id(x,use_default_for_unknown=false),df[:kepid])
     obs_5q = df[:wf_id].!=-1
     df = df[obs_5q,keys(df.colindex)]

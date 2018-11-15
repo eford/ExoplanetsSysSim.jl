@@ -302,6 +302,9 @@ function setup_christiansen(filename::String; force_reread::Bool = false)
   df = tmp_df
   StellarTable.set_star_table(df)
   end
+    mast_df = CSV.read(convert(String,joinpath(Pkg.dir("ExoplanetsSysSim"), "data", "KeplerMAST_TargetProperties.csv")))
+    delete!(mast_df, [~(x in [:kepid, :contam]) for x in names(mast_df)])
+    df = join(df, mast_df, on=:kepid)
     println("# Removing stars observed <5 quarters.")
     df[:wf_id] = map(x->ExoplanetsSysSim.WindowFunction.get_window_function_id(x,use_default_for_unknown=false),df[:kepid])
     obs_5q = df[:wf_id].!=-1
