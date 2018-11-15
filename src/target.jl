@@ -64,17 +64,17 @@ function generate_kepler_target_from_table(sim_param::SimParam)
                 attmpt_num = 0
             end
             radius = draw_asymmetric_normal( star_table(star_id,:radius), star_table(star_id,:radius_err1), abs(star_table(star_id,:radius_err2)) )
-            #mass = draw_asymmetric_normal( star_table(star_id,:mass), star_table(star_id,:mass_err1), abs(star_table(star_id,:mass_err2)) )
+            mass = draw_asymmetric_normal( star_table(star_id,:mass), star_table(star_id,:mass_err1), abs(star_table(star_id,:mass_err2)) )
             #dens = draw_asymmetric_normal( star_table(star_id,:dens), star_table(star_id,:dens_err1), abs(star_table(star_id,:dens_err2)) )
             attmpt_num += 1
         end
         
-        # ZAMS mass-radius relation taken from 15.1.1 of Allen's Astrophysical Quantities (2002)
-        if radius > 1.227
-            mass = 10^((log10(radius)-0.011)/0.64)
-        else
-            mass = 10^((log10(radius)+0.02)/0.917)
-        end
+        # # ZAMS mass-radius relation taken from 15.1.1 of Allen's Astrophysical Quantities (2002)
+        # if radius > 1.227
+        #     mass = 10^((log10(radius)-0.011)/0.64)
+        # else
+        #     mass = 10^((log10(radius)+0.02)/0.917)
+        # end
 
         dens   = (mass*sun_mass_in_kg_IAU2010*1000.)/(4//3*pi*(radius*sun_radius_in_m_IAU2015*100.)^3)  # Self-consistent density (gm/cm^3)
   else
