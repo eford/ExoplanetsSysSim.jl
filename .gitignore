@@ -10,3 +10,7 @@ libcorbits.so
 profile*
 
 data/gaiadr2_keplerdr25_crossref\.csv
+
+data/KeplerMAST_TargetProperties_contam\.csv
+
+data/KeplerMAST_TargetProperties_orig\.csv
