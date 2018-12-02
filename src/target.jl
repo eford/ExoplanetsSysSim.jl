@@ -58,7 +58,7 @@ function generate_kepler_target_from_table(sim_param::SimParam)
   radius = 0.0  
     if use_star_table_sigmas
         attmpt_num = 0
-        while (!(min_star_radius<radius<max_star_radius))# || (!(min_star_mass<mass<max_star_mass)) || (!(0.0<dens<max_star_density))
+        while (!(min_star_radius<radius<max_star_radius)) || (!(min_star_mass<mass<max_star_mass))# || (!(0.0<dens<max_star_density))
             if attmpt_num >= max_draws_star_properties 
                 star_id = rand(1:max_star_id)
                 attmpt_num = 0
