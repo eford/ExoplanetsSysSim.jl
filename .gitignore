@@ -8,3 +8,5 @@ julia_types
 exoplanetssyssim
 libcorbits.so
 profile*
+
+data/gaiadr2_keplerdr25_crossref\.csv
