@@ -198,7 +198,7 @@ function generate_period_and_sizes_christiansen(s::Star, sim_param::SimParam; nu
   for j in 1:(length(limitP)-1)
     tmp_ind = find(x -> x == j, j_idx)
     if length(tmp_ind) > 0
-      n_range = length(tmp_ind)    
+      n_range = length(tmp_ind)
       loga_min = log(ExoplanetsSysSim.semimajor_axis(limitP[j], s.mass))
       loga_min_ext = log(ExoplanetsSysSim.semimajor_axis(limitP[j], s.mass)+sepa_min)  # Used for determining minimum semimajor axis separation
       loga_max = log(ExoplanetsSysSim.semimajor_axis(limitP[j+1], s.mass))
@@ -302,9 +302,9 @@ function setup_christiansen(filename::String; force_reread::Bool = false)
   df = tmp_df
   StellarTable.set_star_table(df)
   end
-    mast_df = CSV.read(convert(String,joinpath(Pkg.dir("ExoplanetsSysSim"), "data", "KeplerMAST_TargetProperties.csv")))
-    delete!(mast_df, [~(x in [:kepid, :contam]) for x in names(mast_df)])
-    df = join(df, mast_df, on=:kepid)
+    # mast_df = CSV.read(convert(String,joinpath(Pkg.dir("ExoplanetsSysSim"), "data", "KeplerMAST_TargetProperties.csv")))
+    # delete!(mast_df, [~(x in [:kepid, :contam]) for x in names(mast_df)])
+    # df = join(df, mast_df, on=:kepid)
     println("# Removing stars observed <5 quarters.")
     df[:wf_id] = map(x->ExoplanetsSysSim.WindowFunction.get_window_function_id(x,use_default_for_unknown=false),df[:kepid])
     obs_5q = df[:wf_id].!=-1

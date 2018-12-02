@@ -70,7 +70,7 @@ function setup()
     println("# Finished reading in stellar data")
     
     ### Use simulated planet candidate catalog data
-    # add_param_fixed(sim_param_closure,"num_kepler_targets",1000000)  # For "observed" catalog
+    # add_param_fixed(sim_param_closure,"num_kepler_targets",100000)  # For "observed" catalog
     # cat_obs = simulated_read_kepler_observations(sim_param_closure)
     # println("# Finished setting up simulated true catalog")
     ###
@@ -132,13 +132,13 @@ function setup_abc(num_dist::Integer = 0)
 
     calc_distance_ltd(sum_stat_obs::ExoplanetsSysSim.CatalogSummaryStatistics,sum_stat_sim::ExoplanetsSysSim.CatalogSummaryStatistics) = EvalSysSimModel.calc_distance(sum_stat_obs,sum_stat_sim,num_dist)
     
-    global abc_plan = ABC.abc_pmc_plan_type(EvalSysSimModel.gen_data,EvalSysSimModel.calc_summary_stats, calc_distance_ltd, param_prior, make_proposal_dist=make_proposal_dist_multidim_beta, is_valid=EvalSysSimModel.is_valid, normalize=EvalSysSimModel.normalize_dirch, num_part=500, num_max_attempt=200, num_max_times=15, epsilon_init=9.9e99, target_epsilon=1.0e-100, in_parallel=in_parallel, adaptive_quantiles = false, epsilon_reduction_factor=0.9, tau_factor=1.5);
+    global abc_plan = ABC.abc_pmc_plan_type(EvalSysSimModel.gen_data,EvalSysSimModel.calc_summary_stats, calc_distance_ltd, param_prior, make_proposal_dist=make_proposal_dist_multidim_beta, is_valid=EvalSysSimModel.is_valid, normalize=EvalSysSimModel.normalize_dirch, num_part=100, num_max_attempt=200, num_max_times=15, epsilon_init=9.9e99, target_epsilon=1.0e-100, in_parallel=in_parallel, adaptive_quantiles = false, epsilon_reduction_factor=0.9, tau_factor=1.5);
 end
 
 function setup_abc_p2(abc_plan::ABC.abc_pmc_plan_type)
     abc_plan.tau_factor = 2.0
     abc_plan.num_max_times = 200
-    ExoplanetsSysSim.add_param_fixed(EvalSysSimModel.sim_param_closure,"num_targets_sim_pass_one",5000)
+    ExoplanetsSysSim.add_param_fixed(EvalSysSimModel.sim_param_closure,"num_targets_sim_pass_one",20000)
     return abc_plan
 end
     
@@ -154,23 +154,23 @@ function run_abc_largegen(pop::ABC.abc_population_type, ss_true::ExoplanetsSysSi
     prior_arr = ContinuousDistribution[]
     for i in 1:(length(limitP)-1)
         max_in_col = floor(3*log(limitP[i+1]/limitP[i])/log(2))
-        # lambda_col = Uniform(0.0, max_in_col)
-        # dirch = Dirichlet(ones(r_dim))
-        # prior_arr = vcat(prior_arr, [lambda_col, dirch])
-        for j in 1:r_dim
-            if j < 4 && limitP[i] > 20.0
-                push!(prior_arr, Distributions.Uniform(0., max_in_col))
-            else
-                push!(prior_arr, Distributions.Uniform(0., 0.2))
-            end
-        end
+        lambda_col = Uniform(0.0, max_in_col)
+        dirch = Dirichlet(ones(r_dim))
+        prior_arr = vcat(prior_arr, [lambda_col, dirch])
+        # for j in 1:r_dim
+        #     if j < 4 && limitP[i] > 20.0
+        #         push!(prior_arr, Distributions.Uniform(0., max_in_col))
+        #     else
+        #         push!(prior_arr, Distributions.Uniform(0., 0.2))
+        #     end
+        # end
     end
     param_prior = CompositeDist(prior_arr)
     in_parallel = nworkers() > 1 ? true : false
     
     calc_distance_ltd(sum_stat_obs::ExoplanetsSysSim.CatalogSummaryStatistics,sum_stat_sim::ExoplanetsSysSim.CatalogSummaryStatistics) = EvalSysSimModel.calc_distance(sum_stat_obs,sum_stat_sim,num_dist)
     
-    global abc_plan = ABC.abc_pmc_plan_type(EvalSysSimModel.gen_data,EvalSysSimModel.calc_summary_stats, calc_distance_ltd, param_prior, make_proposal_dist=make_proposal_dist_multidim_beta, is_valid=EvalSysSimModel.is_valid, num_part=npart, num_max_attempt=50, num_max_times=1, epsilon_init=9.9e99, target_epsilon=1.0e-100, in_parallel=in_parallel, tau_factor=2.0);
+    global abc_plan = ABC.abc_pmc_plan_type(EvalSysSimModel.gen_data,EvalSysSimModel.calc_summary_stats, calc_distance_ltd, param_prior, make_proposal_dist=make_proposal_dist_multidim_beta, is_valid=EvalSysSimModel.is_valid, normalize=EvalSysSimModel.normalize_dirch, num_part=npart, num_max_attempt=50, num_max_times=1, epsilon_init=9.9e99, target_epsilon=1.0e-100, in_parallel=in_parallel, tau_factor=2.0);
 
     println("# run_abc_largegen: ",EvalSysSimModel.sim_param_closure)
     sampler_largegen = abc_plan.make_proposal_dist(pop, abc_plan.tau_factor)
@@ -180,7 +180,7 @@ function run_abc_largegen(pop::ABC.abc_population_type, ss_true::ExoplanetsSysSi
         theta_val, dist_largegen, attempts_largegen = ABC.generate_theta(abc_plan, sampler_largegen, ss_true, epshist_targ)
         theta_largegen[:,i] = theta_val  
         prior_logpdf = Distributions.logpdf(abc_plan.prior,theta_val)
-        sampler_logpdf = ABC.logpdf(sampler_largegen, theta_val)
+        sampler_logpdf = Distributions.logpdf(sampler_largegen, theta_val)
         weight_largegen[i] = exp(prior_logpdf-sampler_logpdf)
     end
     return theta_largegen, weight_largegen
