@@ -10,6 +10,8 @@ export setup_window_function, get_window_function_data, get_window_function_id, 
 using DataFrames
 #using CSV
 using JLD
+using PyPlot	#for testing OSD interpolator. Remove when finished testing
+using ApproXD	#for interpolating OSD table
 using ExoplanetsSysSim.SimulationParameters
 
 
@@ -151,6 +153,59 @@ function eval_window_function(wf_idx::Int64, D_idx::Int64, P_idx::Int64)::Float6
    return win_func_data.window_func_array[wf_idx,D_idx,P_idx]     
 end
 
+#Object for storing data necessary for OSD_interpolator
+immutable OSD_data
+  allosds::Array{Float64,3}
+  kepids::Array{Float64,1}
+  periods_length::Int64
+  durations_length::Int64
+  grid::Array{Array{Float64,1},1}
+end
+
+function setup_OSD_interp()			#reads in 3D table of OSD values and sets up global variables to be used in interpolation
+  global OSD_setup
+  OSD_file = load(joinpath(Pkg.dir(), "ExoplanetsSysSim", "src", "allosds.jld"))
+  allosds = OSD_file["allosds"]			#table of OSDs with dimensions: kepids,durations,periods
+  periods = OSD_file["periods"][1,:]		#1000 period values corresponding to OSD values in the third dimension of the allosds table
+  kepids = OSD_file["kepids"]			#kepids corresponding to OSD values in the first dimension of theh allosds table
+  durations = [1.5,2.,2.5,3.,3.5,4.5,5.,6.,7.5,9.,10.5,12.,12.5,15.] #14 durations corresponding to OSD values in the first dimension of theh allosds table
+  periods_length = length(allosds[1,1,:])
+  durations_length = length(allosds[1,:,1])
+  grid = Array{Float64,1}[]			#grid used in OSD_interpolator
+  push!(grid, durations)   
+  push!(grid, periods)
+  global compareNoise = Float64[]		#testing variable used to make sure OSD_interpolator is producing reasonable snrs
+  OSD_setup = OSD_data(allosds, kepids, periods_length, durations_length, grid)
+  return OSD_setup
+end
+
+function interp_OSD_from_table(kepid::Int64, period::Real, duration::Real)
+  kepid = convert(Float64,kepid)
+  meskep = OSD_setup.kepids			#we need to find the index that this planet's kepid corresponds to in allosds.jld
+  if findfirst(meskep , kepid) == 0
+     kepid_index = rand(1:88807)		#if we don't find the kepid in allosds.jld, then we make a random one
+#println("No match"); Used to make sure the kepid values we are producing correspond well to the kepids in allosds.jld
+  else
+     kepid_index = findfirst(meskep , kepid)
+#println("Match"); Used to make sure the kepid values we are producing correspond well to the kepids in allosds.jld
+  end
+  olOSD = OSD_setup.allosds[kepid_index,:,:]    #use correct kepid index to extract 2D table from 3D OSD table
+  lint = Lininterp(olOSD, OSD_setup.grid)	#sets up linear interpolation object
+  osd = eval2D(lint, [duration*24,period])[1]	#interpolates osd
+  return osd
+end
+
+function cdpp_vs_osd(ratio::Float64, cuantos::Int64)
+#testing function that takes ratios of cdpp_snr/osd_snr and plots a histogram to make sure the results are reasonable.
+  global compareNoise
+  push!(compareNoise,ratio)
+  if length(compareNoise) == cuantos
+    PyPlot.plt[:hist](compareNoise,100)
+    println("MES median: ",median(compareNoise)," MES mean: ",mean(compareNoise), " Standard deviation: ",std(compareNoise))
+    cuantos = 100000000
+  end
+  return cuantos
+end
 
 end  # module WindowFunction
 
