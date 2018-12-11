@@ -11,6 +11,8 @@ immutable Star <: StarAbstract
   flux::Float64                      # relevant once have multiple stars in one target
   # ld::LimbDarkeningParamAbstract         # TODO SCI DETAIL: add limb darkening param?
   id::Int64                          # id for looking up properties in stellar catalog
+  kepid::Int64			     # kepid to be used when interpolating OSD values
+
 end
 #typealias SingleStar Star
 SingleStar = Star

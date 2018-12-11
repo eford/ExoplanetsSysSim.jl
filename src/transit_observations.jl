@@ -3,6 +3,7 @@
 
 #using Distributions
 #include("constants.jl")
+include("newPDST.jl")		#includes a function to calculate if given durations match those observed by Kepler for a given period
 
 #  Starting Section of Observables that are actually used
 immutable TransitPlanetObs
@@ -374,6 +375,7 @@ function calc_target_obs_single_obs(t::KeplerTarget, sim_param::SimParam)
   #sdp_sys = Array{SystemDetectionProbsAbstract}(ns)
   sdp_sys = Array{ObservedSystemDetectionProbs}(ns)
   i = 1
+  cuantos = 1000			#indicator for testing OSD interpolator. 
   for (s,sys) in enumerate(t.sys)
     pdet = zeros(num_planets(sys))
     for (p,planet) in enumerate(sys.planet)
@@ -384,8 +386,14 @@ function calc_target_obs_single_obs(t::KeplerTarget, sim_param::SimParam)
 	if duration <= 0.
 	   continue
 	end
-        ntr = calc_expected_num_transits(t, s, p, sim_param)
         period = sys.orbit[p].P
+        kepid = t.kepid
+        osd = WindowFunction.interp_OSD_from_table(kepid, period, duration)
+        PDST = get_legal_durations(period,duration*24)	#tests if durations are included in Kepler's observations for a certain planet period. Skips this planet if not.
+        if PDST == false || osd == Inf || osd == 0.0 
+           continue
+        end
+        ntr = calc_expected_num_transits(t, s, p, sim_param)
         # t0 = rand(Uniform(0.0,period))   # WARNING: Not being calculated from orbit
         depth = calc_transit_depth(t,s,p)
         cdpp = interpolate_cdpp_to_duration(t, duration)
@@ -394,10 +402,14 @@ function calc_target_obs_single_obs(t::KeplerTarget, sim_param::SimParam)
         b = calc_impact_parameter(t.sys[s],p)
 	snr_correction = calc_depth_correction_for_grazing_transit(b,size_ratio)  
         depth *= snr_correction
-        snr = calc_snr_if_transit(t, depth, duration, cdpp, sim_param, num_transit=ntr)
-
+        cdpp_snr = calc_snr_if_transit_cdpp(t, depth, duration, cdpp, sim_param, num_transit=ntr) #for testing if osd_interpolator is giving acceptable results
+        snr = calc_snr_if_transit(t, depth, duration, osd, sim_param, num_transit=ntr)
         pdet[p] = calc_prob_detect_if_transit(t, depth, period, duration, cdpp, sim_param, num_transit=ntr)
         #pdet[p] = calc_prob_detect_if_transit(t, snr, sim_param, num_transit=ntr)
+
+	#plotting function for testing if osd_interpolator is giving acceptable results
+        ratio = cdpp_snr/snr*100
+        cuantos = WindowFunction.cdpp_vs_osd(ratio, cuantos)
 
 	if pdet[p] > min_detect_prob_to_be_included   
            obs[i], sigma[i] = transit_noise_model(t, s, p, depth, duration, snr, ntr) 
