@@ -14,6 +14,7 @@ immutable KeplerTarget
   data_span::Float64
   duty_cycle::Float64
   window_function_id::Int64 # Points to the id of the window function for this target
+  kepid::Int64		#used in interpolating OSD values
   #channel::Int64         # E.g., if we cared which Kepler channel the target fell on
   #has_sc::Vector{Bool}   # TODO OPT: Make Immutable Vector or BitArray for speed?  QUERY: Should this go in KeplerTargetObs?
   #                       # QUERY: Do we want a separate CDPP for SC?  Or will CDPP's in different months be for LC/SC depending on this variable?
@@ -77,11 +78,13 @@ function generate_kepler_target_from_table(sim_param::SimParam)
         # end
 
         dens   = (mass*sun_mass_in_kg_IAU2010*1000.)/(4//3*pi*(radius*sun_radius_in_m_IAU2015*100.)^3)  # Self-consistent density (gm/cm^3)
+        kepid  = star_table(star_id,:kepid)
   else
     radius = star_table(star_id,:radius)
     mass   = star_table(star_id,:mass)
     #dens   = star_table(star_id,:dens)
     dens   = (mass*sun_mass_in_kg_IAU2010*1000.)/(4//3*pi*(radius*sun_radius_in_m_IAU2015*100.)^3)  # Self-consistent density (gm/cm^3)
+    kepid  = star_table(star_id,:kepid)
   end
   ld = LimbDarkeningParam4thOrder(star_table(star_id,:limbdark_coeff1), star_table(star_id,:limbdark_coeff2), star_table(star_id,:limbdark_coeff3), star_table(star_id,:limbdark_coeff4) ) 
   star = SingleStar(radius,mass,1.0,ld,star_id)     # TODO SCI: Allow for blends, binaries, etc.
@@ -96,7 +99,7 @@ function generate_kepler_target_from_table(sim_param::SimParam)
   end
   # ch = rand(DiscreteUniform(1,84))              # Removed channel in favor of window function id
   ps = generate_planetary_system(star, sim_param)  
-  return KeplerTarget([ps],repeat(cdpp_arr, outer=[1,1]),contam,data_span,duty_cycle,wf_id)
+  return KeplerTarget([ps],repeat(cdpp_arr, outer=[1,1]),contam,data_span,duty_cycle,wf_id,kepid)
 end
 
 function generate_kepler_target_simple(sim_param::SimParam)   

@@ -141,12 +141,18 @@ function interpolate_cdpp_to_duration(t::KeplerTarget, duration::Float64)::Float
    return cdpp
 end
 
-
-function calc_snr_if_transit(t::KeplerTarget, depth::Float64, duration::Float64, cdpp::Float64, sim_param::SimParam; num_transit::Float64 = 1)
+#this function calculates snr using cdpp instead of osd
+function calc_snr_if_transit_cdpp(t::KeplerTarget, depth::Float64, duration::Float64, cdpp::Float64, sim_param::SimParam; num_transit::Float64 = 1)
   # depth_tps = frac_depth_to_tps_depth(depth)                  # TODO SCI:  WARNING: Hardcoded this conversion.  Remove once depth calculated using limb darkening model 
   # snr = depth_tps*sqrt(num_transit*duration*LC_rate)/cdpp     # WARNING: Assumes measurement uncertainties are uncorrelated & CDPP based on LC
   snr = depth*sqrt(num_transit*duration*LC_rate)/cdpp     # WARNING: Assumes measurement uncertainties are uncorrelated & CDPP based on LC 
 end
+
+function calc_snr_if_transit(t::KeplerTarget, depth::Real, duration::Real, osd::Real, sim_param::SimParam; num_transit::Real = 1)
+   depth_tps = frac_depth_to_tps_depth(depth)                  # WARNING: Hardcoded this conversion
+   snr = depth_tps/osd*1.0e6 # osd is in ppm
+ end
+
 
 function calc_snr_if_transit_central(t::KeplerTarget, s::Integer, p::Integer, sim_param::SimParam)
   depth = calc_transit_depth(t,s,p)
