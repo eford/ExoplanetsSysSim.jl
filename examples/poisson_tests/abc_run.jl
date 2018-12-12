@@ -2,7 +2,7 @@
 ## (c) 2018 Danley C. Hsu & Eric B. Ford
 # Script for producing Q1-Q16 FGK planet candidate occurrence rate estimates
 
-include(joinpath(dirname(pwd()), "abc_setup.jl"))
+include("abc_setup.jl")
 
 using SysSimABC
 using ExoplanetsSysSim
@@ -10,7 +10,7 @@ using JLD
 using StatsBase
 
 out2txt = false # Write occurrence rates & densities to text files
-expandpart = false # Expand final generation for robust posteriors
+expandpart = true # Expand final generation for robust posteriors
 
 println("Setting up simulation...")
 @time abc_plan = setup_abc()
@@ -27,7 +27,7 @@ println("")
 
 if expandpart
     println("Expanding to large generation...")
-    @time theta_largegen, weights_largegen = run_abc_largegen(output, EvalSysSimModel.get_ss_obs(), output.accept_log.epsilon[end-1])
+    @time theta_largegen, weights_largegen = run_abc_largegen(output, EvalSysSimModel.get_ss_obs(), output.accept_log.epsilon[end-1], npart=500)
     println("")
 end
 
