@@ -388,11 +388,11 @@ function calc_target_obs_single_obs(t::KeplerTarget, sim_param::SimParam)
 	end
         period = sys.orbit[p].P
         kepid = t.kepid
-        osd = WindowFunction.interp_OSD_from_table(kepid, period, duration)
-        PDST = get_legal_durations(period,duration*24)	#tests if durations are included in Kepler's observations for a certain planet period. Skips this planet if not.
-        if PDST == false || osd == Inf || osd == 0.0 
-           continue
-        end
+        osd_duration = get_legal_durations(period,duration)	#tests if durations are included in Kepler's observations for a certain planet period. If not, returns nearest possible duration
+        osd = WindowFunction.interp_OSD_from_table(kepid, period, osd_duration)
+        if osd_duration > duration				#use a correcting factor if this duration is lower than the minimum searched for this period. 
+	  osd = osd*osd_duration/duration
+	end
         ntr = calc_expected_num_transits(t, s, p, sim_param)
         # t0 = rand(Uniform(0.0,period))   # WARNING: Not being calculated from orbit
         depth = calc_transit_depth(t,s,p)
