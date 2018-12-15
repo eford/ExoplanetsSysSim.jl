@@ -47,7 +47,7 @@ function frac_depth_to_tps_depth(frac_depth::Float64)
     return tps_depth::Float64
 end
 
-function detection_efficiency_theory(mes::Float64; min_pdet_nonzero::Float64 = 0.0)
+function detection_efficiency_theory(mes::Float64, expected_num_transits::Float64; min_pdet_nonzero::Float64 = 0.0)
    const muoffset =  0.0
    const sig =  1.0
    const mesthresh = 7.1
@@ -60,7 +60,7 @@ function detection_efficiency_theory(mes::Float64; min_pdet_nonzero::Float64 = 0
    end
 end
 
-function detection_efficiency_fressin2013(mes::Float64)
+function detection_efficiency_fressin2013(mes::Float64, expected_num_transits::Float64)
    const mesmin =  6.0
    const mesmax =  16.0
    if mes <= mesmin
@@ -72,8 +72,7 @@ function detection_efficiency_fressin2013(mes::Float64)
   end
 end
 
-
-function detection_efficiency_christiansen2015(mes::Float64; mes_threshold::Float64 = 7.1, min_pdet_nonzero::Float64 = 0.0)
+function detection_efficiency_christiansen2015(mes::Float64, expected_num_transits::Float64; mes_threshold::Float64 = 7.1, min_pdet_nonzero::Float64 = 0.0)
    const a =  4.65  # from code for detection_efficiency(...) at https://github.com/christopherburke/KeplerPORTs/blob/master/KeplerPORTs_utils.py
    const b =  0.98
    #const a =  4.35 # from arxiv abstract. Informal testing showed it didn't matter
@@ -87,7 +86,7 @@ end
 #global const detection_efficiency_dr25_simple_a =  30.87  # from pg 16 of https://exoplanetarchive.ipac.caltech.edu/docs/KSCI-19110-001.pdf
 #global const detection_efficiency_dr25_simple_b =  0.271
 #global const detection_efficiency_dr25_simple_dist = Gamma(detection_efficiency_dr25_simple_a,detection_efficiency_dr25_simple_b)
-function detection_efficiency_dr25_simple(mes::Float64; min_pdet_nonzero::Float64 = 0.0)::Float64
+function detection_efficiency_dr25_simple(mes::Float64, expected_num_transits::Float64; min_pdet_nonzero::Float64 = 0.0)::Float64
    const a = 30.87  # from pg 16 of https://exoplanetarchive.ipac.caltech.edu/docs/KSCI-19110-001.pdf
    const b = 0.271
    const c = 0.940
@@ -98,6 +97,42 @@ function detection_efficiency_dr25_simple(mes::Float64; min_pdet_nonzero::Float6
    pdet = pdet >= min_pdet_nonzero ? pdet : 0.0
    return pdet
 end
+
+function get_param_for_detection_and_vetting_efficiency_depending_on_num_transits(num_tr::Integer)
+    if num_tr <= 3
+        return (33.3884, 0.264472, 0.699093)
+    elseif num_tr <= 4
+        return  (32.886, 0.269577, 0.768366)
+    elseif num_tr <= 5
+        return (31.5196, 0.282741, 0.833673)
+    elseif num_tr <= 6
+        return (30.9919, 0.286979, 0.859865)
+    elseif num_tr <= 9
+        return (30.1906, 0.294688, 0.875042)
+    elseif num_tr <= 18
+        return (31.6342, 0.279425, 0.886144)
+    elseif num_tr <= 36
+        return (32.6448, 0.268898, 0.889724)
+    else
+        return (27.8185, 0.32432, 0.945075)
+    end
+end
+
+# WARNING: Combined detection and vetting efficiency model - do NOT include additional vetting efficiency
+function detection_and_vetting_efficiency_model_v1(mes::Float64, expected_num_transits::Float64; min_pdet_nonzero::Float64 = 0.0)::Float64
+    num_transit_int = convert(Int64,floor(expected_num_transits))
+    num_transit_int += rand() < expected_num_transits-num_transit_int ? 1 : 0
+    a, b, c = get_param_for_detection_and_vetting_efficiency_depending_on_num_transits(num_transit_int)
+    dist = Gamma(a,b)
+    pdet::Float64 = c*cdf(dist, mes)::Float64
+    pdet = pdet >= min_pdet_nonzero ? pdet : 0.0
+    return pdet
+end
+
+# WARNING: Hardcoded choice of transit detection efficiency here for speed and so as to not have it hardcoded in multiple places
+#detection_efficiency_model = detection_efficiency_christiansen2015  
+detection_efficiency_model = detection_efficiency_dr25_simple
+#detection_efficiency_model = detection_and_vetting_efficiency_model_v1
 
 function vetting_efficiency_none(R_p::Real, P::Real)
     return 1.0
@@ -119,10 +154,6 @@ function vetting_efficiency_dr25_mulders(R_p::Real, P::Real)
     end
     return pvet
 end
-
-# WARNING: Hardcoded choice of transit detection efficiency here for speed and so as to not have it hardcoded in multiple places
-#detection_efficiency_model = detection_efficiency_christiansen2015  
-detection_efficiency_model = detection_efficiency_dr25_simple 
 
 # Resume code original to SysSim
 
@@ -166,7 +197,7 @@ end
 function calc_prob_detect_if_transit(t::KeplerTarget, snr::Float64, period::Float64, duration::Float64, sim_param::SimParam; num_transit::Float64 = 1)
   const min_pdet_nonzero = 1.0e-4                                                # TODO OPT: Consider raising threshold to prevent a plethora of planets that are very unlikely to be detected due to using 0.0 or other small value here
   wf = kepler_window_function(t, num_transit, period, duration)                     
-  return wf*detection_efficiency_model(snr, min_pdet_nonzero=min_pdet_nonzero)	
+  return wf*detection_efficiency_model(snr, num_transit, min_pdet_nonzero=min_pdet_nonzero)	
 end
 
 function calc_prob_detect_if_transit(t::KeplerTarget, depth::Float64, period::Float64, duration::Float64, cdpp::Float64, sim_param::SimParam; num_transit::Float64 = 1)
@@ -198,7 +229,7 @@ function calc_ave_prob_detect_if_transit_from_snr(t::KeplerTarget, snr_central::
   const min_pdet_nonzero = 1.0e-4
   wf = kepler_window_function(t, num_transit, period, duration_central)                    
   
-  detection_efficiency_central = detection_efficiency_model(snr_central, min_pdet_nonzero=min_pdet_nonzero) 
+  detection_efficiency_central = detection_efficiency_model(snr_central, num_transit, min_pdet_nonzero=min_pdet_nonzero) 
   if wf*detection_efficiency_central <= min_pdet_nonzero
      return 0.
   end 
@@ -232,7 +263,7 @@ function calc_ave_prob_detect_if_transit_from_snr(t::KeplerTarget, snr_central::
 	osd = osd*osd_duration/(duration_central*duration_factor)
      end 
      snr_factor = depth_factor*sqrt(duration_factor)*(osd_central/osd)
-     detection_efficiency_model(snr_central*snr_factor, min_pdet_nonzero=min_pdet_nonzero)
+     detection_efficiency_model(snr_central*snr_factor, num_transit, min_pdet_nonzero=min_pdet_nonzero)
   end 
 
   ave_detection_efficiency = sum(weight .* map(integrand,b)::Vector{Float64} )    
@@ -245,7 +276,7 @@ function calc_ave_prob_detect_if_transit_from_snr_cdpp(t::KeplerTarget, snr_cent
   const min_pdet_nonzero = 1.0e-4
   wf = kepler_window_function(t, num_transit, period, duration_central)                    
   
-  detection_efficiency_central = detection_efficiency_model(snr_central, min_pdet_nonzero=min_pdet_nonzero) 
+  detection_efficiency_central = detection_efficiency_model(snr_central, num_transit, min_pdet_nonzero=min_pdet_nonzero) 
   if wf*detection_efficiency_central <= min_pdet_nonzero
      return 0.
   end 
@@ -274,7 +305,7 @@ function calc_ave_prob_detect_if_transit_from_snr_cdpp(t::KeplerTarget, snr_cent
      duration_factor = calc_transit_duration_factor_for_impact_parameter_b(b,size_ratio) 
      cdpp = interpolate_cdpp_to_duration(t,duration_central*duration_factor)
      snr_factor = depth_factor*sqrt(duration_factor)*(cdpp_central/cdpp)
-     detection_efficiency_model(snr_central*snr_factor, min_pdet_nonzero=min_pdet_nonzero)
+     detection_efficiency_model(snr_central*snr_factor, num_transit, min_pdet_nonzero=min_pdet_nonzero)
   end 
 
   ave_detection_efficiency = sum(weight .* map(integrand,b)::Vector{Float64} )    
