@@ -226,7 +226,11 @@ function calc_ave_prob_detect_if_transit_from_snr(t::KeplerTarget, snr_central::
      depth_factor = calc_depth_correction_for_grazing_transit(b,size_ratio)
      duration_factor = calc_transit_duration_factor_for_impact_parameter_b(b,size_ratio)
      kepid = star_table(t.sys[1].star.id, :kepid)
-     osd = WindowFunction.interp_OSD_from_table(kepid, period, duration_central*duration_factor)
+     osd_duration = get_legal_durations(period,duration_central*duration_factor)	#tests if durations are included in Kepler's observations for a certain planet period. If not, returns nearest possible duration
+     osd = WindowFunction.interp_OSD_from_table(kepid, period, osd_duration)
+     if osd_duration > duration_central*duration_factor				#use a correcting factor if this duration is lower than the minimum searched for this period. 
+	osd = osd*osd_duration/(duration_central*duration_factor)
+     end 
      snr_factor = depth_factor*sqrt(duration_factor)*(osd_central/osd)
      detection_efficiency_model(snr_central*snr_factor, min_pdet_nonzero=min_pdet_nonzero)
   end 

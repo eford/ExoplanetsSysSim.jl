@@ -304,11 +304,11 @@ function calc_target_obs_sky_ave(t::KeplerTarget, sim_param::SimParam)
         period = sys.orbit[p].P
         kepid = star_table(t.sys[s].star.id, :kepid)
         duration_central = calc_transit_duration_central(t,s,p)
-        osd_central = WindowFunction.interp_OSD_from_table(kepid, period, duration_central)
-        PDST = get_legal_durations(period,duration_central*24)	#tests if durations are included in Kepler's observations for a certain planet period. Skips this planet if not.
-        if PDST == false || osd_central == Inf || osd_central == 0.0 
-           continue
-        end
+        osd_duration_central = get_legal_durations(period,duration_central)	#tests if durations are included in Kepler's observations for a certain planet period. If not, returns nearest possible duration
+        osd_central = WindowFunction.interp_OSD_from_table(kepid, period, osd_duration_central)
+        if osd_duration_central > duration_central				#use a correcting factor if this duration is lower than the minimum searched for this period. 
+	   osd_central = osd_central*osd_duration_central/duration_central
+	end
         ntr = calc_expected_num_transits(t, s, p, sim_param)
         # t0 = rand(Uniform(0.0,period))   # WARNING: Not being calculated from orbit
         size_ratio = t.sys[s].planet[p].radius/t.sys[s].star.radius
@@ -403,7 +403,7 @@ function calc_target_obs_single_obs(t::KeplerTarget, sim_param::SimParam)
         osd_duration = get_legal_durations(period,duration)	#tests if durations are included in Kepler's observations for a certain planet period. If not, returns nearest possible duration
         osd = WindowFunction.interp_OSD_from_table(kepid, period, osd_duration)
         if osd_duration > duration				#use a correcting factor if this duration is lower than the minimum searched for this period. 
-	  osd = osd*osd_duration/duration
+	   osd = osd*osd_duration/duration
 	end
         ntr = calc_expected_num_transits(t, s, p, sim_param)
         # t0 = rand(Uniform(0.0,period))   # WARNING: Not being calculated from orbit
