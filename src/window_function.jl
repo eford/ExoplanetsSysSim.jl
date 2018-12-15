@@ -164,7 +164,7 @@ end
 
 function setup_OSD_interp()			#reads in 3D table of OSD values and sets up global variables to be used in interpolation
   global OSD_setup
-  OSD_file = load(joinpath(Pkg.dir(), "ExoplanetsSysSim", "src", "allosds.jld"))
+  OSD_file = load(joinpath(Pkg.dir(), "ExoplanetsSysSim", "data", "allosds.jld"))
   allosds = OSD_file["allosds"]			#table of OSDs with dimensions: kepids,durations,periods
   periods = OSD_file["periods"][1,:]		#1000 period values corresponding to OSD values in the third dimension of the allosds table
   kepids = OSD_file["kepids"]			#kepids corresponding to OSD values in the first dimension of theh allosds table
