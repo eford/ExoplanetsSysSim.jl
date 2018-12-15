@@ -51,6 +51,7 @@ function detection_efficiency_theory(mes::Float64, expected_num_transits::Float6
    const muoffset =  0.0
    const sig =  1.0
    const mesthresh = 7.1
+   mes *= 1.003 
    if mes > (9.0 - mesthresh - muoffset)
       return 1.0
    else
@@ -63,6 +64,7 @@ end
 function detection_efficiency_fressin2013(mes::Float64, expected_num_transits::Float64)
    const mesmin =  6.0
    const mesmax =  16.0
+   mes *= 1.003 
    if mes <= mesmin
       return 0.0
    elseif mes >= mesmax
@@ -77,6 +79,7 @@ function detection_efficiency_christiansen2015(mes::Float64, expected_num_transi
    const b =  0.98
    #const a =  4.35 # from arxiv abstract. Informal testing showed it didn't matter
    #const b =  1.05
+   mes *= 1.003 
    usemes = max(0.0,mes - 7.1 - (mes_threshold - 7.1))
    pdet = cdf(Gamma(a,b), usemes)
    pdet = pdet >= min_pdet_nonzero ? pdet : 0.0
@@ -91,6 +94,7 @@ function detection_efficiency_dr25_simple(mes::Float64, expected_num_transits::F
    const b = 0.271
    const c = 0.940
    const dist = Gamma(a,b)
+   mes *= 1.003 
    #pdet = c*cdf(Gamma(a,b), mes)
    pdet::Float64 = c*cdf(dist, mes)::Float64
    #pdet::Float64 = c*cdf(detection_efficiency_dr25_simple_dist, mes)::Float64
@@ -120,6 +124,7 @@ end
 
 # WARNING: Combined detection and vetting efficiency model - do NOT include additional vetting efficiency
 function detection_and_vetting_efficiency_model_v1(mes::Float64, expected_num_transits::Float64; min_pdet_nonzero::Float64 = 0.0)::Float64
+    mes *= 1.003
     num_transit_int = convert(Int64,floor(expected_num_transits))
     num_transit_int += rand() < expected_num_transits-num_transit_int ? 1 : 0
     a, b, c = get_param_for_detection_and_vetting_efficiency_depending_on_num_transits(num_transit_int)
