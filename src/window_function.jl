@@ -168,7 +168,8 @@ function setup_OSD_interp(sim_param::SimParam)			#reads in 3D table of OSD value
   OSD_file = load(joinpath(Pkg.dir(), "ExoplanetsSysSim", "data", convert(String,get(sim_param,"osd_file","allosds.jld"))))
   allosds = OSD_file["allosds"]			#table of OSDs with dimensions: kepids,durations,periods
   periods = OSD_file["periods"][1,:]		#1000 period values corresponding to OSD values in the third dimension of the allosds table
-  kepids = OSD_file["kepids"]			#kepids corresponding to OSD values in the first dimension of theh allosds table
+  kepids = OSD_file["kepids"]			#kepids corresponding to OSD values in the first dimension of the allosds table
+  OSD_file = 0 # unload OSD file to save memory  
   durations = [1.5,2.,2.5,3.,3.5,4.5,5.,6.,7.5,9.,10.5,12.,12.5,15.] #14 durations corresponding to OSD values in the first dimension of theh allosds table
   periods_length = length(allosds[1,1,:])
   durations_length = length(allosds[1,:,1])
@@ -177,6 +178,7 @@ function setup_OSD_interp(sim_param::SimParam)			#reads in 3D table of OSD value
   push!(grid, periods)
   global compareNoise = Float64[]		#testing variable used to make sure OSD_interpolator is producing reasonable snrs
   OSD_setup = OSD_data(allosds, kepids, periods_length, durations_length, grid)
+  allosds = 0 # unload OSD table to save memory  
   return OSD_setup
 end
 

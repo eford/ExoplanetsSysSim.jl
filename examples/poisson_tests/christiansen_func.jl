@@ -236,6 +236,7 @@ function setup_christiansen(sim_param::SimParam; force_reread::Bool = false)
       add_param_fixed(sim_param,"num_targets_sim_pass_one", StellarTable.num_usable_in_star_table())
   end
   StellarTable.set_star_table(df)
+  gc()
   return df  
 end
 
