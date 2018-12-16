@@ -30,7 +30,8 @@ function setup_sim_param_christiansen(args::Vector{String} = Array{String}(0) ) 
     add_param_fixed(sim_param,"generate_planetary_system", ExoplanetsSysSim.generate_planetary_system_uncorrelated_incl)
     add_param_fixed(sim_param,"generate_kepler_target",ExoplanetsSysSim.generate_kepler_target_from_table)
     add_param_fixed(sim_param,"star_table_setup",setup_star_table_christiansen)
-    add_param_fixed(sim_param,"stellar_catalog","q1_q16_christiansen.jld")
+    add_param_fixed(sim_param,"stellar_catalog","q1q17_dr25_gaia_fgk.jld")
+    add_param_fixed(sim_param,"osd_file","dr25fgk_osds.jld")
     add_param_fixed(sim_param,"generate_num_planets",generate_num_planets_christiansen)
     add_param_fixed(sim_param,"generate_planet_mass_from_radius",ExoplanetsSysSim.generate_planet_mass_from_radius_powerlaw)
     add_param_fixed(sim_param,"vetting_efficiency",ExoplanetsSysSim.vetting_efficiency_none)  
@@ -221,7 +222,7 @@ end
 function setup_christiansen(sim_param::SimParam; force_reread::Bool = false)
   #global df
   wf = WindowFunction.setup_window_function(sim_param)
-  WindowFunction.setup_OSD_interp() #read in osd files so they can be interpolated
+  WindowFunction.setup_OSD_interp(sim_param) #read in osd files so they can be interpolated
   df = ExoplanetsSysSim.StellarTable.df
   if haskey(sim_param,"read_stellar_catalog") && !force_reread
      return df
