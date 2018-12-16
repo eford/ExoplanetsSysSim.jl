@@ -169,7 +169,20 @@ function read_koi_catalog(filename::String, force_reread::Bool = false)
             has_period = .!(ismissing.(df[:koi_period]) .| ismissing.(df[:koi_period_err1]) .| ismissing.(df[:koi_period_err2]))
 
             is_usable = .&(is_cand, has_radius, has_period)
-            usable = find(is_usable)
+
+           #  symbols_to_keep = [:kepid, :kepoi_name, :koi_pdisposition, :koi_score, :koi_ror, :koi_period, :koi_period_err1, :koi_period_err2, :koi_time0bk, :koi_time0bk_err1, :koi_time0bk_err2, :koi_depth, :koi_depth_err1, :koi_depth_err2, :koi_duration, :koi_duration_err1, :koi_duration_err2]
+
+           # delete!(df, [~(x in symbols_to_keep) for x in names(df)])    # delete columns that we won't be using anyway
+           
+           usable = find(is_usable)
+        
+           # df = df[usable, symbols_to_keep]
+           # tmp_df = DataFrame()    
+           # for col in names(df)
+           #     tmp_df[col] = collect(skipmissing(df[col]))
+           # end
+           # df = tmp_df
+           # usable = collect(1:length(df[:kepid]))
        catch
            error(string("# Failed to read koi catalog >",filename,"< in ascii format."))
        end
