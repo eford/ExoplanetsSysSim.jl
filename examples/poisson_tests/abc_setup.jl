@@ -66,11 +66,11 @@ end
 function setup()
     global sim_param_closure = setup_sim_param_christiansen()
     sim_param_closure = set_test_param(sim_param_closure)
-    df_star = setup_star_table_christiansen(sim_param_closure)
-    println("# Finished reading in stellar data")
     
     ### Use simulated planet candidate catalog data
-    # add_param_fixed(sim_param_closure,"num_kepler_targets",100000)  # For "observed" catalog
+    # df_star = setup_star_table_christiansen(sim_param_closure)
+    # println("# Finished reading in stellar data")
+    # add_param_fixed(sim_param_closure,"num_kepler_targets",1000000)  # For "observed" catalog
     # cat_obs = simulated_read_kepler_observations(sim_param_closure)
     # println("# Finished setting up simulated true catalog")
     ###
@@ -78,7 +78,10 @@ function setup()
     ### Use real planet candidate catalog data
     df_koi,usable_koi = read_koi_catalog(sim_param_closure)
     println("# Finished reading in KOI data")  
+    df_star = setup_star_table_christiansen(sim_param_closure)
+    println("# Finished reading in stellar data")
     cat_obs = setup_actual_planet_candidate_catalog(df_star, df_koi, usable_koi, sim_param_closure)
+    println("# Finished setting up true catalog")
     ###
     
     global summary_stat_ref_closure = calc_summary_stats_obs_binned_rates(cat_obs,sim_param_closure, trueobs_cat = true)
