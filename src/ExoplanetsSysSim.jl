@@ -40,7 +40,7 @@ include("corbits.jl")
 export prob_of_transits_approx
 include("window_function.jl")
 export WindowFunction
-export setup_window_function, get_window_function_data, get_window_function_id, eval_window_function, setup_OSD_interp, cdpp_vs_osd
+export setup_window_function, get_window_function_data, get_window_function_id, eval_window_function, setup_OSD_interp#, cdpp_vs_osd
 include("stellar_table.jl")
 export  StellarTable
 export setup_star_table, star_table, num_usable_in_star_table, set_star_table, star_table_has_key

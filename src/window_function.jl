@@ -10,7 +10,7 @@ export setup_window_function, get_window_function_data, get_window_function_id, 
 using DataFrames
 #using CSV
 using JLD
-using PyPlot	#for testing OSD interpolator. Remove when finished testing
+# using PyPlot	#for testing OSD interpolator. Remove when finished testing
 using ApproXD	#for interpolating OSD table
 using ExoplanetsSysSim.SimulationParameters
 
@@ -196,17 +196,17 @@ function interp_OSD_from_table(kepid::Int64, period::Real, duration::Real)
   return osd
 end
 
-function cdpp_vs_osd(ratio::Float64, cuantos::Int64)
-#testing function that takes ratios of cdpp_snr/osd_snr and plots a histogram to make sure the results are reasonable.
-  global compareNoise
-  push!(compareNoise,ratio)
-  if length(compareNoise) == cuantos
-    PyPlot.plt[:hist](compareNoise,100)
-    println("MES median: ",median(compareNoise)," MES mean: ",mean(compareNoise), " Standard deviation: ",std(compareNoise))
-    cuantos = 100000000
-  end
-  return cuantos
-end
+# function cdpp_vs_osd(ratio::Float64, cuantos::Int64)
+# #testing function that takes ratios of cdpp_snr/osd_snr and plots a histogram to make sure the results are reasonable.
+#   global compareNoise
+#   push!(compareNoise,ratio)
+#   if length(compareNoise) == cuantos
+#     PyPlot.plt[:hist](compareNoise,100)
+#     println("MES median: ",median(compareNoise)," MES mean: ",mean(compareNoise), " Standard deviation: ",std(compareNoise))
+#     cuantos = 100000000
+#   end
+#   return cuantos
+# end
 
 end  # module WindowFunction
 
