@@ -155,16 +155,17 @@ end
 
 #Object for storing data necessary for OSD_interpolator
 immutable OSD_data
-  allosds::Array{Float64,3}
+  #allosds::Array{Float64,3}
+  allosds::Array{Float32,3}  # For subset OSD files
   kepids::Array{Float64,1}
   periods_length::Int64
   durations_length::Int64
   grid::Array{Array{Float64,1},1}
 end
 
-function setup_OSD_interp()			#reads in 3D table of OSD values and sets up global variables to be used in interpolation
+function setup_OSD_interp(sim_param::SimParam)			#reads in 3D table of OSD values and sets up global variables to be used in interpolation
   global OSD_setup
-  OSD_file = load(joinpath(Pkg.dir(), "ExoplanetsSysSim", "data", "allosds.jld"))
+  OSD_file = load(joinpath(Pkg.dir(), "ExoplanetsSysSim", "data", convert(String,get(sim_param,"osd_file","allosds.jld"))))
   allosds = OSD_file["allosds"]			#table of OSDs with dimensions: kepids,durations,periods
   periods = OSD_file["periods"][1,:]		#1000 period values corresponding to OSD values in the third dimension of the allosds table
   kepids = OSD_file["kepids"]			#kepids corresponding to OSD values in the first dimension of theh allosds table
