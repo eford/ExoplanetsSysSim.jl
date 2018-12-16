@@ -155,8 +155,8 @@ end
 
 #Object for storing data necessary for OSD_interpolator
 immutable OSD_data
-  #allosds::Array{Float64,3}
-  allosds::Array{Float32,3}  # For subset OSD files
+  allosds::Array{Float64,3}
+  # allosds::Array{Float32,3}  # For subset OSD files
   kepids::Array{Float64,1}
   periods_length::Int64
   durations_length::Int64
@@ -185,15 +185,12 @@ end
 function interp_OSD_from_table(kepid::Int64, period::Real, duration::Real)
   kepid = convert(Float64,kepid)
   meskep = OSD_setup.kepids			#we need to find the index that this planet's kepid corresponds to in allosds.jld
-  if findfirst(meskep , kepid) == 0
+  kepid_index = findfirst(meskep, kepid)
+  if kepid_index == 0
      kepid_index = rand(1:88807)		#if we don't find the kepid in allosds.jld, then we make a random one
-#println("No match"); Used to make sure the kepid values we are producing correspond well to the kepids in allosds.jld
-  else
-     kepid_index = findfirst(meskep , kepid)
-#println("Match"); Used to make sure the kepid values we are producing correspond well to the kepids in allosds.jld
   end
-  olOSD = OSD_setup.allosds[kepid_index,:,:]    #use correct kepid index to extract 2D table from 3D OSD table
-  olOSD = convert(Array{Float64,2},olOSD)  
+  olOSD = view(OSD_setup.allosds,kepid_index,:,:)    #use correct kepid index to extract 2D table from 3D OSD table
+  # olOSD = convert(Array{Float64,2},olOSD)
   lint = Lininterp(olOSD, OSD_setup.grid)	#sets up linear interpolation object
   osd = ApproXD.eval2D(lint, [duration*24,period])[1]	#interpolates osd
   return osd

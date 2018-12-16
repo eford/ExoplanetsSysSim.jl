@@ -16,6 +16,6 @@ tmp_ind = [findfirst(x -> x == y, kepids) for y in cat_ids]
 kepids = kepids[tmp_ind]
 allosds = allosds[tmp_ind,:,:]
 
-allosds = convert(Array{Float32,3}, allosds)
+# allosds = convert(Array{Float32,3}, allosds)
 
 save(joinpath(Pkg.dir(), "ExoplanetsSysSim", "data", "dr25fgk_osds.jld"), "allosds", allosds, "periods", periods, "kepids", kepids)
