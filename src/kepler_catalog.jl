@@ -149,7 +149,7 @@ function read_koi_catalog(filename::String, force_reread::Bool = false)
             error(string("# Failed to read koi catalog >",filename,"< in jld format."))
         end
     else
-        try
+       try
             tmp_koi_cat = readlines(filename)
             tmp_ind = 1
             num_skip = 1
@@ -170,9 +170,9 @@ function read_koi_catalog(filename::String, force_reread::Bool = false)
 
             is_usable = .&(is_cand, has_radius, has_period)
             usable = find(is_usable)
-        catch
-            error(string("# Failed to read koi catalog >",filename,"< in ascii format."))
-        end
+       catch
+           error(string("# Failed to read koi catalog >",filename,"< in ascii format."))
+       end
     end
     return df, usable
 end
