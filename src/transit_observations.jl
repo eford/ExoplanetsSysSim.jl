@@ -314,9 +314,11 @@ function calc_target_obs_sky_ave(t::KeplerTarget, sim_param::SimParam)
         size_ratio = t.sys[s].planet[p].radius/t.sys[s].star.radius
         depth = calc_transit_depth(t,s,p)
         snr_central = calc_snr_if_transit(t, depth, duration_central, osd_central, sim_param, num_transit=ntr)
-        #cdpp_central = interpolate_cdpp_to_duration(t, duration_central)
-	#snr_central = calc_snr_if_transit_cdpp(t, depth, duration_central, cdpp_central, sim_param, num_transit=ntr)
-        pdet_ave = calc_ave_prob_detect_if_transit_from_snr(t, snr_central, period, duration_central, size_ratio, osd_central, sim_param, num_transit=ntr) 
+        pdet_ave = calc_ave_prob_detect_if_transit_from_snr(t, snr_central, period, duration_central, size_ratio, osd_central, sim_param, num_transit=ntr)
+        
+        # cdpp_central = interpolate_cdpp_to_duration(t, duration_central)
+	# snr_cdpp_central = calc_snr_if_transit_cdpp(t, depth, duration_central, cdpp_central, sim_param, num_transit=ntr)
+        # pdet_ave_cdpp = calc_ave_prob_detect_if_transit_from_snr_cdpp(t, snr_cdpp_central, period, duration_central, size_ratio, cdpp_central, sim_param, num_transit=ntr)
  
 	add_to_catalog = pdet_ave > min_detect_prob_to_be_included  # Include all planets with sufficient detection probability
 
@@ -334,8 +336,12 @@ function calc_target_obs_sky_ave(t::KeplerTarget, sim_param::SimParam)
 
 	      duration = duration_central * transit_duration_factor   # WARNING:  Technically, this duration may be slightly reduced for grazing cases to account for reduction in SNR due to planet not being completely inscribed by star at mid-transit.  But this will be a smaller effect than limb-darkening for grazing transits.  Also, makes a variant of the small angle approximation
               # cdpp = interpolate_cdpp_to_duration(t, duration)
-	      # snr = snr_central * (cdpp_central/cdpp) * sqrt(transit_duration_factor)
-              osd = WindowFunction.interp_OSD_from_table(kepid, period, duration)
+	       # snr = snr_central * (cdpp_central/cdpp) * sqrt(transit_duration_factor)
+              osd_duration = get_legal_durations(period,duration)	#tests if durations are included in Kepler's observations for a certain planet period. If not, returns nearest possible duration
+              osd = WindowFunction.interp_OSD_from_table(kepid, period, osd_duration)
+              if osd_duration > duration				#use a correcting factor if this duration is lower than the minimum searched for this period. 
+	          osd = osd*osd_duration/duration
+	      end 
               snr = snr_central * (osd_central/osd) * sqrt(transit_duration_factor)
               pdet_this_b = calc_prob_detect_if_transit(t, snr, period, duration, sim_param, num_transit=ntr)
               pvet = vetting_efficiency(t.sys[s].planet[p].radius, period) 
@@ -420,6 +426,7 @@ function calc_target_obs_single_obs(t::KeplerTarget, sim_param::SimParam)
         pdet[p] = calc_prob_detect_if_transit(t, snr, period, duration, sim_param, num_transit=ntr)
 
 	if pdet[p] > min_detect_prob_to_be_included
+           pvet = vetting_efficiency(t.sys[s].planet[p].radius, period)
            pdet[p] *= pvet
            obs[i], sigma[i] = transit_noise_model(t, s, p, depth, duration, snr, ntr) 
            #id[i] = tuple(convert(Int32,s),convert(Int32,p))

@@ -193,8 +193,9 @@ function interp_OSD_from_table(kepid::Int64, period::Real, duration::Real)
 #println("Match"); Used to make sure the kepid values we are producing correspond well to the kepids in allosds.jld
   end
   olOSD = OSD_setup.allosds[kepid_index,:,:]    #use correct kepid index to extract 2D table from 3D OSD table
+  olOSD = convert(Array{Float64,2},olOSD)  
   lint = Lininterp(olOSD, OSD_setup.grid)	#sets up linear interpolation object
-  osd = eval2D(lint, [duration*24,period])[1]	#interpolates osd
+  osd = ApproXD.eval2D(lint, [duration*24,period])[1]	#interpolates osd
   return osd
 end
 
