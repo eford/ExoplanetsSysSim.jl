@@ -11,7 +11,7 @@ using DataFrames
 #using CSV
 using JLD
 # using PyPlot	#for testing OSD interpolator. Remove when finished testing
-using ApproXD	#for interpolating OSD table
+# using ApproXD	#for interpolating OSD table
 using ExoplanetsSysSim.SimulationParameters
 
 
@@ -154,17 +154,45 @@ function eval_window_function(wf_idx::Int64, D_idx::Int64, P_idx::Int64)::Float6
 end
 
 #Object for storing data necessary for OSD_interpolator
-immutable OSD_data
-  allosds::Array{Float64,3}
-  # allosds::Array{Float32,3}  # For subset OSD files
-  kepids::Array{Float64,1}
-  periods_length::Int64
-  durations_length::Int64
-  grid::Array{Array{Float64,1},1}
+struct OSD_data{T1<:Real, T2<:Real}
+    allosds::Array{T1,3}
+    kepids::Array{Int64,1}
+    #periods_length::Int64
+    #durations_length::Int64
+    grid::Array{Array{T2,1},1}
+
+    function OSD_data(data::AbstractArray{T1,3}, kepids::AbstractArray{Int64,1}, durations::AbstractArray{T2,1}, periods::AbstractArray{T2,1} ) where {T1<:Real, T2<:Real}
+        @assert(size(data,1)==length(kepids))
+        @assert(size(data,2)==length(durations))
+        @assert(size(data,3)==length(periods))
+        @assert issorted(kepids)
+        @assert issorted(durations)
+        @assert issorted(periods)
+        new{T1,T2}(data, kepids, [durations,periods])
+    end
 end
 
-function setup_OSD_interp(sim_param::SimParam)			#reads in 3D table of OSD values and sets up global variables to be used in interpolation
+# Only point of this version is to provide a drop in replacement for Keir's code
+function OSD_data(allosds::AbstractArray{T1,3}, kepids::AbstractArray{T3,1}, periods_length::Int64, durations_length::Int64, grid::Array{Array{T2,1},1}) where {T1<:Real, T2<:Real, T3<:Real}
+    @assert length(grid) == 2
+    @assert durations_length == length(grid[1])
+    @assert periods_length == length(grid[2])
+    if eltype(kepids) != Int64
+        kepids = round.(Int64,kepids)
+    end
+    @assert grid[1][1] == 1.5  # Checking that durations were passed as hours, since that's what Keir's assumed
+    return OSD_data(allosds, kepids, grid[1] ./ 24.0 , grid[2])  # Convert durations to days, since that's units in rest of SysSim
+end
+
+num_stars(osd::OSD_data) = size(osd.allosds,1)
+num_durations(osd::OSD_data) = size(osd.allosds,2)
+num_periods(osd::OSD_data) = size(osd.allosds,3)
+
+function setup_OSD(sim_param::SimParam; force_reread::Bool = false)			#reads in 3D table of OSD values and sets up global variables to be used in interpolation
   global OSD_setup
+  if haskey(sim_param,"read_OSD_function") && !force_reread
+     return OSD_setup
+  end
   OSD_file = load(joinpath(Pkg.dir(), "ExoplanetsSysSim", "data", convert(String,get(sim_param,"osd_file","allosds.jld"))))
   allosds = OSD_file["allosds"]			#table of OSDs with dimensions: kepids,durations,periods
   periods = OSD_file["periods"][1,:]		#1000 period values corresponding to OSD values in the third dimension of the allosds table
@@ -178,23 +206,71 @@ function setup_OSD_interp(sim_param::SimParam)			#reads in 3D table of OSD value
   push!(grid, periods)
   global compareNoise = Float64[]		#testing variable used to make sure OSD_interpolator is producing reasonable snrs
   OSD_setup = OSD_data(allosds, kepids, periods_length, durations_length, grid)
-  allosds = 0 # unload OSD table to save memory  
+  allosds = 0 # unload OSD table to save memory
+  add_param_fixed(sim_param,"read_OSD_function",true)
   return OSD_setup
 end
 
-function interp_OSD_from_table(kepid::Int64, period::Real, duration::Real)
-  kepid = convert(Float64,kepid)
-  meskep = OSD_setup.kepids			#we need to find the index that this planet's kepid corresponds to in allosds.jld
-  kepid_index = findfirst(meskep, kepid)
-  if kepid_index == 0
-     kepid_index = rand(1:88807)		#if we don't find the kepid in allosds.jld, then we make a random one
-  end
-  olOSD = view(OSD_setup.allosds,kepid_index,:,:)    #use correct kepid index to extract 2D table from 3D OSD table
-  # olOSD = convert(Array{Float64,2},olOSD)
-  lint = Lininterp(olOSD, OSD_setup.grid)	#sets up linear interpolation object
-  osd = ApproXD.eval2D(lint, [duration*24,period])[1]	#interpolates osd
-  return osd
+setup_OSD_interp(sim_param::SimParam; force_reread::Bool = false) = setup_OSD(sim_param, force_reread=force_reread)
+
+function find_index_lower_bounding_point(grid::AbstractArray{T1,1}, x::T2; verbose::Bool = false) where {T1<:Real, T2<:Real}
+    if verbose
+        @assert issorted(grid)
+        @assert length(grid)>=2
+        println("# ", grid[1], " <= ", x, " <= ", grid[end])
+        @assert grid[1] <= x <= grid[end]
+    end
+    idx = searchsortedlast(grid,x)
+    if idx == 0 
+        idx = 1
+    #elseif idx >= length(grid) # should never happen
+    #    idx = length(grid)-1
+    end
+    return idx
 end
+
+function interp_OSD_from_table(kepid::Int64, period::T2, duration::T3; verbose::Bool = false) where {T2<:Real, T3<:Real}
+  @assert eltype(OSD_setup.kepids) == Int64      # otherwise would need something like kepid = convert(eltype(OSD_setup.kepids),kepid)
+  kepid_idx = searchsortedfirst(OSD_setup.kepids, kepid)
+  if (kepid_idx > num_stars(OSD_setup)) || (OSD_setup.kepids[kepid_idx] != kepid) # if we don't find the kepid in allosds.jld, then we make a random one
+     kepid_idx = rand(1:size(OSD_setup.allosds,1))
+     if verbose
+            println("# picked random kepid = ", OSD_setup.kepids[kepid_idx])
+     end
+  end
+  idx_duration = find_index_lower_bounding_point(OSD_setup.grid[1], duration)
+  idx_period   = find_index_lower_bounding_point(OSD_setup.grid[2], period)  
+  #z = view(OSD_setup.allosds,kepid_idx,idx_duration:(idx_duration+1),idx_period:(idx_period+1))     # use correct kepid index to extract 2D table from 3D OSD table
+  w_dur = (duration-OSD_setup.grid[1][idx_duration]) / (OSD_setup.grid[1][idx_duration+1]-OSD_setup.grid[1][idx_duration])
+  w_per = (period  -OSD_setup.grid[2][idx_period])   / (OSD_setup.grid[2][idx_period+1]  -OSD_setup.grid[2][idx_period])
+  if verbose
+        println("# durations: ",  OSD_setup.grid[1][idx_duration]," - ",OSD_setup.grid[1][idx_duration+1],
+        " periods: ", OSD_setup.grid[2][idx_period], " - ", OSD_setup.grid[2][idx_period+1], "\n# ",
+        " w_dur = ", w_dur, "  w_per = ", w_per)
+  end
+  #= value = z[1,1] * w_dur * w_per +
+          z[2,1] * (1-w_dur) * w_per +
+          z[1,2] * w_dur * (1-w_per) +
+          z[2,2] * (1-w_dur) * (1-w_per)  =#
+  value = OSD_setup.allosds[kepid_idx,idx_duration,  idx_period  ] * w_dur * w_per +
+          OSD_setup.allosds[kepid_idx,idx_duration+1,idx_period  ] * (1-w_dur) * w_per +
+          OSD_setup.allosds[kepid_idx,idx_duration,  idx_period+1] * w_dur * (1-w_per) +
+          OSD_setup.allosds[kepid_idx,idx_duration+1,idx_period+1] * (1-w_dur) * (1-w_per)
+end
+
+# function interp_OSD_from_table(kepid::Int64, period::Real, duration::Real)
+#   kepid = convert(Float64,kepid)
+#   meskep = OSD_setup.kepids			#we need to find the index that this planet's kepid corresponds to in allosds.jld
+#   kepid_index = findfirst(meskep, kepid)
+#   if kepid_index == 0
+#      kepid_index = rand(1:88807)		#if we don't find the kepid in allosds.jld, then we make a random one
+#   end
+#   olOSD = OSD_setup.allosds[kepid_index,:,:]    #use correct kepid index to extract 2D table from 3D OSD table
+#   # olOSD = convert(Array{Float64,2},olOSD)
+#   @time lint = Lininterp(olOSD, OSD_setup.grid)	#sets up linear interpolation object
+#   osd = ApproXD.eval2D(lint, [duration*24,period])[1]	#interpolates osd
+#   return osd
+# end
 
 # function cdpp_vs_osd(ratio::Float64, cuantos::Int64)
 # #testing function that takes ratios of cdpp_snr/osd_snr and plots a histogram to make sure the results are reasonable.
