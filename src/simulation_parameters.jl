@@ -38,6 +38,7 @@ end
 
 function SimParam() 
   d = Dict{String,Any}([version_id_pair,julia_version_pair])
+  return SimParam(d)
 end
 
 "Update SimParam() to define current state at run time, and not precompile time"
