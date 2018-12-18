@@ -36,6 +36,12 @@ function SimParam(p::Dict{String,Any})   # By default all parameters are set as 
   return SimParam(p,a)
 end
 
+function SimParam() 
+  d = Dict{String,Any}([version_id_pair,julia_version_pair])
+end
+
+"Update SimParam() to define current state at run time, and not precompile time"
+function __init__()
 """
     SimParam()
 Creates a nearly empty SimParam object, with just the version id and potentially other information about the code, system, runtime, etc.
@@ -48,9 +54,10 @@ function SimParam()
     #d["ExoplanetsSysSim branch"] = LibGit2.headname(LibGit2.GitRepo(dirname(pathof(ExoplanetsSysSim))))
     #d["ExoplanetsSysSim head_oid"] = LibGit2.head_oid(LibGit2.GitRepo(dirname(pathof(ExoplanetsSysSim))))
   catch
-    warn("# Couldn't add full information about version of SysSim to SimParam.")
+    @warn("# Couldn't add full information about version of SysSim to SimParam.")
   end
   SimParam(d)
+end
 end
 
 """
