@@ -168,7 +168,7 @@ function interpolate_cdpp_to_duration(t::KeplerTarget, duration::Float64)::Float
    dur_idx = searchsortedlast(cdpp_durations,duration_in_hours)   # cdpp_durations is defined in constants.jl
    if dur_idx <= 0 
       cdpp = t.cdpp[1,1]
-   elseif dur_idx==length(cdpp_durations) && (duration_in_hours > cdpp_durations[end]) # Should be 15 cdpp_durations.
+   elseif dur_idx==length(cdpp_durations) && (duration_in_hours >= cdpp_durations[end]) # Should be 15 cdpp_durations.
       cdpp = t.cdpp[length(cdpp_durations),1]
    else
       w = ((duration_in_hours)-cdpp_durations[dur_idx]) / (cdpp_durations[dur_idx+1]-cdpp_durations[dur_idx])

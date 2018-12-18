@@ -241,21 +241,33 @@ function interp_OSD_from_table(kepid::Int64, period::T2, duration::T3; verbose::
   idx_duration = find_index_lower_bounding_point(OSD_setup.grid[1], duration)
   idx_period   = find_index_lower_bounding_point(OSD_setup.grid[2], period)  
   #z = view(OSD_setup.allosds,kepid_idx,idx_duration:(idx_duration+1),idx_period:(idx_period+1))     # use correct kepid index to extract 2D table from 3D OSD table
-  w_dur = (duration-OSD_setup.grid[1][idx_duration]) / (OSD_setup.grid[1][idx_duration+1]-OSD_setup.grid[1][idx_duration])
-  w_per = (period  -OSD_setup.grid[2][idx_period])   / (OSD_setup.grid[2][idx_period+1]  -OSD_setup.grid[2][idx_period])
-  if verbose
-        println("# durations: ",  OSD_setup.grid[1][idx_duration]," - ",OSD_setup.grid[1][idx_duration+1],
-        " periods: ", OSD_setup.grid[2][idx_period], " - ", OSD_setup.grid[2][idx_period+1], "\n# ",
-        " w_dur = ", w_dur, "  w_per = ", w_per)
-  end
+
   #= value = z[1,1] * w_dur * w_per +
           z[2,1] * (1-w_dur) * w_per +
           z[1,2] * w_dur * (1-w_per) +
           z[2,2] * (1-w_dur) * (1-w_per)  =#
-  value = OSD_setup.allosds[kepid_idx,idx_duration,  idx_period  ] * w_dur * w_per +
+  
+  if idx_duration < length(OSD_setup.grid[1]) && idx_period < length(OSD_setup.grid[2])
+      w_dur = (duration-OSD_setup.grid[1][idx_duration]) / (OSD_setup.grid[1][idx_duration+1]-OSD_setup.grid[1][idx_duration])
+      w_per = (period  -OSD_setup.grid[2][idx_period])   / (OSD_setup.grid[2][idx_period+1]  -OSD_setup.grid[2][idx_period])
+      
+      value = OSD_setup.allosds[kepid_idx,idx_duration,  idx_period  ] * w_dur * w_per +
           OSD_setup.allosds[kepid_idx,idx_duration+1,idx_period  ] * (1-w_dur) * w_per +
           OSD_setup.allosds[kepid_idx,idx_duration,  idx_period+1] * w_dur * (1-w_per) +
-          OSD_setup.allosds[kepid_idx,idx_duration+1,idx_period+1] * (1-w_dur) * (1-w_per)
+          OSD_setup.allosds[kepid_idx,idx_duration+1,idx_period+1] * (1-w_dur) * (1-w_per)                       
+  elseif idx_period < length(OSD_setup.grid[2])
+      w_per = (period  -OSD_setup.grid[2][idx_period])   / (OSD_setup.grid[2][idx_period+1]  -OSD_setup.grid[2][idx_period])
+      
+      value = (OSD_setup.allosds[kepid_idx,idx_duration,  idx_period+1] - OSD_setup.allosds[kepid_idx,idx_duration,  idx_period  ]) * w_per +
+           OSD_setup.allosds[kepid_idx,idx_duration,  idx_period  ]
+  elseif idx_duration < length(OSD_setup.grid[1])
+      w_dur = (duration-OSD_setup.grid[1][idx_duration]) / (OSD_setup.grid[1][idx_duration+1]-OSD_setup.grid[1][idx_duration])
+      
+      value = (OSD_setup.allosds[kepid_idx,idx_duration+1,idx_period  ] - OSD_setup.allosds[kepid_idx,idx_duration,  idx_period  ]) * w_dur +
+          OSD_setup.allosds[kepid_idx,idx_duration,idx_period  ]
+  else
+      value = OSD_setup.allosds[kepid_idx,idx_duration,  idx_period  ]
+  end
 end
 
 # function interp_OSD_from_table(kepid::Int64, period::Real, duration::Real)
