@@ -1,0 +1,6 @@
+authors = ["Eric Ford <eford@psu.edu>"]
+name = "ExoplanetsSysSim"
+uuid = "e0ba718c-02ec-11e9-384b-dd2930072415"
+version = "0.1.0"
+
+[deps]
