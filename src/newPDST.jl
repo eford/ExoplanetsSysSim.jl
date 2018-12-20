@@ -9,15 +9,15 @@ function get_legal_durations(period::Float64,duration::Float64)
   i = 1
   #determine what maximum and minimum durations were searched for this period
   while min_duration == 0.0 || max_duration == 0.0
-    if period < max_periods[i] && min_duration == 0.0
-      min_duration = durations[i]
-    end 
-    if period > min_periods[num_dur+1-i] && max_duration == 0.0
-      max_duration = durations[num_dur+1-i]
-    end
     if i > 14
       println("No durations match this period")
       return(0.0,0.0)
+    end    
+    if period <= max_periods[i] && min_duration == 0.0
+      min_duration = durations[i]
+    end 
+    if period >= min_periods[num_dur+1-i] && max_duration == 0.0
+      max_duration = durations[num_dur+1-i]
     end
     i+=1
   end

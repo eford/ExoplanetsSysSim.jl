@@ -208,9 +208,15 @@ function generate_period_and_sizes_christiansen(s::Star, sim_param::SimParam; nu
       tmp_Plist = exp.((3*tmp_logalist - log(s.mass))/2)*ExoplanetsSysSim.day_in_year  # Convert from log a (in AU) back to P (in days)
       rad_dist = Distributions.Categorical(rate_tab[((j-1)*(r_dim+1)+2):((j-1)*(r_dim+1)+(r_dim+1))]) # Distribution for fraction of times the next planet draw would be assigned to a given radius bin
       for n in 1:n_range
-        Plist[tmp_ind[n]] = tmp_Plist[n]
+        if tmp_Plist[n] < limitP[j]
+            Plist[tmp_ind[n]] = limitP[j]
+        elseif tmp_Plist[n] > limitP[j+1]
+            Plist[tmp_ind[n]] = limitP[j+1]
+        else
+            Plist[tmp_ind[n]] = tmp_Plist[n]
+        end
         i_idx = rand(rad_dist)
-        Rplist[tmp_ind[n]] = exp(Base.rand()*(log(limitRp[i_idx+1])-log(limitRp[i_idx]))+log(limitRp[i_idx]))           
+        Rplist[tmp_ind[n]] = exp(Base.rand()*(log(limitRp[i_idx+1])-log(limitRp[i_idx]))+log(limitRp[i_idx]))
       end
     end
   end
