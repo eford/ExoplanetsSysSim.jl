@@ -136,8 +136,8 @@ end
 
 # WARNING: Hardcoded choice of transit detection efficiency here for speed and so as to not have it hardcoded in multiple places
 #detection_efficiency_model = detection_efficiency_christiansen2015  
-detection_efficiency_model = detection_efficiency_dr25_simple
-#detection_efficiency_model = detection_and_vetting_efficiency_model_v1
+#detection_efficiency_model = detection_efficiency_dr25_simple
+detection_efficiency_model = detection_and_vetting_efficiency_model_v1
 
 function vetting_efficiency_none(R_p::Real, P::Real)
     return 1.0
