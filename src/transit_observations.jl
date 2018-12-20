@@ -308,8 +308,8 @@ function calc_target_obs_sky_ave(t::KeplerTarget, sim_param::SimParam)
         ntr = calc_expected_num_transits(t, s, p, sim_param)
 
         # cdpp_central = interpolate_cdpp_to_duration(t, duration_central)
-        # snr_cdpp_central = calc_snr_if_transit_cdpp(t, depth, duration_central, cdpp_central, sim_param, num_transit=ntr)
-        # pdet_ave = calc_ave_prob_detect_if_transit_from_snr_cdpp(t, snr_cdpp_central, period, duration_central, size_ratio, cdpp_central, sim_param, num_transit=ntr)
+        # snr_central = calc_snr_if_transit_cdpp(t, depth, duration_central, cdpp_central, sim_param, num_transit=ntr)
+        # pdet_ave = calc_ave_prob_detect_if_transit_from_snr_cdpp(t, snr_central, period, duration_central, size_ratio, cdpp_central, sim_param, num_transit=ntr)
 
         kepid = StellarTable.star_table(t.sys[s].star.id, :kepid)
         osd_duration_central = get_legal_durations(period,duration_central)	#tests if durations are included in Kepler's observations for a certain planet period. If not, returns nearest possible duration
@@ -335,14 +335,17 @@ function calc_target_obs_sky_ave(t::KeplerTarget, sim_param::SimParam)
               transit_duration_factor = calc_effective_transit_duration_factor_for_impact_parameter_b(b,size_ratio)
 
 	      duration = duration_central * transit_duration_factor   # WARNING:  Technically, this duration may be slightly reduced for grazing cases to account for reduction in SNR due to planet not being completely inscribed by star at mid-transit.  But this will be a smaller effect than limb-darkening for grazing transits.  Also, makes a variant of the small angle approximation
+               
               # cdpp = interpolate_cdpp_to_duration(t, duration)
               # snr = snr_central * (cdpp_central/cdpp) * sqrt(transit_duration_factor)
+               
               osd_duration = get_legal_durations(period,duration)	#tests if durations are included in Kepler's observations for a certain planet period. If not, returns nearest possible duration
               osd = WindowFunction.interp_OSD_from_table(kepid, period, osd_duration)
               if osd_duration > duration				#use a correcting factor if this duration is lower than the minimum searched for this period. 
 	          osd = osd*osd_duration/duration
 	      end 
               snr = snr_central * (osd_central/osd) * sqrt(transit_duration_factor)
+               
               pdet_this_b = calc_prob_detect_if_transit(t, snr, period, duration, sim_param, num_transit=ntr)
               pvet = vetting_efficiency(t.sys[s].planet[p].radius, period) 
 
