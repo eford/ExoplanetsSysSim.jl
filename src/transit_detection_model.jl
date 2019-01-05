@@ -267,7 +267,7 @@ function calc_ave_prob_detect_if_transit_from_snr(t::KeplerTarget, snr_central::
      if osd_duration > duration_central*duration_factor				#use a correcting factor if this duration is lower than the minimum searched for this period. 
 	osd = osd*osd_duration/(duration_central*duration_factor)
      end 
-     snr_factor = depth_factor*sqrt(duration_factor)*(osd_central/osd)
+     snr_factor = depth_factor*(osd_central/osd)
      detection_efficiency_model(snr_central*snr_factor, num_transit, min_pdet_nonzero=min_pdet_nonzero)
   end 
 
