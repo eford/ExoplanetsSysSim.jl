@@ -98,7 +98,7 @@ function generate_obs_targets(cat_phys::KeplerPhysicalCatalog, sim_param::SimPar
    	Rstar::Float64 = rsol_in_au*sys.star.radius
        
         does_it_transit = does_planet_transit(sys, pl)
-        pdet_if_tr = does_it_transit ? calc_prob_detect_if_transit_with_actual_b_cdpp(kep_targ, ps, pl, sim_param) : 0.
+        pdet_if_tr = does_it_transit ? calc_prob_detect_if_transit_with_actual_b(kep_targ, ps, pl, sim_param) : 0.
         if !does_it_transit || (rand()>pdet_if_tr)
     	  splice!(cat_phys.target[t].sys[ps].orbit, pl)
 	  splice!(cat_phys.target[t].sys[ps].planet, pl)
