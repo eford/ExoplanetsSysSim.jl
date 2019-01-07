@@ -375,7 +375,7 @@ end
 function calc_ave_prob_detect_if_transit_cdpp(t::KeplerTarget, depth::Float64, period::Float64, duration_central::Float64, size_ratio::Float64, sim_param::SimParam; num_transit::Float64 = 1)
   cdpp_central = interpolate_cdpp_to_duration(t, duration_central)
   snr_central = calc_snr_if_transit(t,depth,duration_central,cdpp_central, sim_param, num_transit=num_transit)
-  return calc_ave_prob_detect_if_transit_from_snr(t, snr_central, period, duration_central, size_ratio, cdpp_central, sim_param, num_transit=num_transit)
+  return calc_ave_prob_detect_if_transit_from_snr_cdpp(t, snr_central, period, duration_central, size_ratio, cdpp_central, sim_param, num_transit=num_transit)
 end
 
 function calc_ave_prob_detect_if_transit_cdpp(t::KeplerTarget, s::Integer, p::Integer, sim_param::SimParam)
