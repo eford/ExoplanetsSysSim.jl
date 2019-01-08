@@ -573,7 +573,7 @@ function transit_noise_model_diagonal(t::KeplerTarget, s::Integer, p::Integer, d
         else        # TODO SCI DETAIL:  Account for correlated uncertaintties in transit parameters
             cov = zeros(4,4)
         if tau>=I 
-	cov[0,0] = -3*tau/(delta*delta*a15)
+	# cov[0,0] = -3*tau/(delta*delta*a15)
 	cov[1,1] = 24*tau*a10/(delta*delta*a5)
 	cov[1,2] = cov[2,1] = 36*a8*tau*a1/(delta*delta*a5) 
 	cov[1,3] = cov[3,1] = -12*a11*a1/(delta*a5) 
@@ -585,7 +585,7 @@ function transit_noise_model_diagonal(t::KeplerTarget, s::Integer, p::Integer, d
 	cov[3,4] = cov[4,3] = -24*a6*a2/(tau*a5)
 	cov[4,4] = a12/(tau*a5)
         else
-	cov[0,0] = 3*I/(delta*delta*b14)
+	# cov[0,0] = 3*I/(delta*delta*b14)
 	cov[1,1] = -24*I*I*b12/(delta*delta*tau*b7)
 	cov[1,2] = cov[2,1] = 36*I*b13*b5/(delta*delta*b7) 
 	cov[1,3] = cov[3,1] = 12*b5*b1/(delta*b7) 
