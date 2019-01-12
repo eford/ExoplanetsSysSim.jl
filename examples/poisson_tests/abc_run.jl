@@ -25,16 +25,14 @@ println("Running simulation (part 2)...")
 #@time output = run_abc(abc_plan, output)
 println("")
 
-if expandpart
-    println("Expanding to large generation...")
-    @time theta_largegen, weights_largegen = run_abc_largegen(output, EvalSysSimModel.get_ss_obs(), output.accept_log.epsilon[end-1], npart=500)
-    println("")
-end
+save(string("test-pop-out.jld"), "output", output, "ss_true", EvalSysSimModel.get_ss_obs())
 
 if expandpart
+    println("Expanding to large generation...")
+    @time theta_largegen, weights_largegen = run_abc_largegen(output, EvalSysSimModel.get_ss_obs(), output.accept_log.epsilon[end-1], npart=200)
+    println("")
+
     save(string("test-pop-out.jld"), "output", output, "ss_true", EvalSysSimModel.get_ss_obs(), "theta_largegen", theta_largegen, "weights_largegen", weights_largegen)
-else
-    save(string("test-pop-out.jld"), "output", output, "ss_true", EvalSysSimModel.get_ss_obs())
 end
 
 if out2txt

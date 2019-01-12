@@ -141,7 +141,7 @@ end
 function setup_abc_p2(abc_plan::ABC.abc_pmc_plan_type)
     abc_plan.tau_factor = 2.0
     abc_plan.num_max_times = 200
-    ExoplanetsSysSim.add_param_fixed(EvalSysSimModel.sim_param_closure,"num_targets_sim_pass_one",20000)
+    ExoplanetsSysSim.add_param_fixed(EvalSysSimModel.sim_param_closure,"num_targets_sim_pass_one",10000)
     return abc_plan
 end
     
