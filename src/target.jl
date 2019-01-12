@@ -47,6 +47,8 @@ function generate_kepler_target_from_table(sim_param::SimParam)
   const max_star_radius = 2.0
   const max_star_mass = 2.0
   const max_star_density = 1000.0
+  const min_frac_rad_sigma = 0.06
+    
   max_star_id = StellarTable.num_usable_in_star_table()
 
   star_table(id::Integer,sym::Symbol) = StellarTable.star_table(id,sym)
@@ -63,7 +65,9 @@ function generate_kepler_target_from_table(sim_param::SimParam)
                 star_id = rand(1:max_star_id)
                 attmpt_num = 0
             end
-            radius = draw_asymmetric_normal( star_table(star_id,:radius), star_table(star_id,:radius_err1), abs(star_table(star_id,:radius_err2)) )
+            rad_errp = max(star_table(star_id,:radius_err1), min_frac_rad_sigma*star_table(star_id,:radius))
+            rad_errn = max(abs(star_table(star_id,:radius_err2)), min_frac_rad_sigma*star_table(star_id,:radius))
+            radius = draw_asymmetric_normal( star_table(star_id,:radius), rad_errp,  rad_errn)
             mass = draw_asymmetric_normal( star_table(star_id,:mass), star_table(star_id,:mass_err1), abs(star_table(star_id,:mass_err2)) )
             #dens = draw_asymmetric_normal( star_table(star_id,:dens), star_table(star_id,:dens_err1), abs(star_table(star_id,:dens_err2)) )
             attmpt_num += 1
