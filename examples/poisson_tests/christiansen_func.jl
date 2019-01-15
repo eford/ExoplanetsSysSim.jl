@@ -98,17 +98,25 @@ function set_test_param(sim_param_closure::SimParam)
             @assert (size(rate_init_list) == (r_dim, p_dim))
             rate_tab_init = rate_init_list*0.01
         end
-        lamb_col = sum(rate_tab_init, 1)
-        rate_tab_init = rate_tab_init ./ lamb_col
-        rate_tab_init = vcat(lamb_col, rate_tab_init)
+        if r_dim > 1
+            lamb_col = sum(rate_tab_init, 1)
+            rate_tab_init = rate_tab_init ./ lamb_col
+            rate_tab_init = vcat(lamb_col, rate_tab_init)
+        end
         add_param_active(sim_param_closure, "obs_par", rate_tab_init)
     else
         rate_init_list = fill(1.0, n_bin)
         rate_tab_init = reshape(rate_init_list*0.01, (r_dim, p_dim))
-        lamb_col = sum(rate_tab_init, 1)
-        rate_tab_init = rate_tab_init ./ lamb_col
-        rate_tab_init = vcat(lamb_col, rate_tab_init)
+        if r_dim > 1
+            lamb_col = sum(rate_tab_init, 1)
+            rate_tab_init = rate_tab_init ./ lamb_col
+            rate_tab_init = vcat(lamb_col, rate_tab_init)
+        end
         add_param_active(sim_param_closure, "obs_par", rate_tab_init)
+    end
+    
+    if r_dim == 1
+        add_param_fixed(sim_param_closure,"generate_period_and_sizes", generate_period_and_sizes_christiansen_single_rp)
     end
     
     return sim_param_closure
@@ -220,6 +228,68 @@ function generate_period_and_sizes_christiansen(s::Star, sim_param::SimParam; nu
                   end
                   i_idx = rand(rad_dist)
                   Rplist[tmp_ind[n]] = exp(Base.rand()*(log(limitRp[i_idx+1])-log(limitRp[i_idx]))+log(limitRp[i_idx]))
+              end
+          end
+      end
+  end
+  return Plist, Rplist
+end
+
+function generate_period_and_sizes_christiansen_single_rp(s::Star, sim_param::SimParam; num_pl::Integer = 1)
+  rate_tab::Array{Float64,2} = get_any(sim_param, "obs_par", Array{Float64,2})
+  
+  limitP::Array{Float64,1} = get_any(sim_param, "p_lim_arr", Array{Float64,1})
+  limitRp::Array{Float64,1} = get_any(sim_param, "r_lim_arr", Array{Float64,1})
+  const r_dim = length(limitRp)-1
+  sepa_min = 0.05  # Minimum orbital separation in AU
+  backup_sepa_factor_slightly_less_than_one = 0.95  
+    
+  @assert ((length(limitP)-1) == size(rate_tab, 2))
+  #@assert ((length(limitRp)-1) == size(rate_tab, 1))
+  @assert size(rate_tab, 1) == 1
+  end
+  Plist = zeros(num_pl)
+  Rplist = zeros(num_pl)
+  # rate_tab_1d = reshape(rate_tab,length(rate_tab))
+  # maxcuml = sum(rate_tab_1d)
+  # cuml = cumsum_kbn(rate_tab_1d/maxcuml)
+  maxcuml = sum(rate_tab[1,:])
+  cuml = cumsum_kbn(rate_tab[1,:]/maxcuml)  
+
+  # We assume uniform sampling in log P and log Rp within each bin
+  j_idx = ones(Int64, num_pl)
+    
+  for n in 1:num_pl
+    rollp = Base.rand()
+    # idx = findfirst(x -> x > rollp, cuml)
+    # i_idx = (idx-1)%size(rate_tab,1)+1
+    # j_idx[n] = floor(Int64,(idx-1)//size(rate_tab,1))+1
+    # Rplist[n] = exp(Base.rand()*(log(limitRp[i_idx+1])-log(limitRp[i_idx]))+log(limitRp[i_idx]))
+    j_idx[n] = findfirst(x -> x > rollp, cuml)
+  end
+
+  for j in 1:(length(limitP)-1)
+      tmp_ind = find(x -> x == j, j_idx)
+      if length(tmp_ind) > 0
+          redraw_att = 0
+          invalid_config = true
+          while invalid_config && redraw_att < 20
+              n_range = length(tmp_ind)
+              loga_min = log(ExoplanetsSysSim.semimajor_axis(limitP[j], s.mass))
+              loga_min_ext = log(ExoplanetsSysSim.semimajor_axis(limitP[j], s.mass)+sepa_min)  # Used for determining minimum semimajor axis separation
+              loga_max = log(ExoplanetsSysSim.semimajor_axis(limitP[j+1], s.mass))
+              logsepa_min = min(loga_min_ext-loga_min, (loga_max-loga_min)/n_range/2*backup_sepa_factor_slightly_less_than_one)  # Prevents minimum separations too large
+              tmp_logalist = draw_uniform_selfavoiding(n_range,min_separation=logsepa_min,lower_bound=loga_min,upper_bound=loga_max)
+              tmp_Plist = exp.((3*tmp_logalist - log(s.mass))/2)*ExoplanetsSysSim.day_in_year  # Convert from log a (in AU) back to P (in days)
+              invalid_config = false
+              redraw_att += 1
+              for n in 1:n_range
+                  if tmp_Plist[n] < limitP[j] || tmp_Plist[n] > limitP[j+1]
+                      invalid_config = true
+                  else
+                      Plist[tmp_ind[n]] = tmp_Plist[n]
+                  end
+                  Rplist[tmp_ind[n]] = exp(Base.rand()*(log(limitRp[2])-log(limitRp[1]))+log(limitRp[1]))
               end
           end
       end
