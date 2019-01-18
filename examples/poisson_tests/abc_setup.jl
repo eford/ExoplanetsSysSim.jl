@@ -125,18 +125,24 @@ include(joinpath(Pkg.dir(),"ExoplanetsSysSim","examples","poisson_tests", "beta_
 function setup_abc(num_dist::Integer = 0)
     EvalSysSimModel.setup()
     limitP::Array{Float64,1} = get_any(EvalSysSimModel.sim_param_closure, "p_lim_arr", Array{Float64,1})
-    const r_dim = length(get_any(EvalSysSimModel.sim_param_closure, "r_lim_arr", Array{Float64,1}))-1
+    limitR::Array{Float64,1} = get_any(EvalSysSimModel.sim_param_closure, "r_lim_arr", Array{Float64,1})
+    limitR_full::Array{Float64,1} = get_any(EvalSysSimModel.sim_param_closure, "r_lim_full", Array{Float64,1})
+    const r_dim = length(limitR)-1
     prior_arr = ContinuousDistribution[]
     ss_obs_table = EvalSysSimModel.get_ss_obs().stat["planets table"]
 
     for i in 1:(length(limitP)-1)
         max_in_col = floor(3*log(limitP[i+1]/limitP[i])/log(2))
         lambda_col = Uniform(0.0, max_in_col)
+        prior_arr = vcat(prior_arr, lambda_col)
         if r_dim > 1
-            dirch = Dirichlet(ones(r_dim))
-            prior_arr = vcat(prior_arr, [lambda_col, dirch])
-        else
-            prior_arr = vcat(prior_arr, lambda_col)
+            # dirch = Dirichlet(ones(r_dim))
+            # prior_arr = vcat(prior_arr, dirch)
+            for j in 1:r_dim
+                r_ind = findfirst(x -> x == limitR[j], limitR_full)
+                beta_dist = Beta(log(limitR[j+1]/limitR[j])*log(limitP[i+1]/limitP[i])/log(2), log(limitP[i+1]/limitP[i])/2*sum(log.([getindex(limitR_full, x) for x = 2:length(limitR_full) if x != r_ind+1] ./ [getindex(limitR_full, x) for x = 1:length(limitR_full)-1 if x != r_ind])))
+                prior_arr = vcat(prior_arr, beta_dist)
+            end
         end
         # for j in 1:r_dim
         #     if j < 4 && limitP[i] > 20.0
@@ -178,11 +184,15 @@ function run_abc_largegen(pop::ABC.abc_population_type, ss_true::ExoplanetsSysSi
     for i in 1:(length(limitP)-1)
         max_in_col = floor(3*log(limitP[i+1]/limitP[i])/log(2))
         lambda_col = Uniform(0.0, max_in_col)
+        prior_arr = vcat(prior_arr, lambda_col)
         if r_dim > 1
-            dirch = Dirichlet(ones(r_dim))
-            prior_arr = vcat(prior_arr, [lambda_col, dirch])
-        else
-            prior_arr = vcat(prior_arr, lambda_col)
+            # dirch = Dirichlet(ones(r_dim))
+            # prior_arr = vcat(prior_arr, dirch)
+            for j in 1:r_dim
+                r_ind = findfirst(x -> x == limitR[j], limitR_full)
+                beta_dist = Beta(log(limitR[j+1]/limitR[j])*log(limitP[i+1]/limitP[i])/log(2), log(limitP[i+1]/limitP[i])/2*sum(log.([getindex(limitR_full, x) for x = 2:length(limitR_full) if x != r_ind+1] ./ [getindex(limitR_full, x) for x = 1:length(limitR_full)-1 if x != r_ind])))
+                prior_arr = vcat(prior_arr, beta_dist)
+            end
         end
         # for j in 1:r_dim
         #     if j < 4 && limitP[i] > 20.0

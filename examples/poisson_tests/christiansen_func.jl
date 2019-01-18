@@ -38,8 +38,8 @@ function setup_sim_param_christiansen(args::Vector{String} = Array{String}(0) ) 
     add_param_fixed(sim_param,"mr_power_index",2.0)
     add_param_fixed(sim_param,"mr_const",1.0)
     add_param_fixed(sim_param,"generate_period_and_sizes", generate_period_and_sizes_christiansen)
-    #p_lim_arr_num = [0.5, 1.25, 2.5, 5., 10., 20., 40., 80., 160., 320.]
-    #r_lim_arr_num = [0.5, 0.75, 1., 1.25, 1.5, 1.75, 2., 2.5, 3., 4., 6., 8., 12., 16.]
+    add_param_fixed(sim_param,"p_lim_full",[0.5, 1., 2., 4., 8., 16., 32., 64., 128., 256., 500.])
+    add_param_fixed(sim_param,"r_lim_full",[0.25, 0.5, 0.75, 1., 1.25, 1.5, 1.75, 2., 2.5, 3., 4., 6., 8., 12., 16.]*ExoplanetsSysSim.earth_radius)
     #p_dim = length(p_lim_arr_num)-1
     #r_dim = length(r_lim_arr_num)-1
     #rate_tab_init = reshape(fill(1.0, p_dim*r_dim)*0.01,(r_dim,p_dim))
