@@ -74,7 +74,7 @@ function fit_beta_mle(x::AbstractArray{T,1}; tol::T = 1e-6, max_it::Int64 = 10, 
         println("it = 0: ", mle_new)
     end
     if any(mle_new.<=zero(T))
-        println("# Warning: mean= ", xbar, " var= ",var," (alpha,beta)_init= ",mle_new," invalid, reinitializing to (1,1)")
+        println("# Warning: mean= ", xbar, " var= ",vbar," (alpha,beta)_init= ",mle_new," invalid, reinitializing to (1,1)")
         verbose = true
         mle_new = ones(T,2)
     end
@@ -93,9 +93,9 @@ function fit_beta_mle(x::AbstractArray{T,1}; tol::T = 1e-6, max_it::Int64 = 10, 
 end
 
 function make_beta(x::AbstractArray{T,1}, w::AbstractArray{T,1}; 
-                   mean::T = Compat.Statistics.mean(x,AnalyticWeights(w)), 
-                   var::T = Compat.Statistics.varm(x,xbar,AnalyticWeights(w)), tau_factor::T=one(T) ) where T<:Real
-    alpha_beta = (var < mean*(1.0-mean)) ? [mom_alpha(mean, var), mom_beta(mean,var)] : ones(T,2)
+                   xmean::T = Compat.Statistics.mean(x,AnalyticWeights(w)), 
+                   xvar::T = Compat.Statistics.varm(x,xmean,AnalyticWeights(w)), tau_factor::T=one(T) ) where T<:Real
+    alpha_beta = (xvar < xmean*(1.0-xmean)) ? [mom_alpha(xmean, xvar), mom_beta(xmean,xvar)] : ones(T,2)
     if any(alpha_beta.<=zero(T))
         alpha_beta = fit_beta_mle(x, w=w, init_guess=alpha_beta, verbose=true)
     end
@@ -110,8 +110,8 @@ function make_beta(x::AbstractArray{T,1}, w::AbstractArray{T,1};
     Beta(alpha_beta[1], alpha_beta[2])
 end
 
-function make_beta_transformed(x::AbstractArray{T,1}, w::AbstractArray{T,1}; xmin::T=zero(T), xmax::T=one(T), mean::T = Compat.Statistics.mean(x,AnalyticWeights(w)), var::T = Compat.Statistics.varm(x,xbar,AnalyticWeights(w)), tau_factor::T=one(T) ) where T<:Real
-    alpha_beta = (var < mean*(1.0-mean)) ? [mom_alpha(mean, var), mom_beta(mean,var)] : ones(T,2)
+function make_beta_transformed(x::AbstractArray{T,1}, w::AbstractArray{T,1}; xmin::T=zero(T), xmax::T=one(T), xmean::T = Compat.Statistics.mean(x,AnalyticWeights(w)), xvar::T = Compat.Statistics.varm(x,xmean,AnalyticWeights(w)), tau_factor::T=one(T) ) where T<:Real
+    alpha_beta = (xvar < xmean*(1.0-xmean)) ? [mom_alpha(xmean, xvar), mom_beta(xmean,xvar)] : ones(T,2)
     if any(alpha_beta.<=zero(T))
         alpha_beta = fit_beta_mle(x, w=w, init_guess=alpha_beta, verbose=true)
     end
@@ -151,7 +151,7 @@ function make_proposal_dist_multidim_beta(theta::AbstractArray{Float64,2}, weigh
         end
         =#
         
-        dist_arr = vcat(dist_arr, ContinuousDistribution[make_beta_transformed(theta[i,:], weights, xmin=0.0, xmax=max_col_rate, mean=theta_mean[i]/max_col_rate, var=theta_var[i]/max_col_rate^2, tau_factor=tau_factor_indiv[i]) for i in (col_startidx):(col_startidx+r_dim-1)])
+        dist_arr = vcat(dist_arr, ContinuousDistribution[make_beta_transformed(theta[i,:], weights, xmin=0.0, xmax=max_col_rate, xmean=theta_mean[i]/max_col_rate, xvar=theta_var[i]/max_col_rate^2, tau_factor=tau_factor_indiv[i]) for i in (col_startidx):(col_startidx+r_dim-1)])
     end
 
 dist = CompositeDist(dist_arr)
@@ -202,7 +202,7 @@ function make_proposal_dist_multidim_beta_dirichlet(theta::AbstractArray{Float64
         end
         =#
         
-        dist_arr = vcat(dist_arr, make_beta_transformed(theta[col_startidx,:], weights, xmin=0.0, xmax=max_col_rate, mean=theta_mean[col_startidx]/max_col_rate, var=theta_var[col_startidx]/max_col_rate^2, tau_factor=tau_factor_indiv[col_startidx]), ContinuousDistribution[ make_beta(theta[i,:], weights, mean=theta_mean[i], var=theta_var[i], tau_factor=tau_factor_indiv[i]) for i in (col_startidx+1):(col_startidx+r_dim)])
+        dist_arr = vcat(dist_arr, make_beta_transformed(theta[col_startidx,:], weights, xmin=0.0, xmax=max_col_rate, mean=theta_mean[col_startidx]/max_col_rate, var=theta_var[col_startidx]/max_col_rate^2, tau_factor=tau_factor_indiv[col_startidx]), ContinuousDistribution[ make_beta(theta[i,:], weights, xmean=theta_mean[i], xvar=theta_var[i], tau_factor=tau_factor_indiv[i]) for i in (col_startidx+1):(col_startidx+r_dim)])
     end
 
 dist = CompositeDist(dist_arr)

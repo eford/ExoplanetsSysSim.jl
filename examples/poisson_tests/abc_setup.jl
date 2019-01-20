@@ -151,12 +151,13 @@ include(joinpath(Pkg.dir(),"ExoplanetsSysSim","examples","poisson_tests", "chris
 include(joinpath(Pkg.dir(),"ExoplanetsSysSim","examples","poisson_tests", "beta_proposal.jl"))
 
 function setup_abc(num_dist::Integer = 0; prior_choice::String = "uniform", bin_size_factor::Float64 = 1.5)
+    EvalSysSimModel.setup(prior_choice, bin_size_factor)
+
     limitP::Array{Float64,1} = get_any(EvalSysSimModel.sim_param_closure, "p_lim_arr", Array{Float64,1})
     limitR::Array{Float64,1} = get_any(EvalSysSimModel.sim_param_closure, "r_lim_arr", Array{Float64,1})
     limitR_full::Array{Float64,1} = get_any(EvalSysSimModel.sim_param_closure, "r_lim_full", Array{Float64,1})
     const r_dim = length(limitR)-1
-
-    EvalSysSimModel.setup(prior_choice, bin_size_factor)
+    
     prior_arr = ContinuousDistribution[]
     ss_obs_table = EvalSysSimModel.get_ss_obs().stat["planets table"]
 
@@ -202,6 +203,8 @@ function setup_abc(num_dist::Integer = 0; prior_choice::String = "uniform", bin_
     elseif prior_choice == "beta"
         abc_plan.is_valid = EvalSysSimModel.is_valid_beta
     end
+    
+    return abc_plan
 end
 
 function setup_abc_p2(abc_plan::ABC.abc_pmc_plan_type)

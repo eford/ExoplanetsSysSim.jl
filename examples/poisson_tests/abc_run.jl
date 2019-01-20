@@ -12,7 +12,7 @@ using StatsBase
 out2txt = false # Write occurrence rates & densities to text files
 expandpart = true # Expand final generation for robust posteriors
 prior_choice = "uniform"
-bin_size_factor = 1.5
+bin_size_factor = 2.0
 
 println("Setting up simulation...")
 @time abc_plan = setup_abc(prior_choice = prior_choice, bin_size_factor = bin_size_factor)
@@ -55,11 +55,13 @@ else
 end
 
 for p_ind = 1:(length(limitP)-1)
-    col_ind = (p_ind-1)*(r_dim+1)+1
-    for r_ind = 1:(length(limitR)-1)
-        dens_denom = 1.0/(log2(limitP[p_ind+1])-log2(limitP[p_ind]))/(log2(limitR[r_ind+1])-log2(limitR[r_ind]))
+    col_ind = (p_ind-1)*(r_dim)+1
+    for r_ind = 1:r_dim
+        bin_ind = (p_ind-1)*(r_dim)+r_ind
+        dens_denom = 1.0/log(limitP[p_ind+1]/limitP[p_ind])/log(limitR[r_ind+1]/limitR[r_ind])
 
         if prior_choice == "dirichlet" && r_dim > 1
+            col_ind = (p_ind-1)*(r_dim+1)+1
             bin_ind = (p_ind-1)*(r_dim+1)+r_ind+1
             if expandpart
                 quant_arr = quantile(theta_largegen[bin_ind,:].*theta_largegen[col_ind,:], weight_vec, [0.1587, 0.5, 0.8413])
@@ -68,14 +70,12 @@ for p_ind = 1:(length(limitP)-1)
             end
         elseif prior_choice == "beta"
             col_lambda = bin_size_factor * 3 * log(limitP[p_ind+1]/limitP[p_ind])/log(2)
-            bin_ind = (p_ind-1)*(r_dim+1)+r_ind
             if expandpart
                 quant_arr = quantile(theta_largegen[bin_ind,:]*col_lambda, weight_vec, [0.1587, 0.5, 0.8413])
             else
                 quant_arr = quantile(output.theta[bin_ind,:]*col_lambda, weight_vec, [0.1587, 0.5, 0.8413])
             end
         else
-            bin_ind = (p_ind-1)*(r_dim+1)+r_ind
             if expandpart
                 quant_arr = quantile(theta_largegen[bin_ind,:], weight_vec, [0.1587, 0.5, 0.8413])
             else

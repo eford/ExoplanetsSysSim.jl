@@ -270,7 +270,7 @@ function generate_period_and_sizes_christiansen_uniform(s::Star, sim_param::SimP
     
   @assert ((length(limitP)-1) == size(rate_tab, 2))
   @assert ((length(limitRp)-1) == size(rate_tab, 1))
-  end
+
   Plist = zeros(num_pl)
   Rplist = zeros(num_pl)
   rate_tab_1d = reshape(rate_tab,length(rate_tab))
@@ -328,7 +328,7 @@ function generate_period_and_sizes_christiansen_beta(s::Star, sim_param::SimPara
     
   @assert ((length(limitP)-1) == size(rate_tab, 2))
   @assert ((length(limitRp)-1) == size(rate_tab, 1))
-  end
+
   Plist = zeros(num_pl)
   Rplist = zeros(num_pl)
   rate_tab_1d = reshape([3*log(limitP[i+1]/limitP[i])/log(2) for i in 1:length(limitP)-1]'.*rate_tab,length(rate_tab))
@@ -385,6 +385,7 @@ function generate_period_and_sizes_christiansen_dirichlet(s::Star, sim_param::Si
     
   @assert ((length(limitP)-1) == size(rate_tab, 2))
   @assert ((length(limitRp)-1) == (size(rate_tab, 1)-1))
+    
   Plist = zeros(num_pl)
   Rplist = zeros(num_pl)
   maxcuml = sum(rate_tab[1,:])
