@@ -11,9 +11,11 @@ using StatsBase
 
 out2txt = false # Write occurrence rates & densities to text files
 expandpart = true # Expand final generation for robust posteriors
+prior_choice = "uniform"
+bin_size_factor = 1.5
 
 println("Setting up simulation...")
-@time abc_plan = setup_abc()
+@time abc_plan = setup_abc(prior_choice = prior_choice, bin_size_factor = bin_size_factor)
 println("")
 println("Running simulation...")
 @time output = run_abc(abc_plan)
@@ -29,7 +31,7 @@ save(string("test-pop-out.jld"), "output", output, "ss_true", EvalSysSimModel.ge
 
 if expandpart
     println("Expanding to large generation...")
-    @time theta_largegen, weights_largegen = run_abc_largegen(output, EvalSysSimModel.get_ss_obs(), output.accept_log.epsilon[end-1], npart=200)
+    @time theta_largegen, weights_largegen = run_abc_largegen(abc_plan, output, EvalSysSimModel.get_ss_obs(), output.accept_log.epsilon[end-1], npart=200)
     println("")
 
     save(string("test-pop-out.jld"), "output", output, "ss_true", EvalSysSimModel.get_ss_obs(), "theta_largegen", theta_largegen, "weights_largegen", weights_largegen)
@@ -57,11 +59,28 @@ for p_ind = 1:(length(limitP)-1)
     for r_ind = 1:(length(limitR)-1)
         dens_denom = 1.0/(log2(limitP[p_ind+1])-log2(limitP[p_ind]))/(log2(limitR[r_ind+1])-log2(limitR[r_ind]))
 
-        bin_ind = (p_ind-1)*(r_dim+1)+r_ind+1
-        if expandpart
-            quant_arr = quantile(theta_largegen[bin_ind,:].*theta_largegen[col_ind,:], weight_vec, [0.1587, 0.5, 0.8413])
+        if prior_choice == "dirichlet" && r_dim > 1
+            bin_ind = (p_ind-1)*(r_dim+1)+r_ind+1
+            if expandpart
+                quant_arr = quantile(theta_largegen[bin_ind,:].*theta_largegen[col_ind,:], weight_vec, [0.1587, 0.5, 0.8413])
+            else
+                quant_arr = quantile(output.theta[bin_ind,:].*output.theta[col_ind,:], weight_vec, [0.1587, 0.5, 0.8413])
+            end
+        elseif prior_choice == "beta"
+            col_lambda = bin_size_factor * 3 * log(limitP[p_ind+1]/limitP[p_ind])/log(2)
+            bin_ind = (p_ind-1)*(r_dim+1)+r_ind
+            if expandpart
+                quant_arr = quantile(theta_largegen[bin_ind,:]*col_lambda, weight_vec, [0.1587, 0.5, 0.8413])
+            else
+                quant_arr = quantile(output.theta[bin_ind,:]*col_lambda, weight_vec, [0.1587, 0.5, 0.8413])
+            end
         else
-            quant_arr = quantile(output.theta[bin_ind,:].*output.theta[col_ind,:], weight_vec, [0.1587, 0.5, 0.8413])
+            bin_ind = (p_ind-1)*(r_dim+1)+r_ind
+            if expandpart
+                quant_arr = quantile(theta_largegen[bin_ind,:], weight_vec, [0.1587, 0.5, 0.8413])
+            else
+                quant_arr = quantile(output.theta[bin_ind,:], weight_vec, [0.1587, 0.5, 0.8413])
+            end
         end
 
         println("-----------------------------")
