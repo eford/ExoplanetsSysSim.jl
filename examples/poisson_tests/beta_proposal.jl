@@ -202,7 +202,7 @@ function make_proposal_dist_multidim_beta_dirichlet(theta::AbstractArray{Float64
         end
         =#
         
-        dist_arr = vcat(dist_arr, make_beta_transformed(theta[col_startidx,:], weights, xmin=0.0, xmax=max_col_rate, mean=theta_mean[col_startidx]/max_col_rate, var=theta_var[col_startidx]/max_col_rate^2, tau_factor=tau_factor_indiv[col_startidx]), ContinuousDistribution[ make_beta(theta[i,:], weights, xmean=theta_mean[i], xvar=theta_var[i], tau_factor=tau_factor_indiv[i]) for i in (col_startidx+1):(col_startidx+r_dim)])
+        dist_arr = vcat(dist_arr, make_beta_transformed(theta[col_startidx,:], weights, xmin=0.0, xmax=max_col_rate, xmean=theta_mean[col_startidx]/max_col_rate, xvar=theta_var[col_startidx]/max_col_rate^2, tau_factor=tau_factor_indiv[col_startidx]), ContinuousDistribution[ make_beta(theta[i,:], weights, xmean=theta_mean[i], xvar=theta_var[i], tau_factor=tau_factor_indiv[i]) for i in (col_startidx+1):(col_startidx+r_dim)])
     end
 
 dist = CompositeDist(dist_arr)
