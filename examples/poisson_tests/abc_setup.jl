@@ -162,12 +162,13 @@ function setup_abc(num_dist::Integer = 0; prior_choice::String = "uniform", bin_
     ss_obs_table = EvalSysSimModel.get_ss_obs().stat["planets table"]
 
     if prior_choice == "dirichlet"
+        weights_arr = [log(limitR[j+1]/limitR[j]) for j in 1:r_dim]/minimum([log(limitR_full[k+1]/limitR_full[k]) for k in 1:(length(limitR_full)-1)])
         for i in 1:(length(limitP)-1)
             max_in_col = 3*log(limitP[i+1]/limitP[i])/log(2)
             lambda_col = Uniform(0.0, max_in_col)
             prior_arr = vcat(prior_arr, lambda_col)
             if r_dim > 1
-                dirch_dist = Dirichlet([log(limitR[j+1]/limitR[j]) for j in 1:r_dim])
+                dirch_dist = Dirichlet(weights_arr)
                 prior_arr = vcat(prior_arr, dirch_dist)
             end
         end

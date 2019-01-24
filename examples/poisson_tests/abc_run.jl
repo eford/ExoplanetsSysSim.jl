@@ -47,11 +47,11 @@ limitR = get_any(EvalSysSimModel.sim_param_closure, "r_lim_arr", Array{Float64,1
 const r_dim = length(limitR)-1
 
 if expandpart
-    #weight_vec = aweights(weights_largegen)
-    weight_vec = aweights(fill(1.0, length(weights_largegen)))
+    weight_vec = aweights(weights_largegen)
+    #weight_vec = aweights(fill(1.0, length(weights_largegen)))
 else
-    #weight_vec = aweights(output.weights)
-    weight_vec = aweights(fill(1.0, length(output.weights)))
+    weight_vec = aweights(output.weights)
+    #weight_vec = aweights(fill(1.0, length(output.weights)))
 end
 
 for p_ind = 1:(length(limitP)-1)
