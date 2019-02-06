@@ -105,10 +105,6 @@ function set_test_param(sim_param_closure::SimParam)
         add_param_active(sim_param_closure, "obs_par", rate_tab_init)
     end
     
-    if r_dim == 1
-        add_param_fixed(sim_param_closure,"generate_period_and_sizes", generate_period_and_sizes_christiansen_single_rp)
-    end
-    
     return sim_param_closure
 end
 
