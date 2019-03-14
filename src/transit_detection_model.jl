@@ -136,16 +136,33 @@ end
 
 # WARNING: Hardcoded choice of transit detection efficiency here for speed and so as to not have it hardcoded in multiple places
 #detection_efficiency_model = detection_efficiency_christiansen2015  
-#detection_efficiency_model = detection_efficiency_dr25_simple
+# detection_efficiency_model = detection_efficiency_dr25_simple
 detection_efficiency_model = detection_and_vetting_efficiency_model_v1
 
 function vetting_efficiency_none(R_p::Real, P::Real)
     return 1.0
 end
 
-# From Mulders et al. 2018 (arXiv 1805.08211)
+# From Mulders e-mail (Gaia, no score)
 # WARNING: Assumes inputs are in R_sol and days
 function vetting_efficiency_dr25_mulders(R_p::Real, P::Real)
+    const c = 0.93
+    const a_R = -0.03
+    const P_break = 205.
+    const a_P = 0.00
+    const b_P = -0.24
+    pvet = c*(R_p/earth_radius)^a_R
+    if P < P_break
+        pvet *= (P/P_break)^a_P
+    else
+        pvet *= (P/P_break)^b_P
+    end
+    return pvet
+end
+
+# From Mulders et al. 2018 (arXiv 1805.08211)
+# WARNING: Assumes inputs are in R_sol and days
+function vetting_efficiency_dr25_mulders_vetcut(R_p::Real, P::Real)
     const c = 0.63
     const a_R = 0.19
     const P_break = 53.
