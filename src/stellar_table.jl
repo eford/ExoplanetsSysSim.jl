@@ -60,6 +60,9 @@ function setup(filename::String; force_reread::Bool = false)
   usable = find(is_usable)
   df = df[usable, symbols_to_keep]
   end
+    mast_df = CSV.read(convert(String,joinpath(Pkg.dir("ExoplanetsSysSim"), "data", "KeplerMAST_TargetProperties.csv")))
+    delete!(mast_df, [~(x in [:kepid, :contam]) for x in names(mast_df)])
+    df = join(df, mast_df, on=:kepid)
     df[:wf_id] = map(x->ExoplanetsSysSim.WindowFunction.get_window_function_id(x,use_default_for_unknown=false),df[:kepid])
     obs_5q = df[:wf_id].!=-1
     df = df[obs_5q,keys(df.colindex)]
@@ -128,9 +131,9 @@ function generate_star_from_table(sim_param::SimParam, id::Integer)  # WARNING: 
   while f<0.0
     f = 1.0+0.1*randn()
   end
-  # ld = LimbDarkeningParam4thOrder(StellarTable.star_table(id,:limbdark_coeff1), StellarTable.star_table(id,:limbdark_coeff2), StellarTable.star_table(id,:limbdark_coeff3), StellarTable.star_table(id,:limbdark_coeff4) ) # TODO Add limb darkening
-  # return SingleStar(r,m,f,id,ld)
-  return SingleStar(r,m,f,id)
+  ld = LimbDarkeningParam4thOrder(StellarTable.star_table(id,:limbdark_coeff1), StellarTable.star_table(id,:limbdark_coeff2), StellarTable.star_table(id,:limbdark_coeff3), StellarTable.star_table(id,:limbdark_coeff4) ) # TODO Add limb darkening
+  return SingleStar(r,m,f,id,ld)
+  # return SingleStar(r,m,f,id)
 end
 
 function generate_star_from_table(sim_param::SimParam)

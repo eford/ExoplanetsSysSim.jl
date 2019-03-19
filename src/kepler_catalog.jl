@@ -102,7 +102,6 @@ function generate_obs_targets(cat_phys::KeplerPhysicalCatalog, sim_param::SimPar
         does_it_transit = does_planet_transit(sys, pl)
         pdet_if_tr = does_it_transit ? calc_prob_detect_if_transit_with_actual_b(kep_targ, ps, pl, sim_param) : 0.
         if !does_it_transit || (rand()>pdet_if_tr)
-
     	  splice!(cat_phys.target[t].sys[ps].orbit, pl)
 	  splice!(cat_phys.target[t].sys[ps].planet, pl)
      	end
@@ -116,10 +115,10 @@ end
 # The following function is primarily left for debugging.  
 function simulated_read_kepler_observations(sim_param::SimParam )
    println("# WARNING: Using simulated_read_kepler_observations.")
-   if haskey(sim_param,"stellar_catalog")
-      star_tab_func = get_function(sim_param, "star_table_setup")
-      star_tab_func(sim_param)
-   end
+   # if haskey(sim_param,"stellar_catalog")
+   #    star_tab_func = get_function(sim_param, "star_table_setup")
+   #    star_tab_func(sim_param)
+   # end
    num_sys = get_int(sim_param,"num_kepler_targets")
    generate_kepler_target = get_function(sim_param,"generate_kepler_target")
    target_list = Array{KeplerTarget}(undef,num_sys)
@@ -151,7 +150,7 @@ function read_koi_catalog(filename::String, force_reread::Bool = false)
             error(string("# Failed to read koi catalog >",filename,"< in jld2 format."))
         end
     else
-        try
+       try
             tmp_koi_cat = readlines(filename)
             tmp_ind = 1
             num_skip = 1
@@ -172,6 +171,14 @@ function read_koi_catalog(filename::String, force_reread::Bool = false)
 
             is_usable = .&(is_cand, has_radius, has_period)
             usable = findall(is_usable)
+           #  symbols_to_keep = [:kepid, :kepoi_name, :koi_pdisposition, :koi_score, :koi_ror, :koi_period, :koi_period_err1, :koi_period_err2, :koi_time0bk, :koi_time0bk_err1, :koi_time0bk_err2, :koi_depth, :koi_depth_err1, :koi_depth_err2, :koi_duration, :koi_duration_err1, :koi_duration_err2]
+           # df = df[usable, symbols_to_keep]
+           # tmp_df = DataFrame()    
+           # for col in names(df)
+           #     tmp_df[col] = collect(skipmissing(df[col]))
+           # end
+           # df = tmp_df
+           # usable = collect(1:length(df[:kepid]))
         catch
             error(string("# Failed to read koi catalog >",filename,"< in ascii format."))
         end
@@ -235,7 +242,7 @@ function setup_actual_planet_candidate_catalog(df_star::DataFrame, df_koi::DataF
             end
             num_pl = plid
             target_obs = KeplerTargetObs(num_pl)
-	    target_obs.star = ExoplanetsSysSim.StarObs(df_obs[i,:radius],df_obs[i,:mass],0)
+	    target_obs.star = ExoplanetsSysSim.StarObs(df_obs[i,:radius],df_obs[i,:mass],findfirst(df_star[:kepid], df_obs[i,:kepid]))
         end
         
         target_obs.obs[plid] = ExoplanetsSysSim.TransitPlanetObs(df_obs[i,:koi_period],df_obs[i,:koi_time0bk],df_obs[i,:koi_depth]/1.0e6,df_obs[i,:koi_duration])

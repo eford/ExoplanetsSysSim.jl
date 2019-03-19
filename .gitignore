@@ -2,9 +2,19 @@
 *.jl.*.cov
 *.jl.mem
 deps/deps.jl
+deps/build.log
 *.jl~
 julia_types
 # ExoplanetsSysSim specific
 exoplanetssyssim
 libcorbits.so
 profile*
+# Data files
+data/gaiadr2_keplerdr25_crossref\.csv
+data/KeplerMAST_TargetProperties_contam\.csv
+data/KeplerMAST_TargetProperties_orig\.csv
+data/dr25fgk_osds_float32\.jld
+data/dr25fgk_osds\.jld
+data/q1q17_dr25_gaia_fgk\.csv
+data/q1q17_dr25_gaia_fgk_relaxcut_nan\.jld
+data/DR2PapTable1\.txt

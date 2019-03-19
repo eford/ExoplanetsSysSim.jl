@@ -40,13 +40,14 @@ end
 function generate_kepler_target_from_table(sim_param::SimParam)  
   # generate_star = get_function(sim_param,"generate_star")
   generate_planetary_system = get_function(sim_param,"generate_planetary_system")
-  ar_table_sigmas = true
   max_draws_star_properties = 20
   min_star_radius = 0.5
   min_star_mass = 0.5  
   max_star_radius = 2.0
   max_star_mass = 2.0
   max_star_density = 1000.0
+  const use_star_table_sigmas = true
+  const min_frac_rad_sigma = 0.06
   max_star_id = StellarTable.num_usable_in_star_table()
 
   star_table(id::Integer,sym::Symbol) = StellarTable.star_table(id,sym)
@@ -59,23 +60,26 @@ function generate_kepler_target_from_table(sim_param::SimParam)
     #if use_star_table_sigmas
     if get(sim_param,"use_star_table_sigmas",false)
         attmpt_num = 0
-        while (!(min_star_radius<radius<max_star_radius))# || (!(min_star_mass<mass<max_star_mass)) || (!(0.0<dens<max_star_density))
+        while (!(min_star_radius<radius<max_star_radius)) || (!(min_star_mass<mass<max_star_mass))# || (!(0.0<dens<max_star_density))
             if attmpt_num >= max_draws_star_properties 
                 star_id = rand(1:max_star_id)
                 attmpt_num = 0
             end
-            radius = draw_asymmetric_normal( star_table(star_id,:radius), star_table(star_id,:radius_err1), abs(star_table(star_id,:radius_err2)) )
-            #mass = draw_asymmetric_normal( star_table(star_id,:mass), star_table(star_id,:mass_err1), abs(star_table(star_id,:mass_err2)) )
+            rad_errp = max(star_table(star_id,:radius_err1), min_frac_rad_sigma*star_table(star_id,:radius))
+            rad_errn = max(abs(star_table(star_id,:radius_err2)), min_frac_rad_sigma*star_table(star_id,:radius))
+            radius = draw_asymmetric_normal( star_table(star_id,:radius), rad_errp,  rad_errn)
+            mass = draw_asymmetric_normal( star_table(star_id,:mass), star_table(star_id,:mass_err1), abs(star_table(star_id,:mass_err2)) )
             #dens = draw_asymmetric_normal( star_table(star_id,:dens), star_table(star_id,:dens_err1), abs(star_table(star_id,:dens_err2)) )
             attmpt_num += 1
         end
         
-        # ZAMS mass-radius relation taken from 15.1.1 of Allen's Astrophysical Quantities (2002)
-        if radius > 1.227
-            mass = 10^((log10(radius)-0.011)/0.64)
-        else
-            mass = 10^((log10(radius)+0.02)/0.917)
-        end
+        # # ZAMS mass-radius relation taken from 15.1.1 of Allen's Astrophysical Quantities (2002)
+        # if radius > 1.227
+        #     mass = 10^((log10(radius)-0.011)/0.64)
+        # else
+        #     mass = 10^((log10(radius)+0.02)/0.917)
+        # end
+
         dens   = (mass*sun_mass_in_kg_IAU2010*1000.)/(4//3*pi*(radius*sun_radius_in_m_IAU2015*100.)^3)  # Self-consistent density (gm/cm^3)
   else
     radius = star_table(star_id,:radius)
@@ -83,9 +87,10 @@ function generate_kepler_target_from_table(sim_param::SimParam)
     #dens   = star_table(star_id,:dens)
     dens   = (mass*sun_mass_in_kg_IAU2010*1000.)/(4//3*pi*(radius*sun_radius_in_m_IAU2015*100.)^3)  # Self-consistent density (gm/cm^3)
   end
-  star = SingleStar(radius,mass,1.0, star_id)     # TODO SCI: Allow for blends, binaries, etc.
+  ld = LimbDarkeningParam4thOrder(star_table(star_id,:limbdark_coeff1), star_table(star_id,:limbdark_coeff2), star_table(star_id,:limbdark_coeff3), star_table(star_id,:limbdark_coeff4) ) 
+  star = SingleStar(radius,mass,1.0,ld,star_id)     # TODO SCI: Allow for blends, binaries, etc.
   cdpp_arr = make_cdpp_array(star_id)
-  contam = 0.0 # rand(LogNormal(1.0e-3,1.0))      # TODO SCI: Come up with better description of Kepler targets, maybe draw from real contaminations
+  contam = star_table(star_id, :contam) # rand(LogNormal(1.0e-3,1.0))      # TODO SCI: Come up with better description of Kepler targets, maybe draw from real contaminations
   data_span = star_table(star_id, :dataspan)
   duty_cycle = star_table(star_id, :dutycycle)
   if StellarTable.star_table_has_key(:wf_id)
