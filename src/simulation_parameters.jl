@@ -36,7 +36,7 @@ function SimParam(p::Dict{String,Any})   # By default all parameters are set as 
   return SimParam(p,a)
 end
 
-function SimParam() 
+function SimParam()
   d = Dict{String,Any}([version_id_pair,julia_version_pair])
   return SimParam(d)
 end
@@ -47,9 +47,9 @@ function __init__()
     SimParam()
 Creates a nearly empty SimParam object, with just the version id and potentially other information about the code, system, runtime, etc.
 """
-function SimParam() 
+function SimParam()
   d = Dict{String,Any}([version_id_pair,julia_version_pair,("hostname",gethostname()), ("time",time())])
-  try 
+  try
     d["ExoplanetsSysSim version"] = Pkg.installed()["ExoplanetsSysSim"]
     #d["ExoplanetsSysSim directory"] = dirname(pathof(ExoplanetsSysSim))
     #d["ExoplanetsSysSim branch"] = LibGit2.headname(LibGit2.GitRepo(dirname(pathof(ExoplanetsSysSim))))
@@ -110,7 +110,7 @@ end
 """
 ### set_inactive(sim::SimParam, key::String)
 Sets the key parameter to be inactive in sim.
-""" 
+"""
 function set_inactive(sim::SimParam,key::String)
   @assert haskey(sim.param,key)
   sim.active[key] = false
@@ -119,7 +119,7 @@ end
 """
 ### set_inactive(sim::SimParam, keys::Vector{String})
 Sets each of the key parameters to be inactive in sim.
-""" 
+"""
 function set_inactive(sim::SimParam,keys::Vector{String})
   for k in keys
     set_inactive(sim,k)
@@ -137,7 +137,7 @@ function get(sim::SimParam, key::String, default_val::T) where T
   return val
 end
 
-function get_any(sim::SimParam, key::String, default_val::Any) 
+function get_any(sim::SimParam, key::String, default_val::Any)
   val = get(sim.param,key,default_val)
   return val
 end
@@ -160,7 +160,7 @@ function get_bool(sim::SimParam, key::String)
   return val
 end
 
-function noop() 
+function noop()
 end
 
 
@@ -238,13 +238,13 @@ function update_sim_param_from_vector!(param::Vector{Float64}, sim::SimParam)
         # println("# Replacing >",sorted_keys[k],"< with >",param[i],"<")
         sim.param[sorted_keys[k]] = param[i]
         i = i+1
-      elseif eltype( sim.param[sorted_keys[k]]) <: Real 
+      elseif eltype( sim.param[sorted_keys[k]]) <: Real
         # println("# Replacing >",sim.param[sorted_keys[k]],"< with >",reshape(param[i:i+param_len-1], size(sim.param[sorted_keys[k]]),"<")
         sim.param[sorted_keys[k]] = reshape(param[i:i+param_len-1], size(sim.param[sorted_keys[k]]))
         i = i+1
       end
     elseif param_len>1
-      if eltype( sim.param[sorted_keys[k]]) <: Real 
+      if eltype( sim.param[sorted_keys[k]]) <: Real
         # println("# Replacing >",sim.param[sorted_keys[k]],"< with >",reshape(param[i:i+param_len-1], size(sim.param[sorted_keys[k]])),"<")
         sim.param[sorted_keys[k]] = reshape(param[i:i+param_len-1], size(sim.param[sorted_keys[k]]))
         i = i+param_len
@@ -276,8 +276,8 @@ function setup_sim_param_demo(args::Vector{String} = Array{String}(undef,0) )   
   add_param_fixed(sim_param,"stellar_catalog","q1q17_dr25_gaia_fgk.jld2")
   add_param_fixed(sim_param,"generate_num_planets",ExoplanetsSysSim.generate_num_planets_poisson)
   add_param_active(sim_param,"log_eta_pl",log(2.0))
-  add_param_fixed(sim_param,"generate_planet_mass_from_radius",generate_planet_mass_from_radius_powerlaw)
-  add_param_fixed(sim_param,"vetting_efficiency",vetting_efficiency_none)  
+  add_param_fixed(sim_param,"generate_planet_mass_from_radius",ExoplanetsSysSim.generate_planet_mass_from_radius_powerlaw)
+  add_param_fixed(sim_param,"vetting_efficiency",ExoplanetsSysSim.vetting_efficiency_none)  
   add_param_fixed(sim_param,"mr_power_index",2.0)
   add_param_fixed(sim_param,"mr_const",1.0)
   #add_param_fixed(sim_param,"generate_period_and_sizes",ExoplanetsSysSim.generate_period_and_sizes_log_normal)
@@ -294,14 +294,14 @@ function setup_sim_param_demo(args::Vector{String} = Array{String}(undef,0) )   
   add_param_fixed(sim_param,"max_radius",10.0*ExoplanetsSysSim.earth_radius)
   add_param_fixed(sim_param,"generate_e_omega",ExoplanetsSysSim.generate_e_omega_rayleigh)
   add_param_fixed(sim_param,"sigma_hk",0.03)
-  add_param_fixed(sim_param,"sigma_incl",2.0)   # degrees 
+  add_param_fixed(sim_param,"sigma_incl",2.0)   # degrees
   add_param_fixed(sim_param,"calc_target_obs_sky_ave",ExoplanetsSysSim.calc_target_obs_sky_ave)
   add_param_fixed(sim_param,"calc_target_obs_single_obs",ExoplanetsSysSim.calc_target_obs_single_obs)
   add_param_fixed(sim_param,"read_target_obs",ExoplanetsSysSim.simulated_read_kepler_observations)
   add_param_fixed(sim_param,"transit_noise_model",ExoplanetsSysSim.transit_noise_model_fixed_noise)
   # add_param_fixed(sim_param,"transit_noise_model",transit_noise_model_diagonal)
   # add_param_fixed(sim_param,"rng_seed",1234)   # If you want to be able to reproduce simulations
-   
+
 
   # Do other initialization tasks belong here or elsewhere?
   # TODO OPT:  Try to preallocate memory for each target to see if this makes a performance difference

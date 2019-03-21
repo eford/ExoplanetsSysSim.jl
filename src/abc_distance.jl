@@ -84,7 +84,7 @@ end
 
 function distance_poisson_draw(lambda::Real, k::Integer)
   d =  Distributions.Poisson(lambda)
-  simulated_number_of_detections = rand(d)  
+  simulated_number_of_detections = rand(d)
   abs( simulated_number_of_detections -k)
 end
 
@@ -92,10 +92,10 @@ end
 function distance_sum_of_bernoulli_draws(num_pl_obs::Integer, num_targets_obs::Integer, prob_detect_list::Vector{TReal}, num_targets_sim::Integer, bin_match_list::Vector{TInt}) where {TReal<:Real, TInt<:Integer}
    @assert(0<=num_pl_obs<=num_targets_obs)
    num_pl_match = length(bin_match_list)
-   @assert(0<=length(bin_match_list)) 
+   @assert(0<=length(bin_match_list))
 
    num_detect_sim = 0
-   if num_pl_match >= 1 
+   if num_pl_match >= 1
       num_draws_all = min(max(1,floor(Int64, num_targets_obs/num_targets_sim)),1000)
       @assert(1<=num_draws_all<=1000)
       for i in 1:num_pl_match
@@ -112,11 +112,11 @@ function distance_sum_of_bernoulli_draws(num_pl_obs::Integer, num_targets_obs::I
       end
    end
    distance = dist_L2_abs(num_pl_obs/num_targets_obs, num_detect_sim/num_targets_obs)
-   return distance, num_detect_sim 
+   return distance, num_detect_sim
 end
 
 # compute Canberra distance.
-function distance_canberra{T<:Real, S<:Real}(x::AbstractVector{T}, y::AbstractVector{S})
+function distance_canberra(x::AbstractVector{T}, y::AbstractVector{S}) where {T<:Real, S<:Real}
     @assert length(x) == length(y)
     dist_sum = 0.0
     for i in 1:length(x)
@@ -132,7 +132,7 @@ function distance_canberra{T<:Real, S<:Real}(x::AbstractVector{T}, y::AbstractVe
 end
 
 # compute Cosine distance.
-function distance_cosine{T<:Real, S<:Real}(x::AbstractVector{T}, y::AbstractVector{S})
+function distance_cosine(x::AbstractVector{T}, y::AbstractVector{S}) where {T<:Real, S<:Real}
     @assert length(x) == length(y)
     numer = 0.0
     denom_1 = 0.0
@@ -188,8 +188,3 @@ function test_abc_distance(cat_obs::KeplerObsCatalog, cat_phys::KeplerPhysicalCa
   d1 = calc_distance_vector_demo(ss_pass1,ss_pass1, 1, sim_param)
   d2 = calc_distance_vector_demo(ss_pass2,ss_pass2, 2, sim_param)
 end
-
-
-
-
-
