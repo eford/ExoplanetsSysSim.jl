@@ -11,12 +11,11 @@
     planet::Vector{Planet}
     orbit::Vector{Orbit}
 
-  #=    # TODO DETAIL: Setup inner constructor to enforce equal number of planets & orbits
-      function PlanetarySystem{StarT}(s::StarT, p::Vector{Planet}, o::Vector{Orbit}) where {StarT<:StarAbstract}
+      # TODO DETAIL: Setup inner constructor to enforce equal number of planets & orbits
+      function PlanetarySystem{StarT}(s::StarT, p::AbstractVector{Planet}, o::AbstractVector{Orbit}) where {StarT<:StarAbstract}
         @assert(length(p)==length(o)) # else error(string("Number of planets must match number of orbits: Np= ",length(p)," No= ",length(o)))
         new(s,p,o)
       end
-  =#
   end
 
   const PlanetarySystemSingleStar = PlanetarySystem{SingleStar}
@@ -31,8 +30,24 @@ function PlanetarySystem(s::StarT, p::Planet, o::Orbit) where {StarT<:StarAbstra
    PlanetarySystem(s,[p],[o])  # Constructor for a single Planet System
 end
 
-function PlanetarySystem(ps::PlanetarySystem{StarT}, keep::Vector{Int64})  where {StarT<:StarAbstract} # Why doesn't this work?
+function PlanetarySystem(s::StarT, p::AbstractVector{Planet}, o::AbstractVector{Orbit}) where {StarT<:StarAbstract}
+   PlanetarySystem{StarT}(s,p,o)  # Constructor for a single Planet System
+end
+
+function PlanetarySystem(ps::PlanetarySystem{StarT}, keep::AbstractVector{Int64})  where {StarT<:StarAbstract} # Why doesn't this work?
    PlanetarySystem{StarT}(ps.star,ps.planet[keep],ps.orbit[keep])
+end
+
+function star( ps::PlanetarySystem{StarT} )::StarT where {StarT<:StarAbstract}
+  return ps.star
+end
+
+function planets( ps::PlanetarySystem{StarT} )::Vector{Planet} where {StarT<:StarAbstract}
+  return ps.planet
+end
+
+function orbits( ps::PlanetarySystem{StarT} )::Vector{Orbit} where {StarT<:StarAbstract}
+  return ps.orbit
 end
 
 #function PlanetarySystemSingleStar(ps::PlanetarySystemSingleStar, keep::Vector{Int64})
@@ -40,14 +55,14 @@ end
 #   PlanetarySystem(ps.star,ps.planet[keep],ps.orbit[keep])
 #end
 
-flux(ps::PlanetarySystem{StarT}) where {StarT<:StarAbstract} = flux(ps.star)
+flux(ps::PlanetarySystem{StarT}) where {StarT<:StarAbstract} = flux(star(ps))
 #flux(ps::PlanetarySystem{Star}) = flux(ps.star)
 #flux(ps::PlanetarySystem{BinaryStar}) = flux(ps.star)
 #flux(ps::PlanetarySystem{MultipleStar}) = flux(ps.star)
 
 function num_planets(s::PlanetarySystem{StarT}) where {StarT<:StarAbstract}
-  @assert( length(s.planet) == length(s.orbit) )    # TODO OPT: Deactivate inner assert's like this for speed once tested
-  return length(s.planet)
+  @assert( length(planets(s)) == length(orbits(s)) )    # TODO OPT: Deactivate inner assert's like this for speed once tested
+  return length(planets(s))
 end
 
 function generate_planet_mass_from_radius_powerlaw(r::Float64, sim_param::SimParam)
@@ -161,7 +176,16 @@ function draw_power_law(n::Real, x0::Real, x1::Real, num_pl::Integer)
     if n != -1
         return ((x1^(n+1) - x0^(n+1)).*rand(num_pl) .+ x0^(n+1)).^(1/(n+1))
     else #if n == -1
-        return exp(log(x0) .+ rand(num_pl).*log(x1/x0))
+        return exp.(log(x0) .+ rand(num_pl).*log(x1/x0))
+    end
+end
+
+function draw_power_law!(out::Array, n::Real, x0::Real, x1::Real, num_pl::Integer)
+    @assert length(out)==num_pl
+    if n != -1
+        return out .= ((x1^(n+1) - x0^(n+1)).*rand(num_pl) .+ x0^(n+1)).^(1/(n+1))
+    else #if n == -1
+        return out .= exp.(log(x0) .+ rand(num_pl).*log(x1/x0))
     end
 end
 

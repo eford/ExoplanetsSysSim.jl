@@ -3,6 +3,7 @@ using Test
 # write your own tests here
 @test 1 == 1
 
+using DataFrames
 using ExoplanetsSysSim
 
 function run_constructor_tests()

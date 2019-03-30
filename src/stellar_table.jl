@@ -38,13 +38,9 @@ function setup(filename::String; force_reread::Bool = false)
   if occursin(r".jld2$",filename)
   #if occursin(r".jld$",filename)
   try
-    println("trying to load ", filename)
-    #data = JLD.load(filename)
     data = load(filename)
-    println("try to extract stellar_catalog")
     df = data["stellar_catalog"]
-    println("checking type")
-    #Core.typeassert(df,DataFrame)
+    Core.typeassert(df,DataFrame)
   catch
     error(string("# Failed to read stellar catalog >",filename,"< in jld2 format."))
   end
