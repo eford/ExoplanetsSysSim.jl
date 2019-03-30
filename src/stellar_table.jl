@@ -17,8 +17,10 @@ using FileIO
 export setup_star_table, star_table, num_usable_in_star_table, set_star_table, star_table_has_key
 
 df = DataFrame()
-        
+
 function setup(sim_param::SimParam; force_reread::Bool = false)
+  wf = WindowFunction.setup_window_function(sim_param)
+  WindowFunction.setup_OSD_interp(sim_param)
   global df
   if haskey(sim_param,"read_stellar_catalog") && !force_reread
      return df
@@ -28,14 +30,14 @@ function setup(sim_param::SimParam; force_reread::Bool = false)
   df = setup(stellar_catalog_filename)
   add_param_fixed(sim_param,"read_stellar_catalog",true)
   add_param_fixed(sim_param,"num_kepler_targets",num_usable_in_star_table())
-  return df  
+  return df
 end
 
 function setup(filename::String; force_reread::Bool = false)
   global df
   if occursin(r".jld2$",filename)
   #if ismatch(r".jld$",filename)
-  try 
+  try
     data = load(filename)
     df = data["stellar_catalog"]
     Core.typeassert(df,DataFrame)
@@ -43,7 +45,7 @@ function setup(filename::String; force_reread::Bool = false)
     error(string("# Failed to read stellar catalog >",filename,"< in jld2 format."))
   end
   else
-  try 
+  try
     #df = readtable(filename)
     #df = CSV.read(filename,nullable=true)
     df = CSV.read(filename, allowmissing=:all)
@@ -60,8 +62,11 @@ function setup(filename::String; force_reread::Bool = false)
   usable = find(is_usable)
   df = df[usable, symbols_to_keep]
   end
-    mast_df = CSV.read(convert(String,joinpath(Pkg.dir("ExoplanetsSysSim"), "data", "KeplerMAST_TargetProperties.csv")))
-    delete!(mast_df, [~(x in [:kepid, :contam]) for x in names(mast_df)])
+    filename = joinpath(dirname(pathof(ExoplanetsSysSim)), "..", "data", "KeplerMAST_TargetProperties.csv")
+    mast_df = CSV.read(filename) #convert(String,filename))
+    #delete!(mast_df, [~(x in [:kepid, :contam]) for x in names(mast_df)])
+    deletecols!(mast_df, [~(x in [:kepid, :contam]) for x in names(mast_df)])
+    deletecols!(df, [:contam])
     df = join(df, mast_df, on=:kepid)
     df[:wf_id] = map(x->ExoplanetsSysSim.WindowFunction.get_window_function_id(x,use_default_for_unknown=false),df[:kepid])
     obs_5q = df[:wf_id].!=-1
@@ -73,7 +78,7 @@ end
 setup_star_table(sim_param::SimParam; force_reread::Bool = false) = setup(sim_param, force_reread=force_reread)
 setup_star_table(filename::String) = setup(filename)
 
-function num_usable_in_star_table() 
+function num_usable_in_star_table()
   global df
   return size(df,1)
 end
@@ -121,7 +126,7 @@ function generate_star_from_table(sim_param::SimParam, id::Integer)  # WARNING: 
   mu_r = StellarTable.star_table(id,:radius)
   sig_r1 = StellarTable.star_table(id,:radius_err1)
   sig_r2 = StellarTable.star_table(id,:radius_err2)
-  z = randn() 
+  z = randn()
   r = mu_r + (z>0) ?  z*sig_r1 : z*sig_r2
   m = rand(Normal(r,0.1))::Float64
   while m<0.0
@@ -140,5 +145,3 @@ function generate_star_from_table(sim_param::SimParam)
   id = rand(1:StellarTable.num_usable_in_star_table())
   generate_star_from_table(sim_param, id)
 end
-
-

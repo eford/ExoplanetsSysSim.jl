@@ -10,6 +10,7 @@ export setup_window_function, get_window_function_data, get_window_function_id, 
 using DataFrames
 #using CSV
 using JLD
+using ExoplanetsSysSim
 using ExoplanetsSysSim.SimulationParameters
 
 
@@ -39,7 +40,8 @@ function setup(sim_param::SimParam; force_reread::Bool = false)
   if haskey(sim_param,"read_window_function") && !force_reread
      return win_func_data
   end
-  window_function_filename = convert(String,joinpath(dirname(pathof(ExoplanetsSysSim)), "..","data", convert(String,get(sim_param,"window_function","DR25topwinfuncs.jld2")) ) )
+  window_function_filename = convert(String,joinpath(dirname(pathof(ExoplanetsSysSim)),
+      "..", "data", convert(String,get(sim_param,"window_function","DR25topwinfuncs.jld2")) ) )
   setup(window_function_filename)
   add_param_fixed(sim_param,"read_window_function",true)
   @assert( size(win_func_data.window_func_array,2) == length(win_func_data.wf_durations_in_hrs) )
@@ -65,14 +67,14 @@ function setup(filename::String)
       allsortedkepids = wfdata["allsortedkepids"]
       window_function_id_arr = wfdata["window_function_id_arr"]
       already_warned = falses(length(allsortedkepids))
-      global win_func_data = window_function_data(window_func_array, wf_durations_in_hrs, wf_periods_in_days, sorted_quarter_strings, 
+      global win_func_data = window_function_data(window_func_array, wf_durations_in_hrs, wf_periods_in_days, sorted_quarter_strings,
                                                 allsortedkepids, window_function_id_arr, maximum(window_function_id_arr), already_warned )
 
     catch
       error(string("# Failed to read window function data > ", filename," < in jld2 format."))
     end
   end
- 
+
   return win_func_data
 end
 
@@ -107,7 +109,7 @@ function get_window_function_id(kepid::Int64; use_default_for_unknown::Bool = tr
   end
   # TODO SCI DETAIL IMPORTANT? This does not include TPS timeouts or MESthresholds (see DR25 Completeness Products)
 
-  return wf_id 
+  return wf_id
 end
 
 
@@ -119,12 +121,12 @@ function calc_period_idx(P::Float64)::Int64
   elseif idx<length(win_func_data.wf_periods_in_days)
      if P-win_func_data.wf_periods_in_days[idx]>win_func_data.wf_periods_in_days[idx+1]-P
         idx += 1
-     end 
+     end
   end
   return idx   # TODO IMPORTANT: IMPLEMENT / TEST
 end
 
-function calc_duration_idx(D::Float64)::Int64 
+function calc_duration_idx(D::Float64)::Int64
   # NOTE IMPORTANT: Currently assumes we left wf data in hours, so deal with that conversion here
   @assert(D>=zero(D)) ##### Make sure this function is still doing the right thing if D = 0!
   hours_in_day = 24
@@ -145,7 +147,7 @@ function eval_window_function(wf_idx::Int64=-1; Duration::Float64=0., Period::Fl
   P_idx = calc_period_idx(Period)
   wf = eval_window_function(wf_idx,D_idx,P_idx)
   # TODO IMPORTANT: Improve way deal with missing wf values for some durations. Interpolate?
-  while wf<=zero(wf) && D_idx<length(win_func_data.wf_durations_in_hrs)  
+  while wf<=zero(wf) && D_idx<length(win_func_data.wf_durations_in_hrs)
      D_idx += 1
      wf = eval_window_function(wf_idx,D_idx,P_idx)
   end
@@ -157,7 +159,7 @@ function eval_window_function(wf_idx::Int64, D_idx::Int64, P_idx::Int64)::Float6
    #@assert(1<=wf_idx<maximum(win_func_data.window_function_id_arr))
    #@assert(1<=P_idx<=length(win_func_data.wf_periods_in_days))
    #@assert(1<=D_idx<=length(win_func_data.wf_durations_in_hrs))
-   return win_func_data.window_func_array[wf_idx,D_idx,P_idx]     
+   return win_func_data.window_func_array[wf_idx,D_idx,P_idx]
 end
 
 #Object for storing data necessary for OSD_interpolator
@@ -200,16 +202,18 @@ function setup_OSD(sim_param::SimParam; force_reread::Bool = false)			#reads in 
   if haskey(sim_param,"read_OSD_function") && !force_reread
      return OSD_setup
   end
-  OSD_file = load(joinpath(Pkg.dir(), "ExoplanetsSysSim", "data", convert(String,get(sim_param,"osd_file","allosds.jld"))))
+  #OSD_file = load(joinpath(Pkg.dir(), "ExoplanetsSysSim", "data", convert(String,get(sim_param,"osd_file","allosds.jld"))))
+  #OSD_file = load(joinpath(Pkg.dir(), "ExoplanetsSysSim", "data", convert(String,get(sim_param,"osd_file","allosds.jld"))))
+  OSD_file = load(joinpath(dirname(pathof(ExoplanetsSysSim)),"data",convert(String,get(sim_param,"osd_file","allosds.jld"))))
   allosds = OSD_file["allosds"]			#table of OSDs with dimensions: kepids,durations,periods
   periods = OSD_file["periods"][1,:]		#1000 period values corresponding to OSD values in the third dimension of the allosds table
   kepids = OSD_file["kepids"]			#kepids corresponding to OSD values in the first dimension of the allosds table
-  OSD_file = 0 # unload OSD file to save memory  
+  OSD_file = 0 # unload OSD file to save memory
   durations = [1.5,2.,2.5,3.,3.5,4.5,5.,6.,7.5,9.,10.5,12.,12.5,15.] #14 durations corresponding to OSD values in the first dimension of theh allosds table
   periods_length = length(allosds[1,1,:])
   durations_length = length(allosds[1,:,1])
   grid = Array{Float64,1}[]			#grid used in OSD_interpolator
-  push!(grid, durations)   
+  push!(grid, durations)
   push!(grid, periods)
   global compareNoise = Float64[]		#testing variable used to make sure OSD_interpolator is producing reasonable snrs
   OSD_setup = OSD_data(allosds, kepids, periods_length, durations_length, grid)
@@ -228,7 +232,7 @@ function find_index_lower_bounding_point(grid::AbstractArray{T1,1}, x::T2; verbo
         @assert grid[1] <= x <= grid[end]
     end
     idx = searchsortedlast(grid,x)
-    if idx == 0 
+    if idx == 0
         idx = 1
     #elseif idx >= length(grid) # should never happen
     #    idx = length(grid)-1
@@ -246,30 +250,30 @@ function interp_OSD_from_table(kepid::Int64, period::T2, duration::T3; verbose::
      end
   end
   idx_duration = find_index_lower_bounding_point(OSD_setup.grid[1], duration)
-  idx_period   = find_index_lower_bounding_point(OSD_setup.grid[2], period)  
+  idx_period   = find_index_lower_bounding_point(OSD_setup.grid[2], period)
   #z = view(OSD_setup.allosds,kepid_idx,idx_duration:(idx_duration+1),idx_period:(idx_period+1))     # use correct kepid index to extract 2D table from 3D OSD table
 
   #= value = z[1,1] * w_dur * w_per +
           z[2,1] * (1-w_dur) * w_per +
           z[1,2] * w_dur * (1-w_per) +
           z[2,2] * (1-w_dur) * (1-w_per)  =#
-  
+
   if idx_duration < length(OSD_setup.grid[1]) && idx_period < length(OSD_setup.grid[2])
       w_dur = (duration-OSD_setup.grid[1][idx_duration]) / (OSD_setup.grid[1][idx_duration+1]-OSD_setup.grid[1][idx_duration])
       w_per = (period  -OSD_setup.grid[2][idx_period])   / (OSD_setup.grid[2][idx_period+1]  -OSD_setup.grid[2][idx_period])
-      
+
       value = OSD_setup.allosds[kepid_idx,idx_duration,  idx_period  ] * w_dur * w_per +
           OSD_setup.allosds[kepid_idx,idx_duration+1,idx_period  ] * (1-w_dur) * w_per +
           OSD_setup.allosds[kepid_idx,idx_duration,  idx_period+1] * w_dur * (1-w_per) +
-          OSD_setup.allosds[kepid_idx,idx_duration+1,idx_period+1] * (1-w_dur) * (1-w_per)                       
+          OSD_setup.allosds[kepid_idx,idx_duration+1,idx_period+1] * (1-w_dur) * (1-w_per)
   elseif idx_period < length(OSD_setup.grid[2])
       w_per = (period  -OSD_setup.grid[2][idx_period])   / (OSD_setup.grid[2][idx_period+1]  -OSD_setup.grid[2][idx_period])
-      
+
       value = (OSD_setup.allosds[kepid_idx,idx_duration,  idx_period+1] - OSD_setup.allosds[kepid_idx,idx_duration,  idx_period  ]) * w_per +
            OSD_setup.allosds[kepid_idx,idx_duration,  idx_period  ]
   elseif idx_duration < length(OSD_setup.grid[1])
       w_dur = (duration-OSD_setup.grid[1][idx_duration]) / (OSD_setup.grid[1][idx_duration+1]-OSD_setup.grid[1][idx_duration])
-      
+
       value = (OSD_setup.allosds[kepid_idx,idx_duration+1,idx_period  ] - OSD_setup.allosds[kepid_idx,idx_duration,  idx_period  ]) * w_dur +
           OSD_setup.allosds[kepid_idx,idx_duration,idx_period  ]
   else
@@ -304,6 +308,3 @@ end
 # end
 
 end  # module WindowFunction
-
-
-

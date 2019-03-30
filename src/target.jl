@@ -116,7 +116,7 @@ function generate_kepler_target_simple(sim_param::SimParam)
   wf_id = 0
   # ch = rand(DiscreteUniform(1,84))              # Removed channel in favor of window function id
   ps = generate_planetary_system(star, sim_param)
-  return KeplerTarget([ps],fill(cdpp_5hr,num_cdpp_timescales,num_quarters),contam,mission_data_span,mission_duty_cycle,0)
+  return KeplerTarget(PlanetarySystemAbstract[ps],fill(cdpp_5hr,num_cdpp_timescales,num_quarters),contam,mission_data_span,mission_duty_cycle,0)
 end
 
 function test_target(sim_param::SimParam)

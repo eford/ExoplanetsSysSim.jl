@@ -1,12 +1,12 @@
-workspace()
-using ExoplanetsSysSim
-using Base.Test
+using Test
 
 # write your own tests here
 @test 1 == 1
 
+using ExoplanetsSysSim
+
 function run_constructor_tests()
-  ExoplanetsSysSim.test_sim_param_constructors()
+  ExoplanetsSysSim.SimulationParameters.test_sim_param_constructors()
   sim_param = ExoplanetsSysSim.setup_sim_param_demo()
   ExoplanetsSysSim.test_orbit_constructors()
   ExoplanetsSysSim.test_planet_constructors(sim_param)
@@ -22,4 +22,3 @@ function run_constructor_tests()
 end
 
 @test run_constructor_tests() == 0  # Just tests that the basic elements compile and run  # TODO: Write tests that will be useful in diagnosing any bugs
-

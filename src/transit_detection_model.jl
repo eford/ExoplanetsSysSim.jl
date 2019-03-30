@@ -157,7 +157,7 @@ end
 
 # From Mulders et al. 2018 (arXiv 1805.08211)
 # WARNING: Assumes inputs are in R_sol and days
-function vetting_efficiency_dr25_mulders(R_p::Real, P::Real)
+function vetting_efficiency_dr25_mulders_score_cut(R_p::Real, P::Real)
     c = 0.63
     a_R = 0.19
     P_break = 53.

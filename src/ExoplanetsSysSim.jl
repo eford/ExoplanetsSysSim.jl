@@ -3,7 +3,7 @@
 module ExoplanetsSysSim
 
 # Packages to be used                 # Note: Tried to keep to a minimum in core package to help with maintainability
-import Compat: @compat, readstring, is_windows
+import Compat: @compat #, readstring, is_windows
 if VERSION < v"0.7"
   import Compat: UTF8String, ASCIIString
 end
@@ -21,7 +21,7 @@ using CORBITS
 
 # Includes & associated  exports for types, then generic functions, then demo functions
 include("constants.jl")
-#require(joinpath(Pkg.dir("ExoplanetsSysSim"), "src", "constants.jl"))       
+#require(joinpath(Pkg.dir("ExoplanetsSysSim"), "src", "constants.jl"))
 export SimParam
 export SimulationParameters
 export add_param_fixed, add_param_active, set_active, set_inactive, is_active, update_param, get, get_real, get_int, get_function, get_any, haskey, make_vector_of_sim_param, update_sim_param_from_vector!, make_vector_of_active_param_keys, get_range_for_sim_param
@@ -39,7 +39,7 @@ export StarAbstract, Star, SingleStar, BinaryStar
 include("star.jl")
 export flux, mass
 export generate_stars
-export PlanetarySystemAbstract, PlanetarySystemSingleStar, PlanetarySystem
+export PlanetarySystemAbstract, PlanetarySystemSingleStar #, PlanetarySystem
 include("planetary_system.jl")
 #include("corbits.jl")
 #export prob_of_transits_approx

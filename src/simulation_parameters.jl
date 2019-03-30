@@ -3,7 +3,7 @@
 
 module SimulationParameters
 
-import Compat: @compat, readstring
+import Compat: @compat #, readstring
 import Pkg, LibGit2
 using ExoplanetsSysSim
 
@@ -277,7 +277,7 @@ function setup_sim_param_demo(args::Vector{String} = Array{String}(undef,0) )   
   add_param_fixed(sim_param,"generate_num_planets",ExoplanetsSysSim.generate_num_planets_poisson)
   add_param_active(sim_param,"log_eta_pl",log(2.0))
   add_param_fixed(sim_param,"generate_planet_mass_from_radius",ExoplanetsSysSim.generate_planet_mass_from_radius_powerlaw)
-  add_param_fixed(sim_param,"vetting_efficiency",ExoplanetsSysSim.vetting_efficiency_none)  
+  add_param_fixed(sim_param,"vetting_efficiency",ExoplanetsSysSim.vetting_efficiency_none)
   add_param_fixed(sim_param,"mr_power_index",2.0)
   add_param_fixed(sim_param,"mr_const",1.0)
   #add_param_fixed(sim_param,"generate_period_and_sizes",ExoplanetsSysSim.generate_period_and_sizes_log_normal)

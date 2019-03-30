@@ -3,27 +3,36 @@
 #include("orbit.jl")
 #include("planet.jl")
 
-if !@isdefined PlanetarySystemAbstract
-  @compat abstract type PlanetarySystemAbstract end
+#if !@isdefined PlanetarySystemAbstract
+  #@compat
+  abstract type PlanetarySystemAbstract end
 
   struct PlanetarySystem{StarT<:StarAbstract} <: PlanetarySystemAbstract
-    star::StarT                    
-    planet::Vector{Planet}         # TODO OPT: If want to optimize, consider using  something like ImmmutableArrays?
-    orbit::Vector{Orbit}           # TODO OPT: If want to optimize, consider using  something like ImmmutableArrays?
-    # TODO DETAIL: Setup inner constructor to enforce equal number of planets & orbits
-    #PlanetarySystem{StarT}(s::StarAbstract, p::Vector{Planet}, o::Vector{Orbit})
-    #  @assert(length(p)==length(o)) # else error(string("Number of planets must match number of orbits: Np= ",length(p)," No= ",length(o)))
-    #  new(s,p,o)
-    #end
+    star::StarT
+    planet::Vector{Planet}
+    orbit::Vector{Orbit}
   end
-  PlanetarySystemSingleStar = PlanetarySystem{SingleStar}
 
+  #=    # TODO DETAIL: Setup inner constructor to enforce equal number of planets & orbits
+      function PlanetarySystem{StarT}(s::StarT, p::Vector{Planet}, o::Vector{Orbit}) where {StarT<:StarAbstract}
+        @assert(length(p)==length(o)) # else error(string("Number of planets must match number of orbits: Np= ",length(p)," No= ",length(o)))
+        new(s,p,o)
+      end
+  =#
+
+  const PlanetarySystemSingleStar = PlanetarySystem{SingleStar}
+
+#end
+
+function PlanetarySystem(s::StarT) where {StarT<:StarAbstract}
+     PlanetarySystem(s,Vector{Planet}(undef,0),Vector{Orbit}(undef,0))  # Constructor for a Planetary System with no planets
 end
-PlanetarySystem(s::StarT) where StarT<:StarAbstract = PlanetarySystem(s,Array{Planet}(undef,0),Array{Orbit}(undef,0))  # Constructor for a Planetary System with no planets
 
-PlanetarySystem(s::StarT, p::Planet, o::Orbit) where StarT<:StarAbstract = PlanetarySystem(s,[p],[o])  # Constructor for a single Planet System
+function PlanetarySystem(s::StarT, p::Planet, o::Orbit) where {StarT<:StarAbstract}
+   PlanetarySystem(s,[p],[o])  # Constructor for a single Planet System
+end
 
-function PlanetarySystem(ps::PlanetarySystem{StarT}, keep::Vector{Int64})  where StarT<:StarAbstract # Why doesn't this work?
+function PlanetarySystem(ps::PlanetarySystem{StarT}, keep::Vector{Int64})  where {StarT<:StarAbstract} # Why doesn't this work?
    PlanetarySystem{StarT}(ps.star,ps.planet[keep],ps.orbit[keep])
 end
 
@@ -68,16 +77,16 @@ function generate_num_planets_poisson(lambda::Real, max_planets::Integer; min_pl
      d = Distributions.Truncated(Distributions.Poisson(lambda),min_planets,max_planets)
      n = rand(d)
   else
-     if min_planets == 0 
+     if min_planets == 0
         min_planets = -1
-     end 
+     end
      d = Distributions.Truncated(Distributions.Poisson(lambda),min_planets,max_planets)
      n = rand(d)
      #=
      n = -1
      while !(min_planets<=n<=max_planets)
         n = rand(Distributions.Poisson(lambda))
-     end 
+     end
      =#
   end
   return n
@@ -116,7 +125,7 @@ function generate_period_and_sizes_log_normal(s::Star, sim_param::SimParam; num_
     min_radius::Float64 = get_real(sim_param,"min_radius")
     max_radius::Float64 = get_real(sim_param,"max_radius")
     max_draws::Int64 = 100
- 
+
     if   sigma_log_r <= 0. || sigma_log_P<=0.
      println("# mu_log_r= ", mu_log_r, " sigma_log_r= ", sigma_log_r, " mu_log_P= ", mu_log_P, " sigma_log_P= ", sigma_log_P)
     end
@@ -205,7 +214,7 @@ function draw_broken_power_law(n1::Real, n2::Real, x0::Real, x1::Real, xb::Real,
     return x_draws
 end
 
-function generate_periods_power_law(s::Star, sim_param::SimParam; num_pl::Integer = 1) 
+function generate_periods_power_law(s::Star, sim_param::SimParam; num_pl::Integer = 1)
     power_law_P::Float64 = get_real(sim_param,"power_law_P")
     min_period::Float64 = get_real(sim_param,"min_period")
     max_period::Float64 = get_real(sim_param,"max_period")
@@ -213,7 +222,7 @@ function generate_periods_power_law(s::Star, sim_param::SimParam; num_pl::Intege
     return Plist
 end
 
-function generate_sizes_power_law(s::Star, sim_param::SimParam; num_pl::Integer = 1) 
+function generate_sizes_power_law(s::Star, sim_param::SimParam; num_pl::Integer = 1)
     power_law_r::Float64 = get_real(sim_param,"power_law_r")
     min_radius::Float64 = get_real(sim_param,"min_radius")
     max_radius::Float64 = get_real(sim_param,"max_radius")
@@ -231,7 +240,7 @@ function generate_sizes_broken_power_law(s::Star, sim_param::SimParam; num_pl::I
     return Rlist
 end
 
-function generate_period_and_sizes_power_law(s::Star, sim_param::SimParam; num_pl::Integer = 1) 
+function generate_period_and_sizes_power_law(s::Star, sim_param::SimParam; num_pl::Integer = 1)
     return (generate_periods_power_law(s, sim_param, num_pl=num_pl), generate_sizes_power_law(s, sim_param, num_pl=num_pl))
 end
 
@@ -315,7 +324,7 @@ function generate_planetary_system_hardcoded_example(star::StarAbstract, sim_par
          elseif i==length(a)
            max_e[i] = max_e_factor*(1-a[i-1]/a[i])/(1+a[i-1]/a[i])
          else
-           max_e[i] = max_e_factor*min( (1-a[i]/a[i+1])/(1+a[i]/a[i+1]), (1-a[i-1]/a[i])/(1+a[i-1]/a[i]) ) 
+           max_e[i] = max_e_factor*min( (1-a[i]/a[i+1])/(1+a[i]/a[i+1]), (1-a[i-1]/a[i])/(1+a[i-1]/a[i]) )
          end
        end
     end
@@ -365,12 +374,12 @@ function generate_planetary_system_uncorrelated_incl(star::StarAbstract, sim_par
     max_e_factor = 0.999 # A factor just less than 1 to prevent numerical issues with near-crossing orbits
     if length(a)>=2
        for i in 1:length(a)
-          if i==1 
+          if i==1
             max_e[i] = max_e_factor*(1-a[i]/a[i+1])/(1+a[i]/a[i+1])
           elseif i==length(a)
             max_e[i] = max_e_factor*(1-a[i-1]/a[i])/(1+a[i-1]/a[i])
           else
-            max_e[i] = max_e_factor*min( (1-a[i]/a[i+1])/(1+a[i]/a[i+1]), (1-a[i-1]/a[i])/(1+a[i-1]/a[i]) ) 
+            max_e[i] = max_e_factor*min( (1-a[i]/a[i+1])/(1+a[i]/a[i+1]), (1-a[i-1]/a[i])/(1+a[i-1]/a[i]) )
           end
         end
     end
@@ -455,4 +464,3 @@ function test_planetary_system_constructors(sim_param::SimParam)
   m = generate_planet_mass_from_radius_powerlaw(0.02,star,earth_orbit,sim_param)/earth_mass
   generate_planetary_system_simple(star,sim_param,verbose=true)
 end
-
