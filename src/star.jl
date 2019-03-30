@@ -3,9 +3,11 @@
 
 #using Distributions
 
-@compat abstract type StarAbstract end               # Check does using StarAbstract cause a significant performance hit
+@compat abstract type StarAbstract end               # TODO: Check does using StarAbstract cause a significant performance hit
 
-struct Star{LimbDarkeningT<:LimbDarkeningParamAbstract} <: StarAbstract
+@compat abstract type SingleStarAbstract <: StarAbstract end
+
+struct Star{LimbDarkeningT<:LimbDarkeningParamAbstract} <: SingleStarAbstract
   radius::Float64
   mass::Float64
   flux::Float64                      # relevant once have multiple stars in one target

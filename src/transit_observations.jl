@@ -348,7 +348,7 @@ function calc_target_obs_sky_ave(t::KeplerTarget, sim_param::SimParam)
               snr = snr_central * (osd_central/osd)
 
               pdet_this_b = calc_prob_detect_if_transit(t, snr, period, duration, sim_param, num_transit=ntr)
-              pvet = vetting_efficiency(t.sys[s].planet[p].radius, period)
+              pvet = vetting_efficiency(t.sys[s].planet[p].radius, period) # TODO: Ask Danely about this line
 
               if pdet_this_b >= threshold_pdet_ratio * pdet_central
                   #println("# Adding pdet_this_b = ", pdet_this_b, " pdet_c = ", pdet_central, " snr= ",snr, " cdpp= ",cdpp, " duration= ",duration, " b=",b, " u01= ", threshold_pdet_ratio)
@@ -426,7 +426,7 @@ function calc_target_obs_single_obs(t::KeplerTarget, sim_param::SimParam)
         pdet[p] = calc_prob_detect_if_transit(t, snr, period, duration, sim_param, num_transit=ntr)
 
 	if pdet[p] > min_detect_prob_to_be_included
-           pvet = vetting_efficiency(t.sys[s].planet[p].radius, period)
+           pvet = vetting_efficiency(t.sys[s].planet[p].radius, period) # TODO: Ask Danely about this line
            pdet[p] *= pvet
             obs[i], sigma[i] = transit_noise_model(t, s, p, depth, duration, snr, ntr)
       	   i += 1
@@ -459,7 +459,7 @@ function test_transit_observations(sim_param::SimParam; verbose::Bool=false)  # 
     while num_planets(target) == 0
       target = generate_kepler_target(sim_param)::KeplerTarget
     end
-    calc_transit_prob_single_planet_one_obs(target,1,1)
+    #calc_transit_prob_single_planet_one_obs(target,1,1)
     calc_transit_prob_single_planet_obs_ave(target,1,1)
     obs = calc_target_obs_single_obs(target,sim_param)
     obs = calc_target_obs_sky_ave(target,sim_param)

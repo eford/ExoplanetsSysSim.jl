@@ -4,14 +4,12 @@
 #include("planet.jl")
 
 #if !@isdefined PlanetarySystemAbstract
-  #@compat
-  abstract type PlanetarySystemAbstract end
+  @compat abstract type PlanetarySystemAbstract end
 
   struct PlanetarySystem{StarT<:StarAbstract} <: PlanetarySystemAbstract
     star::StarT
     planet::Vector{Planet}
     orbit::Vector{Orbit}
-  end
 
   #=    # TODO DETAIL: Setup inner constructor to enforce equal number of planets & orbits
       function PlanetarySystem{StarT}(s::StarT, p::Vector{Planet}, o::Vector{Orbit}) where {StarT<:StarAbstract}
@@ -19,6 +17,7 @@
         new(s,p,o)
       end
   =#
+  end
 
   const PlanetarySystemSingleStar = PlanetarySystem{SingleStar}
 
@@ -41,12 +40,12 @@ end
 #   PlanetarySystem(ps.star,ps.planet[keep],ps.orbit[keep])
 #end
 
-flux(ps::PlanetarySystem{StarAbstract}) = flux(ps.star)
-flux(ps::PlanetarySystem{Star}) = flux(ps.star)
-flux(ps::PlanetarySystem{BinaryStar}) = flux(ps.star)
-flux(ps::PlanetarySystem{MultipleStar}) = flux(ps.star)
+flux(ps::PlanetarySystem{StarT}) where {StarT<:StarAbstract} = flux(ps.star)
+#flux(ps::PlanetarySystem{Star}) = flux(ps.star)
+#flux(ps::PlanetarySystem{BinaryStar}) = flux(ps.star)
+#flux(ps::PlanetarySystem{MultipleStar}) = flux(ps.star)
 
-function num_planets(s::PlanetarySystem{Star})
+function num_planets(s::PlanetarySystem{StarT}) where {StarT<:StarAbstract}
   @assert( length(s.planet) == length(s.orbit) )    # TODO OPT: Deactivate inner assert's like this for speed once tested
   return length(s.planet)
 end

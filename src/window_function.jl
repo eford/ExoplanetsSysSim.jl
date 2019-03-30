@@ -9,7 +9,8 @@ export setup_window_function, get_window_function_data, get_window_function_id, 
 #using DataArrays
 using DataFrames
 #using CSV
-using JLD
+#using JLD2
+using FileIO
 using ExoplanetsSysSim
 using ExoplanetsSysSim.SimulationParameters
 
@@ -204,7 +205,9 @@ function setup_OSD(sim_param::SimParam; force_reread::Bool = false)			#reads in 
   end
   #OSD_file = load(joinpath(Pkg.dir(), "ExoplanetsSysSim", "data", convert(String,get(sim_param,"osd_file","allosds.jld"))))
   #OSD_file = load(joinpath(Pkg.dir(), "ExoplanetsSysSim", "data", convert(String,get(sim_param,"osd_file","allosds.jld"))))
-  OSD_file = load(joinpath(dirname(pathof(ExoplanetsSysSim)),"data",convert(String,get(sim_param,"osd_file","allosds.jld"))))
+  #OSD_file = load(joinpath(dirname(pathof(ExoplanetsSysSim)),"data",convert(String,get(sim_param,"osd_file","allosds.jld"))))
+  #OSD_file = load(joinpath(dirname(pathof(ExoplanetsSysSim)),"..","data",convert(String,get(sim_param,"osd_file","dr25fgk_relaxcut_osds.jld"))))
+  OSD_file = load(joinpath(dirname(pathof(ExoplanetsSysSim)),"..","data",convert(String,get(sim_param,"osd_file","dr25fgk_small_osds.jld2"))))
   allosds = OSD_file["allosds"]			#table of OSDs with dimensions: kepids,durations,periods
   periods = OSD_file["periods"][1,:]		#1000 period values corresponding to OSD values in the third dimension of the allosds table
   kepids = OSD_file["kepids"]			#kepids corresponding to OSD values in the first dimension of the allosds table

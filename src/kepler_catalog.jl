@@ -54,7 +54,7 @@ function observe_kepler_targets(calc_target_obs::Function, input::KeplerPhysical
   end
   num_targets_sim_pass_one = get_int(sim_param,"num_targets_sim_pass_one")
   if length(output.target) < num_targets_sim_pass_one
-     output.target = Array{KeplerTargetObs}(undef,num_targets_sim_pass_one) 
+     output.target = Array{KeplerTargetObs}(undef,num_targets_sim_pass_one)
   end
   #output.target = Array{KeplerTargetObs}(undef,length(input.target) )  # Replaced to reduce memory allocation
   map!(x::KeplerTarget->calc_target_obs(x,sim_param)::KeplerTargetObs, output.target, input.target)
@@ -98,7 +98,7 @@ function generate_obs_targets(cat_phys::KeplerPhysicalCatalog, sim_param::SimPar
 	incl::Float64 = sys.orbit[pl].incl
    	a::Float64 = semimajor_axis(sys,pl)
    	Rstar::Float64 = rsol_in_au*sys.star.radius
-       
+
         does_it_transit = does_planet_transit(sys, pl)
         pdet_if_tr = does_it_transit ? calc_prob_detect_if_transit_with_actual_b(kep_targ, ps, pl, sim_param) : 0.
         if !does_it_transit || (rand()>pdet_if_tr)
@@ -112,7 +112,7 @@ function generate_obs_targets(cat_phys::KeplerPhysicalCatalog, sim_param::SimPar
 end
 
 
-# The following function is primarily left for debugging.  
+# The following function is primarily left for debugging.
 function simulated_read_kepler_observations(sim_param::SimParam )
    println("# WARNING: Using simulated_read_kepler_observations.")
    # if haskey(sim_param,"stellar_catalog")
@@ -122,7 +122,7 @@ function simulated_read_kepler_observations(sim_param::SimParam )
    num_sys = get_int(sim_param,"num_kepler_targets")
    generate_kepler_target = get_function(sim_param,"generate_kepler_target")
    target_list = Array{KeplerTarget}(undef,num_sys)
-   map!(x->generate_kepler_target(sim_param), target_list, 1:num_sys ) 
+   map!(x->generate_kepler_target(sim_param), target_list, 1:num_sys )
 
    cat_phys_cut = generate_obs_targets(KeplerPhysicalCatalog(target_list), sim_param)
    calc_target_obs = get_function(sim_param,"calc_target_obs_single_obs")
@@ -138,9 +138,9 @@ end
 
 function read_koi_catalog(filename::String, force_reread::Bool = false)
     local df, usable
-    
+
     if occursin(r".jld2$",filename) && !force_reread
-        try 
+        try
             data = load(filename)
             df = data["koi_catalog"]
             usable = data["koi_catalog_usable"]
@@ -173,7 +173,7 @@ function read_koi_catalog(filename::String, force_reread::Bool = false)
             usable = findall(is_usable)
            #  symbols_to_keep = [:kepid, :kepoi_name, :koi_pdisposition, :koi_score, :koi_ror, :koi_period, :koi_period_err1, :koi_period_err2, :koi_time0bk, :koi_time0bk_err1, :koi_time0bk_err2, :koi_depth, :koi_depth_err1, :koi_depth_err2, :koi_duration, :koi_duration_err1, :koi_duration_err2]
            # df = df[usable, symbols_to_keep]
-           # tmp_df = DataFrame()    
+           # tmp_df = DataFrame()
            # for col in names(df)
            #     tmp_df[col] = collect(skipmissing(df[col]))
            # end
@@ -190,19 +190,19 @@ end
 function setup_actual_planet_candidate_catalog(df_star::DataFrame, df_koi::DataFrame, usable_koi::Array{Int64}, sim_param::SimParam)
     local target_obs, num_pl
     df_koi = df_koi[usable_koi,:]
-    
+
     if haskey(sim_param, "koi_subset_csv")
         koi_subset = fill(false, length(df_koi[:kepid]))
-        
+
         subset_df = readtable(convert(String,get(sim_param,"koi_subset_csv", "christiansen_kov.csv")), header=true, separator=' ')
-        
+
         for n in 1:length(subset_df[:,1])
             subset_colnum = 1
             subset_entry = findall(x->x==subset_df[n,1], df_koi[names(subset_df)[1]])
             # println("Initial cut: ", subset_entry)
             while (length(subset_entry) > 1) & (subset_colnum < length(names(subset_df)))
                 subset_colnum += 1
-                
+
                 subsubset = findall(x->round(x*10.)==round(subset_df[n,subset_colnum]*10.), df_koi[subset_entry,names(subset_df)[subset_colnum]])
 	        # println("Extra cut: ", subset_df[n,subset_colnum], " / ", df_koi[subset_entry,col_idx], " = ", subsubset)
 	        subset_entry = subset_entry[subsubset]
@@ -222,7 +222,7 @@ function setup_actual_planet_candidate_catalog(df_star::DataFrame, df_koi::DataF
         df_koi = df_koi[findall(koi_subset),:]
         tot_plan = count(x->x, koi_subset)
     end
-    
+
     output = KeplerObsCatalog()
     df_obs = join(df_star, df_koi, on = :kepid)
     #df_obs = sort!(df_obs, cols=(:kepid))
@@ -244,7 +244,7 @@ function setup_actual_planet_candidate_catalog(df_star::DataFrame, df_koi::DataF
             target_obs = KeplerTargetObs(num_pl)
 	    target_obs.star = ExoplanetsSysSim.StarObs(df_obs[i,:radius],df_obs[i,:mass],findfirst(df_star[:kepid], df_obs[i,:kepid]))
         end
-        
+
         target_obs.obs[plid] = ExoplanetsSysSim.TransitPlanetObs(df_obs[i,:koi_period],df_obs[i,:koi_time0bk],df_obs[i,:koi_depth]/1.0e6,df_obs[i,:koi_duration])
         target_obs.sigma[plid] = ExoplanetsSysSim.TransitPlanetObs((abs(df_obs[i,:koi_period_err1])+abs(df_obs[i,:koi_period_err2]))/2,(abs(df_obs[i,:koi_time0bk_err1])+abs(df_obs[i,:koi_time0bk_err2]))/2,(abs(df_obs[i,:koi_depth_err1]/1.0e6)+abs(df_obs[i,:koi_depth_err2]/1.0e6))/2,(abs(df_obs[i,:koi_duration_err1])+abs(df_obs[i,:koi_duration_err2]))/2)
 	#target_obs.prob_detect = ExoplanetsSysSim.SimulatedSystemDetectionProbs{OneObserver}( ones(num_pl), ones(num_pl,num_pl), ones(num_pl), fill(Array{Int64}(undef,0), 1) )  # Made line below to simplify calling
@@ -253,7 +253,7 @@ function setup_actual_planet_candidate_catalog(df_star::DataFrame, df_koi::DataF
         if plid == 0
             push!(output.target,target_obs)
         end
-    end	
+    end
     return output
 end
 
@@ -275,7 +275,9 @@ function calc_prob_detect_list(cat::KeplerPhysicalCatalog, sim_param::SimParam)
   pdetectlist = Array{Float64}(undef,0)
   for t in 1:length(cat.target)
     for p in 1:length(cat.target[t].sys[1].planet)
-      pdet = calc_prob_detect_if_transit(cat.target[t],1,p,sim_param)
+      #pdet = calc_prob_detect_if_transit(cat.target[t],1,p,sim_param)
+      pdet = calc_prob_detect_if_transit_with_actual_b(cat.target[t],1,p,sim_param)
+
       if pdet>0.0
         push!(pdetectlist,pdet)
       end
@@ -297,5 +299,3 @@ function test_catalog_constructors(sim_param::SimParam)
   cat_obs = simulated_read_kepler_observations(sim_param)
   return (cat_phys, cat_obs)
 end
-
-

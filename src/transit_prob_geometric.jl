@@ -2,32 +2,36 @@
 ## (c) 2015 Eric B. Ford
 
 # Transit probability expressions if treat planets separately
-function calc_transit_prob_single_planet_approx(P::Float64, Rstar::Float64, Mstar::Float64) 
+function calc_transit_prob_single_planet_approx(P::Float64, Rstar::Float64, Mstar::Float64)
   return min(rsol_in_au*Rstar/semimajor_axis(P,Mstar), 1.0)
 end
 
-function calc_transit_prob_single_planet_obs_ave(ps::PlanetarySystemAbstract, pl::Integer)
- ecc::Float64 = ps.orbit[pl].ecc
+#function calc_transit_prob_single_planet_obs_ave(ps::PlanetarySystemAbstract, pl::Integer)
+function calc_transit_prob_single_planet_obs_ave(ps::PlanetarySystem{StarT}, pl::Integer) where {StarT<:StarAbstract}
+
+  ecc::Float64 = ps.orbit[pl].ecc
  a::Float64 = semimajor_axis(ps,pl)
  Rstar::Float64 = rsol_in_au*ps.star.radius
- return min(Rstar/(a*(1-ecc)*(1+ecc)), 1.0)  
+ return min(Rstar/(a*(1-ecc)*(1+ecc)), 1.0)
 end
 calc_transit_prob_single_planet_obs_ave(t::KeplerTarget, s::Integer, p::Integer) = calc_transit_prob_single_planet_obs_ave(t.sys[s], p)
 
 #=
 # WARNING: This knows about e and w, but still returns a fraction rather than a 0 or 1.  Commented out for now, so no one uses it accidentally until we figure out why it was this way
 function calc_transit_prob_single_planet_one_obs(ps::PlanetarySystemAbstract, pl::Integer)
- ecc::Float64 = ps.orbit[pl].ecc
+ where {StarT<:StarAbstract}
+  ecc::Float64 = ps.orbit[pl].ecc
  a::Float64 = semimajor_axis(ps,pl)
  Rstar::Float64 = rsol_in_au*ps.star.radius
- return min(Rstar*(1+ecc*sin(ps.orbit[pl].omega))/(a*(1-ecc)*(1+ecc)), 1.0)  
+ return min(Rstar*(1+ecc*sin(ps.orbit[pl].omega))/(a*(1-ecc)*(1+ecc)), 1.0)
 end
 calc_transit_prob_single_planet_one_obs(t::KeplerTarget, s::Integer, p::Integer) = calc_transit_prob_single_planet_one_obs(t.sys[s], p)
 =#
 
 # WARNING: Assumes that planets with b>1 won't be detected/pass vetting
-function does_planet_transit(ps::PlanetarySystemAbstract, pl::Integer)
-   ecc::Float64 = ps.orbit[pl].ecc
+#function does_planet_transit(ps::PlanetarySystemAbstract, pl::Integer)
+function does_planet_transit(ps::PlanetarySystem{StarT}, pl::Integer) where {StarT<:StarAbstract}
+    ecc::Float64 = ps.orbit[pl].ecc
    incl::Float64 = ps.orbit[pl].incl
    a::Float64 = semimajor_axis(ps,pl)
    Rstar::Float64 = rsol_in_au*ps.star.radius
@@ -38,7 +42,8 @@ function does_planet_transit(ps::PlanetarySystemAbstract, pl::Integer)
    end
 end
 
-function corbits_placeholder_obs_ave( ps::PlanetarySystemSingleStar, use_pl::Vector{Cint} )    # Might be useful for someone to test w/o CORBITS
+#function corbits_placeholder_obs_ave( ps::PlanetarySystemSingleStar, use_pl::Vector{Cint} )    # Might be useful for someone to test w/o CORBITS
+function corbits_placeholder_obs_ave( ps::PlanetarySystem{StarT}, use_pl::Vector{Cint} ) where {StarT<:StarAbstract}    # Might be useful for someone to test w/o CORBITS
   n = num_planets(ps)
   prob = 1.0
   for p in 1:n
@@ -52,10 +57,11 @@ function corbits_placeholder_obs_ave( ps::PlanetarySystemSingleStar, use_pl::Vec
      end
      =#
   end
-  return prob 
+  return prob
 end
 
-function calc_impact_parameter(ps::PlanetarySystemSingleStar, pl::Integer)
+#function calc_impact_parameter(ps::PlanetarySystemSingleStar, pl::Integer)
+function calc_impact_parameter(ps::PlanetarySystem{StarT}, pl::Integer) where {StarT<:StarAbstract}
       one_minus_e2 = (1-ps.orbit[pl].ecc)*(1+ps.orbit[pl].ecc)
       a_semimajor_axis = semimajor_axis(ps,pl)
       b = a_semimajor_axis *cos(ps.orbit[pl].incl)/(ps.star.radius*rsol_in_au)
@@ -63,7 +69,8 @@ function calc_impact_parameter(ps::PlanetarySystemSingleStar, pl::Integer)
       b = abs(b)
 end
 
-function prob_combo_transits_one_obs( ps::PlanetarySystemSingleStar, use_pl::Vector{Cint} )    
+#function prob_combo_transits_one_obs( ps::PlanetarySystemSingleStar, use_pl::Vector{Cint} )
+function prob_combo_transits_one_obs( ps::PlanetarySystem{StarT}, use_pl::Vector{Cint} )    where {StarT<:StarAbstract}
   n = num_planets(ps)
   for p in 1:n
       #one_minus_e2 = (1-ps.orbit[p].ecc)*(1+ps.orbit[p].ecc)
@@ -79,12 +86,12 @@ function prob_combo_transits_one_obs( ps::PlanetarySystemSingleStar, use_pl::Vec
 end
 
 struct prob_combo_transits_obs_ave_workspace_type
-  a::Vector{Cdouble} 
-  r::Vector{Cdouble} 
-  ecc::Vector{Cdouble} 
-  Omega::Vector{Cdouble} 
-  omega::Vector{Cdouble} 
-  inc::Vector{Cdouble} 
+  a::Vector{Cdouble}
+  r::Vector{Cdouble}
+  ecc::Vector{Cdouble}
+  Omega::Vector{Cdouble}
+  omega::Vector{Cdouble}
+  inc::Vector{Cdouble}
   function prob_combo_transits_obs_ave_workspace_type(n::Integer)
      @assert(1<=n<=100)
      new( Array{Cdouble}(n), Array{Cdouble}(n), Array{Cdouble}(n), Array{Cdouble}(n), Array{Cdouble}(n), Array{Cdouble}(n) )
@@ -96,7 +103,8 @@ end
 const global corbits_max_num_planets_per_system = 20
 prob_combo_transits_obs_ave_workspace =  prob_combo_transits_obs_ave_workspace_type(corbits_max_num_planets_per_system)
 
-function prob_combo_transits_obs_ave( ps::PlanetarySystemSingleStar, use_pl::Vector{Cint}; print_orbit::Bool = false)    
+#function prob_combo_transits_obs_ave( ps::PlanetarySystemSingleStar, use_pl::Vector{Cint}; print_orbit::Bool = false)
+function prob_combo_transits_obs_ave( ps::PlanetarySystem{StarT}, use_pl::Vector{Cint}; print_orbit::Bool = false) where {StarT<:StarAbstract}
   n = num_planets(ps)
   @assert(n<=corbits_max_num_planets_per_system)
   for i in 1:n
@@ -123,11 +131,12 @@ function prob_combo_transits_obs_ave( ps::PlanetarySystemSingleStar, use_pl::Vec
   println("# use_pl = ", use_pl)
   println("")
   end
-  return prob 
+  return prob
 end
 =#
 
-function prob_combo_transits_obs_ave( ps::PlanetarySystemSingleStar, use_pl::Vector{Cint}; print_orbit::Bool = false)    
+#function prob_combo_transits_obs_ave( ps::PlanetarySystemSingleStar, use_pl::Vector{Cint}; print_orbit::Bool = false)
+function prob_combo_transits_obs_ave( ps::PlanetarySystem{StarT}, use_pl::Vector{Cint}; print_orbit::Bool = false) where {StarT<:StarAbstract}
   n = num_planets(ps)
   a =  Cdouble[ semimajor_axis(ps,i) for i in 1:n ]
   r_star = convert(Cdouble,ps.star.radius *  rsol_in_au )
@@ -135,7 +144,7 @@ function prob_combo_transits_obs_ave( ps::PlanetarySystemSingleStar, use_pl::Vec
   ecc = Cdouble[ ps.orbit[i].ecc for i in 1:n ]
   Omega = Cdouble[ ps.orbit[i].asc_node for i in 1:n ]
   omega = Cdouble[ ps.orbit[i].omega for i in 1:n ]
-  inc = Cdouble[ ps.orbit[i].incl for i in 1:n ] 
+  inc = Cdouble[ ps.orbit[i].incl for i in 1:n ]
   #use_pl = Cint[0 for i in 1:n]
   #for i in 1:length(combo)
   #  use_pl[i] = 1
@@ -153,7 +162,7 @@ function prob_combo_transits_obs_ave( ps::PlanetarySystemSingleStar, use_pl::Vec
   println("# use_pl = ", use_pl)
   println("")
   end
-  return prob 
+  return prob
 end
 
 
@@ -168,8 +177,8 @@ mutable struct SimulatedSystemDetectionProbs{T<:SystemDetectionProbsTrait} <: Sy
   # Inputs to CORBITS
   detect_planet_if_transits::Vector{Float64}       # Probability of detecting each planet, averaged over all observers for each planet individually, assumes b~U[0,1);  To be used in pass 1
 
-  # Outputs from CORBITS 
-  pairwise::Matrix{Float64}                 # detection probability (incl geometry & detection probability) for each planet (diagonal) and each planet pair (off diagonal) 
+  # Outputs from CORBITS
+  pairwise::Matrix{Float64}                 # detection probability (incl geometry & detection probability) for each planet (diagonal) and each planet pair (off diagonal)
                                             # TODO OPT: Make matrix symmetric to save memory?
   n_planets::Vector{Float64}                # fraction of time would detect n planets (incl. geometry & detection probability)
 
@@ -190,13 +199,13 @@ function SimulatedSystemDetectionProbs(traits::Type, n::Integer; num_samples::In
   SimulatedSystemDetectionProbs{traits}( ones(n), zeros(n,n), zeros(n), fill(Array{Int64}(undef,0), num_samples) )
 end
 
-SkyAveragedSystemDetectionProbs(p::Vector{Float64}; num_samples::Integer = 1) = SimulatedSystemDetectionProbs( SkyAveraged, p, num_samples=num_samples) 
-SkyAveragedSystemDetectionProbs(n::Integer; num_samples::Integer = 1) = SimulatedSystemDetectionProbs(SkyAveraged, n, num_samples=num_samples) 
+SkyAveragedSystemDetectionProbs(p::Vector{Float64}; num_samples::Integer = 1) = SimulatedSystemDetectionProbs( SkyAveraged, p, num_samples=num_samples)
+SkyAveragedSystemDetectionProbs(n::Integer; num_samples::Integer = 1) = SimulatedSystemDetectionProbs(SkyAveraged, n, num_samples=num_samples)
 SkyAveragedSystemDetectionProbsEmpty() = SimulatedSystemDetectionProbs(SkyAveraged,0)
 
-OneObserverSystemDetectionProbs(p::Vector{Float64}; num_samples::Integer = 1) = SimulatedSystemDetectionProbs( OneObserver, p, num_samples=num_samples) 
+OneObserverSystemDetectionProbs(p::Vector{Float64}; num_samples::Integer = 1) = SimulatedSystemDetectionProbs( OneObserver, p, num_samples=num_samples)
 
-OneObserverSystemDetectionProbs(n::Integer; num_samples::Integer = 1) = SimulatedSystemDetectionProbs(OneObserver, n, num_samples=num_samples) 
+OneObserverSystemDetectionProbs(n::Integer; num_samples::Integer = 1) = SimulatedSystemDetectionProbs(OneObserver, n, num_samples=num_samples)
 OneObserverSystemDetectionProbsEmpty() = SimulatedSystemDetectionProbs(OneObserver,0)
 
 # Functions common to various types of SystemDetectionProbs
@@ -220,13 +229,14 @@ end
 prob_detect_n_planets(prob::SimulatedSystemDetectionProbs{T}, n::Integer) where T<:SystemDetectionProbsTrait = 1<=n<=length(prob.n_planets) ? prob.n_planets[n] : 0.0
 
 # Compute sky-averaged transit probabilities from a planetary system with known physical properties, assuming a single host star
-function calc_simulated_system_detection_probs(ps::PlanetarySystemSingleStar, prob_det_if_tr::Vector{Float64}; num_samples::Integer = 1, max_tranets_in_sys::Integer = 10, min_detect_prob_to_be_included::Float64 = 0.0, observer_trait::Type=SkyAveraged)
+#function calc_simulated_system_detection_probs(ps::PlanetarySystemSingleStar, prob_det_if_tr::Vector{Float64}; num_samples::Integer = 1, max_tranets_in_sys::Integer = 10, min_detect_prob_to_be_included::Float64 = 0.0, observer_trait::Type=SkyAveraged)
+function calc_simulated_system_detection_probs(ps::PlanetarySystem{StarT}, prob_det_if_tr::Vector{Float64}; num_samples::Integer = 1, max_tranets_in_sys::Integer = 10, min_detect_prob_to_be_included::Float64 = 0.0, observer_trait::Type=SkyAveraged)  where {StarT<:StarAbstract}
   @assert observer_trait <: SystemDetectionProbsTrait
   @assert num_planets(ps) == length(prob_det_if_tr)
   idx_detectable = findall(x->x>0.0,prob_det_if_tr)
   n = length(idx_detectable)
   @assert n <= max_tranets_in_sys       # Make sure memory to store these
-  #if n==0 
+  #if n==0
   #   println("# WARNING found no detectable planets based on ",prob_det_if_tr)
   #end
   invalid_prob_flag = false
@@ -246,9 +256,9 @@ function calc_simulated_system_detection_probs(ps::PlanetarySystemSingleStar, pr
   for ntr in 1:min(n,max_tranets_in_sys)  # Loop over number of planets transiting
       sdp.n_planets[ntr] = 0.0
       for combo in combinations(1:n,ntr)  # Loop over specific combinations of detectable planets
-        prob_det_this_combo = 1.0    
+        prob_det_this_combo = 1.0
         for p in combo  # Loop over each planet in this combination of detectable planets
-            prob_det_this_combo *= prob_det_if_tr[idx_detectable[p]] 
+            prob_det_this_combo *= prob_det_if_tr[idx_detectable[p]]
         end
 
         if prob_det_this_combo < min_detect_prob_to_be_included
@@ -260,18 +270,18 @@ function calc_simulated_system_detection_probs(ps::PlanetarySystemSingleStar, pr
       	    planet_should_transit[combo[i]] = one(Cint)
 	end
 	local geo_factor::Float64
-	if observer_trait == SkyAveraged 
+	if observer_trait == SkyAveraged
 	   geo_factor = prob_combo_transits_obs_ave(ps_detectable,planet_should_transit)
 	elseif observer_trait == OneObserver
 	   geo_factor = prob_combo_transits_one_obs(ps_detectable,planet_should_transit)
 	else
 	   error(string("typeof(",observer_trait,") is not a valid trait."))
 	end
-        prob_det_this_combo *= geo_factor 
+        prob_det_this_combo *= geo_factor
 
 	# Store samples of combinations of planets detected drawn from the full joint multi-planet density
 	for i in 1:num_samples
-	   if combo_cum_probs[i] < combo_sample_probs[i] <= combo_cum_probs[i]+prob_det_this_combo  
+	   if combo_cum_probs[i] < combo_sample_probs[i] <= combo_cum_probs[i]+prob_det_this_combo
 	      sdp.combo_detected[i] = combo
 	   end
 	end
@@ -286,19 +296,19 @@ function calc_simulated_system_detection_probs(ps::PlanetarySystemSingleStar, pr
         #=
         for pq in combinations(combo,2)                # Accumulate the probability of detecting each planet pair # TODO: OPT: replace with simply calculating integers for pairs to avoid allocations of small arrays
            sdp.pairwise[pq[1],pq[2]] = prob_det_this_combo
-           sdp.pairwise[pq[2],pq[1]] = prob_det_this_combo   # TODO OPT: Remove if use symmetric matrix type.  
+           sdp.pairwise[pq[2],pq[1]] = prob_det_this_combo   # TODO OPT: Remove if use symmetric matrix type.
         end
         =#
-        if length(combo)>=2 
+        if length(combo)>=2
           for pi in 2:length(combo)                # Accumulate the probability of detecting each planet pair # TODO: OPT: replace with simply calculating integers for pairs to avoid allocations of small arrays
             p = combo[pi]
             for qi in 1:(pi-1)
                q = combo[qi]
                sdp.pairwise[p,q] = prob_det_this_combo
-               sdp.pairwise[q,p] = prob_det_this_combo   # TODO OPT: Remove if use symmetric matrix type.  
+               sdp.pairwise[q,p] = prob_det_this_combo   # TODO OPT: Remove if use symmetric matrix type.
             end # qi
           end # pi
-        end # if 
+        end # if
       end # combo
   end # ntr
 
@@ -346,7 +356,7 @@ function combine_system_detection_probs(prob::Vector{SimulatedSystemDetectionPro
     prob_merged.pairwise[offset+1:offset+npl_s2,offset+1:offset+npl_s2] = prob[s2].pairwise
     # Calculate probabilities of detecting pairs of planets in different systems, assuming uncorrelated orientations
     for p1 in 1:npl_s1
-        for p2 in 1:npl_s2	
+        for p2 in 1:npl_s2
 	    prob_detect_both = prob_detect(prob[s1],p1)*prob_detect(prob[s2],p2)
 	    idx1 = p1
 	    idx2 = offset+p2
@@ -360,7 +370,7 @@ function combine_system_detection_probs(prob::Vector{SimulatedSystemDetectionPro
     for n in 1:min(num_planets_across_systems,max_tranets_in_sys)
         prob_merged.n_planets[n] = p_zero_pl_s1*prob[s2].n_planets[n] + p_zero_pl_s2*prob[s1].n_planets[n]
 	for i in 1:n-1
-	   prob_merged.n_planets[n] += prob[s1].n_planets[i]*prob[s2].n_planets[n-i] + prob[s1].n_planets[n-i]*prob[s2].n_planets[i] 
+	   prob_merged.n_planets[n] += prob[s1].n_planets[i]*prob[s2].n_planets[n-i] + prob[s1].n_planets[n-i]*prob[s2].n_planets[i]
 	end
     end
     # Combine samples of detected planet combinations
@@ -369,13 +379,13 @@ function combine_system_detection_probs(prob::Vector{SimulatedSystemDetectionPro
        prob_merged.combo_detected[i] = vcat( prob[s1].combo_detected, prob[s1].combo_detected+offset )
     end
     return prob_merged
-end 
+end
 
 function select_subset(prob::SimulatedSystemDetectionProbs{T}, idx::Vector{Int64}) # WARNING: Complicated and untested where {T<:SystemDetectionProbsTrait}
     n = length(idx)
     subset = SimulatedSystemDetectionProbs{T}(n)
     subset.detect_planet_if_transits = prob.detect_planet_if_transits[idx]
-    subset.pairwise = ones(n,n)   
+    subset.pairwise = ones(n,n)
     subset.n_planets = zeros(max(n,length(prob.n_planets)))
     if 1<=n<=length(subset.n_planets)
         subset.n_planets[n] = 1.0
@@ -412,7 +422,7 @@ function calc_simulated_system_detection_probs(t::KeplerTarget, sim_param::SimPa
     s1 = 0
     s2 = 0
     for s in 1:length(t.sys)
-	if num_planets(t.sys[s])>=1 
+	if num_planets(t.sys[s])>=1
 	   if s1==0
 	      s1 = s
 	   elseif s2==0
@@ -432,7 +442,7 @@ end
 
 
 mutable struct ObservedSystemDetectionProbs <: SystemDetectionProbsAbstract          # TODO OPT:  For observed systems (or simulations of observed systems) were we can't know everything.  Is this even used?  Or should we just compute these on the fly, rather than storing them? Do we even want to keep this?
-  planet_transits::Vector{Float64}                         # Probability that each planet transits individually for one observer based on actual i, e, and omega 
+  planet_transits::Vector{Float64}                         # Probability that each planet transits individually for one observer based on actual i, e, and omega
   detect_planet_if_transits::Vector{Float64}               # Probability of detecting each planet given that it transits. Assumes one observer based on actual i, e and omega
   # snr::Vector{Float64}                      # Dimensionless SNR of detection for each planet QUERY: Should we store this here?
 end
@@ -464,7 +474,7 @@ end
 
 #=
 # Compute transit probabilities for a single observer from a target with known physical properties
-function calc_observed_system_detection_probs(targ::KeplerTarget, sim_param::SimParam)  
+function calc_observed_system_detection_probs(targ::KeplerTarget, sim_param::SimParam)
   n = num_planets(targ)
   pdet = zeros(n)
   ptr = zeros(n)
@@ -480,9 +490,9 @@ function calc_observed_system_detection_probs(targ::KeplerTarget, sim_param::Sim
 end
 =#
 
-# Estimate transit probabilities for a single observer from a target with known physical properties.  
+# Estimate transit probabilities for a single observer from a target with known physical properties.
 if false    # Do we actually want this for anything?
-function calc_observed_system_detection_probs(kto::KeplerTargetObs, sim_param::SimParam)  
+function calc_observed_system_detection_probs(kto::KeplerTargetObs, sim_param::SimParam)
   n = num_planets(kto)
   pdet = ones(n)   # WARNING: We assume all observed objects were detected and we don't have enough info to calcualte a detection probability.  Do we want to do something different?
   ptr = zeros(n)
@@ -492,4 +502,3 @@ function calc_observed_system_detection_probs(kto::KeplerTargetObs, sim_param::S
   ObservedSystemDetectionProbs( ptr, pdet )
 end
 end
-

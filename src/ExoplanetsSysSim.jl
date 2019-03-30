@@ -1,5 +1,8 @@
 ## ExoplanetsSysSim/src/ExoplanetsSysSim.jl
 ## (c) 2015 Eric B. Ford
+
+using DataFrames # needed outside module, so JLD/JLD2 load has the type
+
 module ExoplanetsSysSim
 
 # Packages to be used                 # Note: Tried to keep to a minimum in core package to help with maintainability

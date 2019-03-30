@@ -1,6 +1,8 @@
 # ExoplanetsSysSim/src/summary_statistics.jl
 ## (c) 2015 Eric B. Ford
 
+using Statistics
+
 mutable struct CatalogSummaryStatistics
   stat::Dict{String,Any}          # For storing summary statistics
   cache::Dict{String,Any}         # For caching data that's not a summary statistic
@@ -16,21 +18,21 @@ function calc_summary_stats_sim_pass_one_demo(cat_obs::KeplerObsCatalog, cat_phy
 
   max_tranets_in_sys = get_int(param,"max_tranets_in_sys")    # Demo that simulation parameters can specify how to evalute models, too
   @assert max_tranets_in_sys >= 1
-  idx_tranets = find(x::KeplerTargetObs-> length(x.obs) > 0, cat_obs.target)::Array{Int64,1}             # Find indices of systems with at least 1 tranet = potentially detectable transiting planet
+  idx_tranets = findall(x::KeplerTargetObs-> length(x.obs) > 0, cat_obs.target)::Array{Int64,1}             # Find indices of systems with at least 1 tranet = potentially detectable transiting planet
 
   # Count total number of tranets and compile indices for N-tranet systems
   num_tranets = 0
   idx_n_tranets = Vector{Int64}[ Int64[] for m = 1:max_tranets_in_sys]
   for n in 1:max_tranets_in_sys-1
-    idx_n_tranets[n] = find(x::KeplerTargetObs-> length(x.obs) == n, cat_obs.target[idx_tranets] )
+    idx_n_tranets[n] = findall(x::KeplerTargetObs-> length(x.obs) == n, cat_obs.target[idx_tranets] )
     num_tranets += n*length(idx_n_tranets[n])
   end
-  idx_n_tranets[max_tranets_in_sys] = find(x::KeplerTargetObs-> length(x.obs) >= max_tranets_in_sys, cat_obs.target[idx_tranets] )
+  idx_n_tranets[max_tranets_in_sys] = findall(x::KeplerTargetObs-> length(x.obs) >= max_tranets_in_sys, cat_obs.target[idx_tranets] )
 
   num_tranets += max_tranets_in_sys*length(idx_n_tranets[max_tranets_in_sys])  # WARNING: this means we need to ignore planets w/ indices > max_tranets_in_sys
   num_tranets  = convert(Int64,num_tranets)            # TODO OPT: Figure out why isn't this already an Int.  I may be doing something that prevents some optimizations
 
-  cache["num_tranets"] = num_tranets                                   
+  cache["num_tranets"] = num_tranets
   cache["idx_tranets"] = idx_tranets                                   # We can save lists of indices to summary stats for pass 2, even though we won't use these for computing a distance or probability
   #cache["idx_n_tranets"] = idx_n_tranets
 
@@ -57,15 +59,15 @@ function calc_summary_stats_sim_pass_one_demo(cat_obs::KeplerObsCatalog, cat_phy
 
   tr_id = 1   # tranet id
   for i in idx_tranets     # For each target with at least one tranet
-     targ = cat_obs.target[i] 
+     targ = cat_obs.target[i]
      for j in 1:min(length(targ.obs),max_tranets_in_sys)   # For each tranet around that target (but truncated if too many tranets in one system)
-         #println("# i= ",i," j= ",j," n= ",n)
-         period_list[n] = targ.obs[j].period
-         depth_list[n] = targ.obs[j].depth
+         #println("# i= ",i," j= ",j," tr_id= ",tr_id)
+         period_list[tr_id] = targ.obs[j].period
+         depth_list[tr_id] = targ.obs[j].depth
          # (s,p) = targ.phys_id[j]
          # ptr = calc_transit_prob_single(cat_phys.target[i],s,p)   # WARNING: Could access physical catalog, rather than observed catalog, but obviously that's dangerous for observations.
-	 weight_list[n] = prob_detect(cat_obs.target[i].prob_detect,j)
-         tr_id += 1 
+	       weight_list[tr_id] = prob_detect(cat_obs.target[i].prob_detect,j)
+         tr_id += 1
       end
    end
   ssd["P list"] = period_list                                     # We can store whole lists, e.g., if we want to compute K-S distances
@@ -77,11 +79,11 @@ function calc_summary_stats_sim_pass_one_demo(cat_obs::KeplerObsCatalog, cat_phy
   log_depth_list = log10.(depth_list[idx_good])
   weight_list = weight_list[idx_good]
   weight_sum = sum(weight_list)
-  ssd["mean log10 P"]  =  mean_log_P = sum( weight_list .* log_period_list) / weight_sum                           # TODO TEST: Check that these four weighted mean and stddevs are working properly 
+  ssd["mean log10 P"]  =  mean_log_P = sum( weight_list .* log_period_list) / weight_sum                           # TODO TEST: Check that these four weighted mean and stddevs are working properly
   ssd["std log10 P"]  =  sum( weight_list .* (log_period_list.-mean_log_P).^2 ) / weight_sum
-  ssd["mean log10 depth"]  =  mean_log_depth = sum( weight_list .* log_depth_list) / weight_sum 
+  ssd["mean log10 depth"]  =  mean_log_depth = sum( weight_list .* log_depth_list) / weight_sum
   ssd["std log10 depth"]  =  sum( weight_list .* (log_depth_list.-mean_log_depth).^2 ) / weight_sum
-  
+
   return CatalogSummaryStatistics(ssd, cache)
 end
 
@@ -91,24 +93,24 @@ function calc_summary_stats_obs_demo(cat_obs::KeplerObsCatalog, param::SimParam 
   cache = Dict{String,Any}()
 
   max_tranets_in_sys = get_int(param,"max_tranets_in_sys")                  # Demo that simulation parameters can specify how to evalute models, too
-  idx_tranets = find(x::KeplerTargetObs-> length(x.obs) > 0, cat_obs.target)             # Find indices of systems with at least 1 tranet = potentially detectable transiting planet
+  idx_tranets = findall(x::KeplerTargetObs-> length(x.obs) > 0, cat_obs.target)             # Find indices of systems with at least 1 tranet = potentially detectable transiting planet
   # Count total number of tranets and compile indices for N-tranet systems
   num_tranets = 0
   idx_n_tranets = Vector{Int64}[ [] for m = 1:max_tranets_in_sys]
   for n in 1:max_tranets_in_sys-1
-    idx_n_tranets[n] = find(x::KeplerTargetObs-> length(x.obs) == n, cat_obs.target[idx_tranets] )
+    idx_n_tranets[n] = findall(x::KeplerTargetObs-> length(x.obs) == n, cat_obs.target[idx_tranets] )
     num_tranets += n*length(idx_n_tranets[n])
   end
-  idx_n_tranets[max_tranets_in_sys] = find(x::KeplerTargetObs-> length(x.obs) >= max_tranets_in_sys, cat_obs.target[idx_tranets] )
+  idx_n_tranets[max_tranets_in_sys] = findall(x::KeplerTargetObs-> length(x.obs) >= max_tranets_in_sys, cat_obs.target[idx_tranets] )
   num_tranets += max_tranets_in_sys*length(idx_n_tranets[max_tranets_in_sys])  # WARNING: this means we need to ignore planets w/ indices > max_tranets_in_sys
-  if ( length( find(x::KeplerTargetObs-> length(x.obs) > max_tranets_in_sys, cat_obs.target[idx_tranets] ) ) > 0)   # Make sure max_tranets_in_sys is at least big enough for observed systems
+  if ( length( findall(x::KeplerTargetObs-> length(x.obs) > max_tranets_in_sys, cat_obs.target[idx_tranets] ) ) > 0)   # Make sure max_tranets_in_sys is at least big enough for observed systems
     warn("Observational data has more transiting planets in one systems than max_tranets_in_sys allows.")
   end
   num_tranets = Int64(num_tranets)           # TODO OPT: Figure out why isn't this already an Int.  I may be doing something that prevents some optimizations
   #println("# num_tranets= ",num_tranets)
 
   # QUERY:  Is there any reason to cache anything for the real observations?  We only need to do this once, so might as well use one pass to simplicity.
-  #cache["num_tranets"] = num_tranets                                   
+  #cache["num_tranets"] = num_tranets
   #cache["idx_tranets"] = idx_tranets                                   # We can save lists of indices to summary stats for pass 2, even though we won't use these for computing a distance or probability
   cache["idx_n_tranets"] = idx_n_tranets
 
@@ -131,7 +133,7 @@ function calc_summary_stats_obs_demo(cat_obs::KeplerObsCatalog, param::SimParam 
          #println("# i= ",i," j= ",j)
          period_list[i] = targ.obs[j].period
          depth_list[i] = targ.obs[j].depth
-         #weight_list[i] = 1.0                                     
+         #weight_list[i] = 1.0
          i = i+1
       end
    end
@@ -143,10 +145,10 @@ function calc_summary_stats_obs_demo(cat_obs::KeplerObsCatalog, param::SimParam 
   idx_good = Bool[ period_list[i]>0.0 && depth_list[i]>0.0 for i in 1:length(period_list) ]
   log_period_list = log10.(period_list[idx_good])
   log_depth_list = log10.(depth_list[idx_good])
-  ssd["mean log10 P"]  =  mean_log_P = mean(log_period_list)                
-  ssd["mean log10 depth"]  =  mean_log_depth = mean(log_depth_list)         
-  ssd["std log10 P"]  =  stdm(log_period_list,mean_log_P)                   
-  ssd["std log10 depth"]  =  stdm(log_depth_list,mean_log_depth)            
+  ssd["mean log10 P"]  =  mean_log_P = mean(log_period_list)
+  ssd["mean log10 depth"]  =  mean_log_depth = mean(log_depth_list)
+  ssd["std log10 P"]  =  stdm(log_period_list,mean_log_P)
+  ssd["std log10 depth"]  =  stdm(log_depth_list,mean_log_depth)
 
   return CatalogSummaryStatistics(ssd, cache)
 end
@@ -157,7 +159,7 @@ function calc_summary_stats_sim_pass_two_demo(cat_obs::KeplerObsCatalog, cat_phy
   #num_sys_tranets = zeros(max_tranets_in_sys)
 
   #for n in 1:max_tranets_in_sys                                            # Make histogram of N-tranet systems
-  #  num_sys_tranets[n] = length(ss.cache["idx_n_tranets"][n])              # TODO SCI: Make pay attention to transit and detection probabilities in multiple systems.  DARIN 
+  #  num_sys_tranets[n] = length(ss.cache["idx_n_tranets"][n])              # TODO SCI: Make pay attention to transit and detection probabilities in multiple systems.  DARIN
   #end
   #ss.stat["num_sys_tranets"] = num_sys_tranets
   return ss
@@ -171,5 +173,3 @@ function test_summary_statistics(cat_obs::KeplerObsCatalog, cat_phys::KeplerPhys
   ss = calc_summary_stats_obs_demo(cat_obs,sim_param)   # So tests can compare to simulated observed catalog
   return ss
 end
-
-

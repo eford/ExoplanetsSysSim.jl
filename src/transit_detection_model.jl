@@ -172,6 +172,7 @@ function vetting_efficiency_dr25_mulders_score_cut(R_p::Real, P::Real)
     return pvet
 end
 
+vetting_efficiency = vetting_efficiency_none 
 # Resume code original to SysSim
 
 
